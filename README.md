@@ -73,7 +73,8 @@ go get go.nandlabs.io/golly
   - Default implementation for local fs available
   - Extensible framework
 
-And many more..
+And many more... Refer to [Godocs](https://godoc.org/go.nandlabs.io/golly?) for
+more information
 
 ## Contributing
 
