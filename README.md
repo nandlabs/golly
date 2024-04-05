@@ -22,12 +22,11 @@ go get go.nandlabs.io/golly
 ## Core Packages
 
 - [clients](clients/README.md)
+  - A common package for all types of client
   - [rest](clients/rest/README.md)
     - HTTP methods: GET, POST, PUT, DELETE
     - Query parameters
     - Request headers
-    - Retry
-    - CircuitBreaker Configuration
     - Proxy Configuration
     - TLS Configuration
     - Transport Layer Configuration
@@ -39,8 +38,7 @@ go get go.nandlabs.io/golly
     - General consumer interface for receiving and processing messages from
       different messaging platforms.
     - Supports QualityOfService features such as
-    - CircuitBreaker
-    - Retry
+
 - [cli](cli/README.md)
   - Easy to use API for building complex command structures
   - Argument parsing and validation
