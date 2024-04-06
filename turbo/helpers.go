@@ -1,11 +1,13 @@
 package turbo
 
 import (
+	"fmt"
+	"html"
 	"net/http"
 	"path"
 )
 
-//Common constants used throughout
+// Common constants used throughout
 const (
 	PathSeparator = "/"
 	GET           = "GET"
@@ -29,7 +31,7 @@ var Methods = map[string]string{
 	PATCH:   PATCH,
 }
 
-//refinePath Borrowed from the golang's net/turbo package
+// refinePath Borrowed from the golang's net/turbo package
 func refinePath(p string) string {
 	if p == "" {
 		return "/"
@@ -44,30 +46,24 @@ func refinePath(p string) string {
 	return rp
 }
 
-//endpointNotFound to check for the request endpoint
+// endpointNotFound to check for the request endpoint
 func endpointNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-	_, err := w.Write([]byte("Endpoint Not Found : " + r.URL.Path + "\n"))
-	if err != nil {
-		return
-	}
+	fmt.Fprintf(w, "Endpoint not found :%q \n", html.EscapeString(r.URL.Path))
 }
 
-//endpointNotFoundHandler when a requested endpoint is not found in the registered route's this handler is invoked
+// endpointNotFoundHandler when a requested endpoint is not found in the registered route's this handler is invoked
 func endpointNotFoundHandler() http.Handler {
 	return http.HandlerFunc(endpointNotFound)
 }
 
-//methodNotAllowed to check for the supported method for the incoming request
+// methodNotAllowed to check for the supported method for the incoming request
 func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
-	_, err := w.Write([]byte("Requested Method : " + r.Method + " not supported for Endpoint : " + r.URL.Path + "\n"))
-	if err != nil {
-		return
-	}
+	fmt.Fprintf(w, "Method %q Not Supported for %q \n", html.EscapeString(r.Method), html.EscapeString(r.URL.Path))
 }
 
-//methodNotAllowedHandler when a requested method is not allowed in the registered route's method list this handler is invoked
+// methodNotAllowedHandler when a requested method is not allowed in the registered route's method list this handler is invoked
 func methodNotAllowedHandler() http.Handler {
 	return http.HandlerFunc(methodNotAllowed)
 }
