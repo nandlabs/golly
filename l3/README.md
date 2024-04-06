@@ -18,7 +18,7 @@ The simplest example is  as shown below.
     import (
 	"errors"
 	
-	"go.nandlabs.io/golly/l3"
+	"oss.nandlabs.io/golly/l3"
 )
 
 //logger Package Level Logger

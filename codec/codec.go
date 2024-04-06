@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"go.nandlabs.io/golly/errutils"
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 const (

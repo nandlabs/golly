@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 // value struct to handle variable based values

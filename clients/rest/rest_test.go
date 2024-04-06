@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/codec"
 )
 
 var client = NewClient()

@@ -18,7 +18,7 @@ Codec provides a unified interface for interacting with multiple formats along w
 ### Installation
 
 ```bash
-go get go.nandlabs.io/golly/codec
+go get oss.nandlabs.io/golly/codec
 ```
 
 ### Usage
@@ -46,7 +46,7 @@ package main
 import (
   "bytes"
   "fmt"
-  codec "go.nandlabs.io/golly/codec"
+  codec "oss.nandlabs.io/golly/codec"
 )
 
 type Message struct {
@@ -75,7 +75,7 @@ package main
 import(
   "bytes"
   "fmt"
-  codec "go.nandlabs.io/golly/codec"
+  codec "oss.nandlabs.io/golly/codec"
 )
 
 //Message - add validations for the fields, codec internally validates the struct

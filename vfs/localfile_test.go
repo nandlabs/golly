@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"go.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 func GetParsedUrl(input string) (output *url.URL) {

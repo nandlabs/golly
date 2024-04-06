@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"go.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/errutils"
 )
 
 const (

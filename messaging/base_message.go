@@ -2,8 +2,8 @@ package messaging
 
 import (
 	"bytes"
-	"go.nandlabs.io/golly/codec"
 	"io"
+	"oss.nandlabs.io/golly/codec"
 	"reflect"
 )
 

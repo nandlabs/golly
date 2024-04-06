@@ -27,14 +27,14 @@ This is a README file for a REST client built using the Go programming language.
 ## Installation
 To install the REST client, use the following command:
 ```bash
-go get go.nandlabs.io/golly/clients/rest
+go get oss.nandlabs.io/golly/clients/rest
 ```
 
 ## Usage
 
 To use the REST client in your Go project, you first need to import the package:
 ```go
-import "go.nandlabs.io/golly/clients/rest"
+import "oss.nandlabs.io/golly/clients/rest"
 ```
 
 #### HTTP Methods : Sending a GET Request
@@ -43,7 +43,7 @@ package main
 
 import (
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {
@@ -65,7 +65,7 @@ package main
 
 import (
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {
@@ -89,7 +89,7 @@ package main
 
 import (
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {
@@ -112,7 +112,7 @@ package main
 
 import (
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {
@@ -139,7 +139,7 @@ package main
 import (
   "crypto/tls"
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {
@@ -165,7 +165,7 @@ package main
 
 import (
   "fmt"
-  "go.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/clients/rest"
 )
 
 func main() {

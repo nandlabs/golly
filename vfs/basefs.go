@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"path"
 
-	"go.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 type BaseVFS struct {

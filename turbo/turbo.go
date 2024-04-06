@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"go.nandlabs.io/golly/l3"
-	"go.nandlabs.io/golly/textutils"
-	"go.nandlabs.io/golly/turbo/auth"
+	"oss.nandlabs.io/golly/l3"
+	"oss.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/turbo/auth"
 )
 
 // Router struct that holds the router configuration

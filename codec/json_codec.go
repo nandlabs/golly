@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"go.nandlabs.io/golly/codec/validator"
+	"oss.nandlabs.io/golly/codec/validator"
 )
 
 const (

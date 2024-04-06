@@ -1,6 +1,6 @@
 # golly/config
 
-[![Go Reference](https://pkg.go.dev/badge/go.nandlabs.io/golly/config.svg)](https://pkg.go.dev/go.nandlabs.io/golly/config)
+[![Go Reference](https://pkg.go.dev/badge/oss.nandlabs.io/golly/config.svg)](https://pkg.go.dev/oss.nandlabs.io/golly/config)
 
 ## Overview
 

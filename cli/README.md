@@ -14,7 +14,7 @@ This project is a Go library for building powerful and user-friendly command-lin
 ### Installation
 
 ```bash
-go get go.nandlabs.io/golly/cli
+go get oss.nandlabs.io/golly/cli
 ```
 
 ### Features
@@ -35,7 +35,7 @@ import (
 	"log"
 	"os"
 
-	"go.nandlabs.io/golly/cli"
+	"oss.nandlabs.io/golly/cli"
 )
 
 func main() {
@@ -69,7 +69,7 @@ import (
 	"log"
 	"os"
 
-	"go.nandlabs.io/golly/cli"
+	"oss.nandlabs.io/golly/cli"
 )
 
 func main() {
@@ -149,7 +149,7 @@ import (
 	"log"
 	"os"
 
-	"go.nandlabs.io/golly/cli"
+	"oss.nandlabs.io/golly/cli"
 )
 
 const (

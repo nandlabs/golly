@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"sync"
 
-	"go.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/errutils"
 )
 
 var manager Manager
