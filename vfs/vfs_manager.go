@@ -1,10 +1,9 @@
 package vfs
 
 import (
+	"fmt"
 	"net/url"
 	"sync"
-
-	"oss.nandlabs.io/golly/errutils"
 )
 
 var manager Manager
@@ -241,7 +240,7 @@ func (fs *fileSystems) getFsFor(src *url.URL) (vfs VFileSystem, err error) {
 	var ok bool
 	vfs, ok = fs.fileSystems[src.Scheme]
 	if !ok {
-		err = errutils.FmtError("Unsupported scheme %s for in the url %s", src.Scheme, src.String())
+		err = fmt.Errorf("Unsupported scheme %s for in the url %s", src.Scheme, src.String())
 	}
 	return
 }
