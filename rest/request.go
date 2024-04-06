@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"strings"
 
 	"oss.nandlabs.io/golly/codec"
-	"oss.nandlabs.io/golly/errutils"
 	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/textutils"
 )
@@ -177,7 +177,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 					if v, ok := r.pathParams[key]; ok {
 						pathValues[i] = v
 					} else {
-						err = errutils.FmtError("Path param with name %s is not set in the request ", key)
+						err = fmt.Errorf("Path param with name %s is not set in the request ", key)
 						break
 					}
 				}
