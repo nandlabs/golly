@@ -2,8 +2,8 @@ package turbo
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"strconv"
 	"strings"
@@ -203,6 +203,7 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 
 // prepareHandler to add any default features like logging, auth... will be injected here
 func prepareHandler(method string, handler http.Handler) http.Handler {
+	//TODO add features later
 	return handler
 }
 
@@ -230,10 +231,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p = url.String()
 		w.Header().Set("Location", p)
 		w.WriteHeader(http.StatusMovedPermanently)
-		_, err := w.Write([]byte("Path Moved : " + p + "\n"))
-		if err != nil {
-			logger.Error(err)
-		}
+		fmt.Fprintf(w, "Path Moved : %q \n", html.EscapeString(p))
 		return
 	}
 	// start by checking where the method of the Request is same as that of the registered method
@@ -311,14 +309,15 @@ func (router *Router) GetPathParams(id string, r *http.Request) (string, error) 
 	params, ok := r.Context().Value("params").([]Param)
 	if !ok {
 		logger.ErrorF("Error Fetching Path Param %s", id)
-		return "err", errors.New(fmt.Sprintf("error fetching path param %s", id))
+
+		return textutils.EmptyStr, fmt.Errorf("error fetching path param %s", id)
 	}
 	for _, p := range params {
 		if p.key == id {
 			return p.value, nil
 		}
 	}
-	return "", errors.New(fmt.Sprintf("No Such parameter %s", id))
+	return textutils.EmptyStr, fmt.Errorf("no such parameter %s", id)
 }
 
 // GetIntPathParams fetches the int path parameters
@@ -365,7 +364,7 @@ func (router *Router) GetQueryParams(id string, r *http.Request) (string, error)
 	val := r.URL.Query().Get(id)
 	if val == "" {
 		logger.ErrorF("Error Fetching Query Param %s", id)
-		return "err", errors.New(fmt.Sprintf("error fetching query param %s", id))
+		return "err", fmt.Errorf("error fetching query param %s", id)
 	}
 	return val, nil
 }
@@ -375,7 +374,7 @@ func (router *Router) GetIntQueryParams(id string, r *http.Request) (int, error)
 	val, ok := strconv.Atoi(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
-		return -1, errors.New(fmt.Sprintf("error fetching query param %s", id))
+		return -1, fmt.Errorf("error fetching query param %s", id)
 	}
 	return val, nil
 }
@@ -385,7 +384,7 @@ func (router *Router) GetFloatQueryParams(id string, r *http.Request) (float64, 
 	val, ok := strconv.ParseFloat(r.URL.Query().Get(id), 64)
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
-		return -1, errors.New(fmt.Sprintf("error fetching query param %s", id))
+		return -1, fmt.Errorf("error fetching query param %s", id)
 	}
 	return val, nil
 }
@@ -395,7 +394,7 @@ func (router *Router) GetBoolQueryParams(id string, r *http.Request) (bool, erro
 	val, ok := strconv.ParseBool(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
-		return false, errors.New(fmt.Sprintf("error fetching query param %s", id))
+		return false, fmt.Errorf("error fetching query param %s", id)
 	}
 	return val, nil
 }

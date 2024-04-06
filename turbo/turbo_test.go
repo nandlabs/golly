@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -173,8 +174,8 @@ func TestRouter_GetPathParamsFail(t *testing.T) {
 	}
 	got, err := router.GetPathParams("foo", req)
 	if err != nil {
-		if got != "err" {
-			t.Errorf("GetPathParams() = %v, want %v", got, "err")
+		if !strings.HasPrefix(err.Error(), "error fetching path param") {
+			t.Errorf("GetPathParams() = %v, want to start with %v", got, "error fetching path param")
 		}
 	}
 }
