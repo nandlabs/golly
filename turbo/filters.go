@@ -3,8 +3,8 @@ package turbo
 import (
 	"net/http"
 
-	"go.nandlabs.io/golly/l3"
-	"go.nandlabs.io/golly/turbo/auth"
+	"oss.nandlabs.io/golly/l3"
+	"oss.nandlabs.io/golly/turbo/auth"
 )
 
 // FilterFunc FuncHandler for with which the Filters need to be defined

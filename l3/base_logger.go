@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"go.nandlabs.io/golly/config"
-	"go.nandlabs.io/golly/fsutils"
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/config"
+	"oss.nandlabs.io/golly/fsutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 const (

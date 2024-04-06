@@ -1,7 +1,7 @@
 package validator_test
 
 import (
-	"go.nandlabs.io/golly/codec/validator"
+	"oss.nandlabs.io/golly/codec/validator"
 	"testing"
 )
 

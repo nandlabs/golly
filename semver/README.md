@@ -15,7 +15,7 @@ A SemVer Package is a package that implements the Semantic Versioning (SemVer) s
 ### Installation
 
 ```bash
-go get go.nandlabs.io/golly/semver
+go get oss.nandlabs.io/golly/semver
 ```
 
 ### Features
@@ -34,7 +34,7 @@ package main
 
 import (
 	"fmt"
-	"go.nandlabs.io/golly/semver"
+	"oss.nandlabs.io/golly/semver"
 )
 
 func main() {

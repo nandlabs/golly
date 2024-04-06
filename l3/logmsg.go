@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 var logMsgPool = &sync.Pool{

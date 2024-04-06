@@ -3,9 +3,9 @@ package rest
 import (
 	"net/http"
 
-	"go.nandlabs.io/golly/codec"
-	"go.nandlabs.io/golly/errutils"
-	"go.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 type Response struct {

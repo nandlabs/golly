@@ -16,7 +16,7 @@ The validator covers the specifications, and its respective validations accordin
 ### Installation
 
 ```bash
-go get go.nandlabs.io/golly/codec/validator
+go get oss.nandlabs.io/golly/codec/validator
 ```
 
 ### Quick Start Guide
@@ -44,7 +44,7 @@ package main
 
 import (
     "fmt"
-    validator "go.nandlabs.io/golly/codec/validator"
+    validator "oss.nandlabs.io/golly/codec/validator"
 )
 
 type TestStruct struct {

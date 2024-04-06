@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 // FileExists function will check if the file exists in the specified path and if it is a file indeed

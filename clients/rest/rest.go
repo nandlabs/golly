@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"go.nandlabs.io/golly/clients"
-	"go.nandlabs.io/golly/config"
-	"go.nandlabs.io/golly/fnutils"
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/clients"
+	"oss.nandlabs.io/golly/config"
+	"oss.nandlabs.io/golly/fnutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 const (
