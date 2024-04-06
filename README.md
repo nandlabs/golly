@@ -23,16 +23,9 @@ go get oss.nandlabs.io/golly
 
 - [clients](clients/README.md)
   - A common package for all types of client
-  - [rest](clients/rest/README.md)
-    - HTTP methods: GET, POST, PUT, DELETE
-    - Query parameters
-    - Request headers
-    - Proxy Configuration
-    - TLS Configuration
-    - Transport Layer Configuration
-    - SSL Configuration
-    - Error handling
-
+  - Checkout clients that leverage this package.
+    - [rest](clients/rest/README.md)
+    - [messaging](messaging/README.md)
 - [cli](cli/README.md)
   - Easy to use API for building complex command structures
   - Argument parsing and validation
@@ -55,7 +48,15 @@ go get oss.nandlabs.io/golly
   - General consumer interface for receiving and processing messages from
     different messaging platforms.
   - A local provider interface for messaging using channels
-
+- [rest](clients/rest/README.md)
+  - HTTP methods: GET, POST, PUT, DELETE
+  - Query parameters
+  - Request headers
+  - Proxy Configuration
+  - TLS Configuration
+  - Transport Layer Configuration
+  - SSL Configuration
+  - Error handling
 - [semver](semver/README.md)
   - Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html)
     specification
