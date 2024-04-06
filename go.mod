@@ -1,4 +1,4 @@
-module go.nandlabs.io/golly
+module oss.nandlabs.io/golly
 
 go 1.18
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 // FmtError formats an error message using a format string and optional values,

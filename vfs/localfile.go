@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.nandlabs.io/golly/errutils"
-	"go.nandlabs.io/golly/fsutils"
+	"oss.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/fsutils"
 )
 
 type OsFile struct {

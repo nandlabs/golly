@@ -11,7 +11,7 @@ The default package has methods for local file system.
 
 ### Installation
 ```bash
-go get go.nandlabs.io/golly/vfs
+go get oss.nandlabs.io/golly/vfs
 ```
 
 ### Usage
@@ -22,7 +22,7 @@ package main
 
 import (
     "fmt"
-    "go.nandlabs.io/golly/vfs"
+    "oss.nandlabs.io/golly/vfs"
 )
 
 var (

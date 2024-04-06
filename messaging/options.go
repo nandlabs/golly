@@ -1,6 +1,6 @@
 package messaging
 
-import "go.nandlabs.io/golly/clients"
+import "oss.nandlabs.io/golly/clients"
 
 const (
 	CircuitBreakerOpts = "CircuitBreakerOption"

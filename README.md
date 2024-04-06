@@ -2,7 +2,7 @@
 [![release](https://img.shields.io/github/v/release/nandlabs/golly?label=Latest&color=228B22)](https://github.com/nandlabs/golly/releases/latest)
 [![releaseDate](https://img.shields.io/github/release-date/nandlabs/golly?label=Released&color=228B22)](https://github.com/nandlabs/golly/releases/latest)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/nandlabs/golly?label=Go&color=00ADD8)
-[![godoc](https://godoc.org/go.nandlabs.io/golly?status.svg)](https://pkg.go.dev/go.nandlabs.io/golly)
+[![godoc](https://godoc.org/oss.nandlabs.io/golly?status.svg)](https://pkg.go.dev/oss.nandlabs.io/golly)
 
 # golly
 
@@ -16,7 +16,7 @@ Golly is a collection of reusable common utilities for go programming language.
 ## Installation
 
 ```bash
-go get go.nandlabs.io/golly
+go get oss.nandlabs.io/golly
 ```
 
 ## Core Packages
@@ -72,7 +72,7 @@ go get go.nandlabs.io/golly
   - Default implementation for local fs available
   - Extensible framework
 
-And many more... Refer to [Godocs](https://godoc.org/go.nandlabs.io/golly?) for
+And many more... Refer to [Godocs](https://godoc.org/oss.nandlabs.io/golly?) for
 more information
 
 ## Contributing

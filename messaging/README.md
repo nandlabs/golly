@@ -27,13 +27,13 @@ This is a flexible and extensible messaging client designed to provide a unified
 ## Installation
 To install the messaging client, use the following command:
 ```bash
-go get go.nandlabs.io/golly/clients/messaging
+go get oss.nandlabs.io/golly/clients/messaging
 ```
 
 ## Usage
 1. Import the library into your Go project:
     ```go
-    import "go.nandlabs.io/golly/clients/messaging"
+    import "oss.nandlabs.io/golly/clients/messaging"
     ```
 2. Initialize the messaging provider for a specific platform. For example, to use the AMQP extension:
     ```go

@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.nandlabs.io/golly/codec"
-	"go.nandlabs.io/golly/errutils"
-	"go.nandlabs.io/golly/ioutils"
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 const (

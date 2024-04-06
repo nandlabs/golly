@@ -3,7 +3,7 @@ package ioutils
 import (
 	"testing"
 
-	"go.nandlabs.io/golly/testing/assert"
+	"oss.nandlabs.io/golly/testing/assert"
 )
 
 func TestMimeToExt(t *testing.T) {

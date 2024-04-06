@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"go.nandlabs.io/golly/textutils"
+	"oss.nandlabs.io/golly/textutils"
 )
 
 // FileWriter struct

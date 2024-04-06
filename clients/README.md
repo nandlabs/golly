@@ -44,16 +44,16 @@ To start using the Generic Golang Client, follow these steps:
 1. Install Go and set up your Go development environment.
 2. Import the Generic Golang Client into your project:
    ```go
-   import "go.nandlabs.io/golly/clients"
+   import "oss.nandlabs.io/golly/clients"
    ```
 3. Depending on the service you want to interact with, import the relevant
    sub-client:
    ```go
-   import "go.nandlabs.io/golly/clients/rest"
+   import "oss.nandlabs.io/golly/clients/rest"
    ```
    or
    ```go
-   import "go.nandlabs.io/golly/clients/messaging"
+   import "oss.nandlabs.io/golly/clients/messaging"
    ```
    You can import multiple sub-clients if needed.
 4. Initialize the sub-client and start using its functionality. Refer to the
