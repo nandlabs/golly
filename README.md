@@ -32,12 +32,6 @@ go get go.nandlabs.io/golly
     - Transport Layer Configuration
     - SSL Configuration
     - Error handling
-  - [messaging](clients/messaging/README.md)
-    - General producer interface for sending messages to different messaging
-      platforms.
-    - General consumer interface for receiving and processing messages from
-      different messaging platforms.
-    - Supports QualityOfService features such as
 
 - [cli](cli/README.md)
   - Easy to use API for building complex command structures
@@ -55,6 +49,13 @@ go get go.nandlabs.io/golly
   - Async logging support
   - Configuration can be done using either a file,env variables,Struct values at
     runtime.
+- [messaging](messaging/README.md)
+  - General producer interface for sending messages to different messaging
+    platforms.
+  - General consumer interface for receiving and processing messages from
+    different messaging platforms.
+  - A local provider interface for messaging using channels
+
 - [semver](semver/README.md)
   - Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html)
     specification
