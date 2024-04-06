@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"fmt"
 	"os"
 	"sync"
-
-	"oss.nandlabs.io/golly/errutils"
 )
 
 const (
@@ -55,7 +54,7 @@ func (ls *localStore) Get(key string, ctx context.Context) (cred *Credential, er
 	if v, ok := ls.credentials[key]; ok {
 		cred = v
 	} else {
-		err = errutils.FmtError("Unable to find a credential with key %s", key)
+		err = fmt.Errorf("Unable to find a credential with key %s", key)
 	}
 
 	return

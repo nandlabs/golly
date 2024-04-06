@@ -1,13 +1,13 @@
 package vfs
 
 import (
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 
-	"oss.nandlabs.io/golly/errutils"
 	"oss.nandlabs.io/golly/fsutils"
 )
 
@@ -99,10 +99,10 @@ func (o *OsFile) Url() *url.URL {
 }
 
 func (o *OsFile) AddProperty(name string, value string) error {
-	return errutils.FmtError("Unsupported operation AddProperty for scheme")
+	return fmt.Errorf("Unsupported operation AddProperty for scheme")
 }
 
 func (o *OsFile) GetProperty(name string) (v string, err error) {
-	err = errutils.FmtError("Unsupported operation GetProperty for scheme")
+	err = fmt.Errorf("Unsupported operation GetProperty for scheme")
 	return
 }

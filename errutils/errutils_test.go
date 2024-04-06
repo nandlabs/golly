@@ -6,16 +6,6 @@ import (
 	"testing"
 )
 
-// TestFmtError tests the FmtError function
-func TestFmtError(t *testing.T) {
-	t.Run("Testing execution of FmtError", func(t *testing.T) {
-		err := FmtError("testing error")
-		if err == nil {
-			t.Errorf("error not created")
-		}
-	})
-}
-
 // TestMultiError_Add tests the Add function of MultiError
 func TestMultiError_Add(t *testing.T) {
 	t.Run("Testing execution of MultiError_Add", func(t *testing.T) {

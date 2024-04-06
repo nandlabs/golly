@@ -2,11 +2,11 @@ package codec
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
 
-	"oss.nandlabs.io/golly/errutils"
 	"oss.nandlabs.io/golly/textutils"
 )
 
@@ -151,7 +151,7 @@ func Get(contentType string, options map[string]interface{}) (c Codec, err error
 			bc.readerWriter = &yamlRW{options: options}
 		}
 	default:
-		err = errutils.FmtError("Unsupported contentType %s", contentType)
+		err = fmt.Errorf("Unsupported contentType %s", contentType)
 	}
 
 	if err == nil {

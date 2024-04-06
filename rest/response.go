@@ -1,10 +1,10 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 
 	"oss.nandlabs.io/golly/codec"
-	"oss.nandlabs.io/golly/errutils"
 	"oss.nandlabs.io/golly/ioutils"
 )
 
@@ -21,7 +21,7 @@ func (r *Response) IsSuccess() bool {
 // GetError gets the error with status code and value
 func (r *Response) GetError() (err error) {
 	if !r.IsSuccess() {
-		err = errutils.FmtError("Server responded with status code %d and status text %s",
+		err = fmt.Errorf("Server responded with status code %d and status text %s",
 			r.raw.StatusCode, r.raw.Status)
 	}
 	return
