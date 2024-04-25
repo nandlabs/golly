@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
@@ -149,7 +148,7 @@ func loadConfig() *LogConfig {
 				logConfig = loadDefaultConfig()
 			} else {
 				defer logConfigFile.Close()
-				bytes, _ := ioutil.ReadAll(logConfigFile)
+				bytes, _ := io.ReadAll(logConfigFile)
 				err = json.Unmarshal(bytes, &logConfig)
 				if err != nil {
 					writeLog(os.Stderr, "Unable to open the log config file using default log config", err)

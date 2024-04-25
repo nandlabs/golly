@@ -240,7 +240,7 @@ func (fs *fileSystems) getFsFor(src *url.URL) (vfs VFileSystem, err error) {
 	var ok bool
 	vfs, ok = fs.fileSystems[src.Scheme]
 	if !ok {
-		err = fmt.Errorf("Unsupported scheme %s for in the url %s", src.Scheme, src.String())
+		err = fmt.Errorf("unsupported scheme %s for in the url %s", src.Scheme, src.String())
 	}
 	return
 }

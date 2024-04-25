@@ -2,7 +2,6 @@ package vfs
 
 import (
 	"io"
-	"io/ioutil"
 )
 
 type BaseFile struct {
@@ -11,7 +10,7 @@ type BaseFile struct {
 
 func (b *BaseFile) AsString() (s string, err error) {
 	var bytes []byte
-	bytes, err = ioutil.ReadAll(b)
+	bytes, err = io.ReadAll(b)
 	if err == nil {
 		s = string(bytes)
 	}
@@ -19,7 +18,7 @@ func (b *BaseFile) AsString() (s string, err error) {
 }
 
 func (b *BaseFile) AsBytes() ([]byte, error) {
-	return ioutil.ReadAll(b)
+	return io.ReadAll(b)
 }
 
 func (b *BaseFile) WriteString(s string) (int, error) {

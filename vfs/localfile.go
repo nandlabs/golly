@@ -3,7 +3,6 @@ package vfs
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -75,10 +74,10 @@ func (o *OsFile) Info() (VFileInfo, error) {
 }
 
 func (o *OsFile) Parent() (file VFile, err error) {
-	var fileInfos []fs.FileInfo
-	fileInfos, err = ioutil.ReadDir(o.Location.Path)
+	var dirEntries []fs.DirEntry
+	dirEntries, err = os.ReadDir(o.Location.Path)
 	if err == nil {
-		for _, info := range fileInfos {
+		for _, info := range dirEntries {
 			var f *os.File
 			var u *url.URL
 			u, _ = o.Location.Parse("../" + info.Name())
@@ -99,10 +98,10 @@ func (o *OsFile) Url() *url.URL {
 }
 
 func (o *OsFile) AddProperty(name string, value string) error {
-	return fmt.Errorf("Unsupported operation AddProperty for scheme")
+	return fmt.Errorf("unsupported operation AddProperty for scheme")
 }
 
 func (o *OsFile) GetProperty(name string) (v string, err error) {
-	err = fmt.Errorf("Unsupported operation GetProperty for scheme")
+	err = fmt.Errorf("unsupported operation GetProperty for scheme")
 	return
 }

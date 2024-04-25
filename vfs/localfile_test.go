@@ -83,12 +83,12 @@ func TestOsFs_Create(t *testing.T) {
 	}
 
 	err = createdFile.AddProperty("test", "value")
-	if err.Error() != "Unsupported operation AddProperty for scheme" {
+	if err.Error() != "unsupported operation AddProperty for scheme" {
 		t.Errorf("Invalid expected error")
 	}
 
 	_, err = createdFile.GetProperty("key")
-	if err.Error() != "Unsupported operation GetProperty for scheme" {
+	if err.Error() != "unsupported operation GetProperty for scheme" {
 		t.Errorf("Invalid expected error")
 	}
 
@@ -104,7 +104,7 @@ func TestOsFs_Create(t *testing.T) {
 
 func TestOsFs_Open(t *testing.T) {
 	u := GetRawPath("file:///testdata/testFile.txt")
-	openedFile, err := testManager.OpenRaw(u)
+	openedFile, _ := testManager.OpenRaw(u)
 	defer openedFile.Close()
 
 	b1 := make([]byte, 5)

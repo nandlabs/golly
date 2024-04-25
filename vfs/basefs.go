@@ -77,9 +77,7 @@ func (b *BaseVFS) CreateRaw(u string) (file VFile, err error) {
 	var fileUrl *url.URL
 	fileUrl, err = url.Parse(u)
 	if err == nil {
-		if err == nil {
-			file, err = b.Create(fileUrl)
-		}
+		file, err = b.Create(fileUrl)
 	}
 	return
 }
