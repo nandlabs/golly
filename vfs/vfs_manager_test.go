@@ -51,7 +51,7 @@ func Test_InvalidFS(t *testing.T) {
 	if err == nil {
 		t.Errorf("CreateRaw() error = %v", err)
 	}
-	if err.Error() != "Unsupported scheme dummy for in the url "+u {
+	if err.Error() != "unsupported scheme dummy for in the url "+u {
 		t.Errorf("Test_InvalidFS() error = %v", err)
 	}
 }
