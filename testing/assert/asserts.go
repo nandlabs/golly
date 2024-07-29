@@ -136,3 +136,12 @@ func Empty(t *testing.T, obj any) bool {
 	}
 	return val
 }
+
+// Len checks if the length of the array is equal to the expected length
+func Len(t *testing.T, obj any, length int) bool {
+	val := assertion.Len(obj, length)
+	if !val {
+		t.Errorf("Expected: %v not found", length)
+	}
+	return val
+}

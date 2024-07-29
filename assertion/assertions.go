@@ -113,3 +113,14 @@ func Empty(obj any) bool {
 	}
 
 }
+
+// Len checks if the length of an object is equal to the expected length
+func Len(obj any, expected int) bool {
+	val := reflect.ValueOf(obj)
+	switch val.Kind() {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+		return val.Len() == expected
+	default:
+		return false
+	}
+}
