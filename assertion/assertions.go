@@ -114,6 +114,12 @@ func Empty(obj any) bool {
 
 }
 
+//NotEmpty checks if an object is not empty
+
+func NotEmpty(obj any) bool {
+	return !Empty(obj)
+}
+
 // Len checks if the length of an object is equal to the expected length
 func Len(obj any, expected int) bool {
 	val := reflect.ValueOf(obj)
