@@ -273,3 +273,70 @@ func TestLen(t *testing.T) {
 		t.Errorf("Len() = true, want false")
 	}
 }
+func TestNotEmpty(t *testing.T) {
+	// Test case 1
+	obj1 := "hello"
+	if Empty(obj1) {
+		t.Errorf("NotEmpty() = false, want true")
+	}
+
+	// Test case 2
+	obj2 := []int{1, 2, 3}
+	if Empty(obj2) {
+		t.Errorf("NotEmpty() = false, want true")
+	}
+
+	// Test case 3
+	obj3 := map[string]interface{}{
+		"key": "value",
+	}
+	if Empty(obj3) {
+		t.Errorf("NotEmpty() = false, want true")
+	}
+
+	// Test case 4
+	obj4 := struct {
+		Field string
+	}{
+		Field: "value",
+	}
+	if Empty(obj4) {
+		t.Errorf("NotEmpty() = false, want true")
+	}
+
+	// Test case 5
+	obj5 := 10
+	if Empty(obj5) {
+		t.Errorf("NotEmpty() = false, want true")
+	}
+
+	// Test case 6
+	obj6 := ""
+	if NotEmpty(obj6) {
+		t.Errorf("NotEmpty() = true, want false")
+	}
+
+	// Test case 7
+	obj7 := []int{}
+	if NotEmpty(obj7) {
+		t.Errorf("NotEmpty() = true, want false")
+	}
+
+	// Test case 8
+	obj8 := map[string]interface{}{}
+	if NotEmpty(obj8) {
+		t.Errorf("NotEmpty() = true, want false")
+	}
+
+	// Test case 9
+	obj9 := struct{}{}
+	if NotEmpty(obj9) {
+		t.Errorf("NotEmpty() = true, want false")
+	}
+
+	// Test case 10
+	var obj10 interface{} = nil
+	if NotEmpty(obj10) {
+		t.Errorf("NotEmpty() = true, want false")
+	}
+}
