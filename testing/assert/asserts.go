@@ -137,6 +137,15 @@ func Empty(t *testing.T, obj any) bool {
 	return val
 }
 
+// NotEmpty checks if an array is not empty
+func NotEmpty(t *testing.T, obj any) bool {
+	val := assertion.NotEmpty(obj)
+	if !val {
+		t.Errorf("Expected: not empty, Actual: empty")
+	}
+	return val
+}
+
 // Len checks if the length of the array is equal to the expected length
 func Len(t *testing.T, obj any, length int) bool {
 	val := assertion.Len(obj, length)
