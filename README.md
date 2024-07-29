@@ -72,9 +72,11 @@ go get oss.nandlabs.io/golly
   - Unified interface for multiple file systems
   - Default implementation for local fs available
   - Extensible framework
+- [testing/assert](testing/assert/README.md)
+  - Flexible and extensible assertion library
 
-And many more... Refer to [Godocs](https://godoc.org/oss.nandlabs.io/golly?) for
-more information
+And many more...
+Refer to [Godocs](https://godoc.org/oss.nandlabs.io/golly?) for more information
 
 ## Contributing
 
