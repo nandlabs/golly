@@ -122,3 +122,11 @@ func TestEmpty(t *testing.T) {
 		t.Errorf("Empty failed: expected array to be empty, but it is not")
 	}
 }
+func TestLen(t *testing.T) {
+	// Test when the length of the array is equal to the expected length
+	arr := []interface{}{1, 2, 3}
+	if !Len(t, arr, 3) {
+		t.Errorf("Len failed: expected length to be 3, but it is not")
+	}
+
+}

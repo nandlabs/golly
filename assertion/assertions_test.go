@@ -233,3 +233,43 @@ func TestEmpty(t *testing.T) {
 		t.Errorf("Empty() = true, want false")
 	}
 }
+func TestLen(t *testing.T) {
+	// Test case 1
+	obj1 := []int{1, 2, 3}
+	expected1 := 3
+	if !Len(obj1, expected1) {
+		t.Errorf("Len() = false, want true")
+	}
+
+	// Test case 2
+	obj2 := "hello"
+	expected2 := 5
+
+	if !Len(obj2, expected2) {
+		t.Errorf("Len() = true, want false")
+	}
+
+	// Test case 3
+	obj3 := map[string]int{
+		"key1": 1,
+		"key2": 2,
+	}
+	expected3 := 2
+	if !Len(obj3, expected3) {
+		t.Errorf("Len() = false, want true")
+	}
+
+	// Test case 4
+	obj4 := []string{}
+	expected4 := 0
+	if !Len(obj4, expected4) {
+		t.Errorf("Len() = false, want true")
+	}
+
+	// Test case 5
+	obj5 := make(chan int, 10)
+	expected5 := 10
+	if Len(obj5, expected5) {
+		t.Errorf("Len() = true, want false")
+	}
+}
