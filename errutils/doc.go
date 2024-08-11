@@ -1,5 +1,3 @@
-package errutils
-
 // Package errutils provides a set of utilities for working with errors in Go.
 
 // Example:
@@ -23,3 +21,5 @@ package errutils
 //
 // In the above example, the `Wrap` function is used to add context to the original error returned by `someFunction()`.
 // The resulting error is then printed using `fmt.Println()`.
+
+package errutils
