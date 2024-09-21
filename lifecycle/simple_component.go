@@ -23,12 +23,9 @@ type SimpleComponent struct {
 	OnStateChange func(prevState, newState ComponentState)
 	//StartFunc is the function that will be called when the component is started.
 	// It returns an error if the component failed to start.
-	// This can be a blocking call with respect to the component.
-	// In onrder to make it non-blocking, use a go routine inside the function.
 	StartFunc func() error
 	// StopFunc is the function that will be called when the component is stopped.
 	// It returns an error if the component failed to stop.
-	// This will always be a blocking call with respect to the component.
 	StopFunc func() error
 }
 
@@ -139,7 +136,6 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 func (scm *SimpleComponentManager) StartAll() {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
-	count := 0
 	for _, component := range scm.components {
 		scm.cwg.Add(1)
 		go func(c Component) {
@@ -147,8 +143,6 @@ func (scm *SimpleComponentManager) StartAll() {
 			if err != nil {
 				c.Stop()
 				scm.cwg.Done()
-			} else {
-				count++
 			}
 		}(component)
 	}
@@ -193,10 +187,12 @@ func (scm *SimpleComponentManager) StopAll() {
 	defer scm.cMutex.Unlock()
 	for _, component := range scm.components {
 		if component.State() == Running {
-			err := component.Stop()
-			if err == nil {
-				scm.cwg.Done()
-			}
+			go func(c Component) {
+				err := component.Stop()
+				if err == nil {
+					scm.cwg.Done()
+				}
+			}(component)
 		}
 	}
 	scm.status = Stopped
