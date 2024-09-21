@@ -77,67 +77,85 @@ func NewRouter() *Router {
 }
 
 // Get to Add a turbo handler for GET method
-func (router *Router) Get(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Get(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, GET)
 }
 
 // Post to Add a turbo handler for POST method
-func (router *Router) Post(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Post(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, POST)
 }
 
 // Put to Add a turbo handler for PUT method
-func (router *Router) Put(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Put(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, PUT)
 }
 
 // Delete to Add a turbo handler for DELETE method
-func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, DELETE)
 }
 
+func sanitizePath(p string) (string, error) {
+	path := strings.TrimSpace(p)
+	var sb strings.Builder
+	for _, c := range path {
+		// Path Variable can be defined using {<name>} syntax or :<name> syntax
+		// Allowed characters in the path are A-Z, a-z, 0-9, -, _, ., ~, :, /, {, }
+		if (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c == 45 || c == 95 || c == 46 || c == 126 || c == 58 || c == 47 || c == 123 || c == 125 {
+			if c == textutils.OpenBraceChar {
+				sb.WriteRune(textutils.ColonChar)
+			} else if c == textutils.CloseBraceChar {
+				logger.Debug("Ignoring char ", textutils.CloseBraceStr)
+			} else {
+				sb.WriteRune(c)
+			}
+		} else {
+			return textutils.EmptyStr, ErrInvalidPath
+		}
+
+	}
+	return sb.String(), nil
+}
+
 // Add a turbo handler for one or more HTTP methods.
-func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) *Route {
+func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) (route *Route, err error) {
 	router.lock.Lock()
 	defer router.lock.Unlock()
-	var route *Route = nil
+	var pathValue string
+	var pathValues []string
+	var length int
 	//Check if the methods provided are valid if not return error straight away
 	for _, method := range methods {
-		if _, contains := Methods[method]; !contains {
-			panic(fmt.Sprintf("Invalid/Unsupported Http method  %s provided", method))
+		if _, contains := Methods[strings.ToUpper(method)]; !contains {
+			return nil, ErrInvalidMethod
 		}
 	}
-	logger.InfoF("Registering New Route: %s", path)
-	//TODO add path check for any query variables specified.
-	pathValue := strings.TrimSpace(path)
+	logger.DebugF("Registering New Route: %s", path)
 
-	//Adds support to path with variables in {} format instead of : prefix
-	var sb strings.Builder
-	for _, c := range pathValue {
-		if c == textutils.OpenBraceChar {
-			sb.WriteRune(textutils.ColonChar)
-		} else if c == textutils.CloseBraceChar {
-			logger.Debug("Ignoring char ", textutils.CloseBraceStr)
-		} else {
-			sb.WriteRune(c)
-		}
+	pathValue, err = sanitizePath(path)
+	if err != nil {
+		return
 	}
-	pathValue = sb.String()
+	pathValues = strings.Split(pathValue, PathSeparator)
+	// check for the leading empty path value and remove it
+	if len(pathValues) > 1 && pathValues[0] == textutils.EmptyStr {
+		pathValues = pathValues[1:]
+	}
+	length = len(pathValues)
 
-	pathValues := strings.Split(pathValue, PathSeparator)[1:]
-	length := len(pathValues)
 	if length > 0 && pathValues[0] != textutils.EmptyStr {
 		isPathVar := false
-		name := textutils.EmptyStr
+		currentPathName := textutils.EmptyStr
 		for i, pathValue := range pathValues {
 			isPathVar = pathValue[0] == textutils.ColonChar
 			if isPathVar {
-				name = pathValue[1:]
+				currentPathName = pathValue[1:]
 			} else {
-				name = pathValue
+				currentPathName = pathValue
 			}
 			currentRoute := &Route{
-				path:         name,
+				path:         currentPathName,
 				isPathVar:    isPathVar,
 				childVarName: textutils.EmptyStr,
 				hasChildVar:  false,
@@ -147,41 +165,48 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 				subRoutes:    make(map[string]*Route),
 				queryParams:  make(map[string]*QueryParam),
 			}
-			if route == nil {
-				if v, ok := router.topLevelRoutes[name]; ok {
+			if i == 0 {
+				// the route will be nil only on the first iteration
+				if v, ok := router.topLevelRoutes[currentPathName]; ok {
 					route = v
 				} else {
 					//No Parent present add the current route as route and continue
 					if currentRoute.isPathVar {
-						panic("the framework does not support path variables at root context")
+						return nil, ErrInvalidPath
 					}
-					router.topLevelRoutes[name] = currentRoute
+					router.topLevelRoutes[currentPathName] = currentRoute
 					route = currentRoute
+
 				}
 			} else {
-				if v, ok := route.subRoutes[name]; ok {
-					if v.isPathVar && isPathVar && v.path != name {
-						panic("one path cannot have multiple names")
+				// current route is not nil, it means that we are already in the middle of the path somewhere
+				if v, ok := route.subRoutes[currentPathName]; ok {
+					// if the path is already present in the subroutes then we will just move to the next path
+					if v.isPathVar && isPathVar && v.path != currentPathName {
+						return nil, ErrInvalidPath
 					}
 					route = v
+
 				} else {
-					route.subRoutes[name] = currentRoute
+					// if the path is not present in the subroutes then we will add the path to the subroutes and move to the next path
+					route.subRoutes[currentPathName] = currentRoute
 					if isPathVar {
-						route.childVarName = name
+						route.childVarName = currentPathName
 						route.hasChildVar = true
 					}
 					route = currentRoute
 				}
-			}
-			//At Last index add the method(s) to the map.
-			if i == len(pathValues)-1 {
-				for _, method := range methods {
-					currentRoute.handlers[method] = http.HandlerFunc(f)
+
+				if i == length-1 {
+					for _, method := range methods {
+						// if the handler is already present then we will overwrite it
+						route.handlers[strings.ToUpper(method)] = http.HandlerFunc(f)
+					}
 				}
 			}
+
 		}
 	} else {
-		//TODO Handle the Root context path
 		currentRoute := &Route{
 			path:         textutils.EmptyStr,
 			isPathVar:    false,
@@ -198,7 +223,7 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 		//Root route will not have any path value
 		router.topLevelRoutes[textutils.EmptyStr] = currentRoute
 	}
-	return route
+	return route, nil
 }
 
 // prepareHandler to add any default features like logging, auth... will be injected here

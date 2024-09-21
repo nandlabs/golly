@@ -849,7 +849,7 @@ func TestRouter_Get(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			if got := router.Get(tt.args.path, tt.args.f); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+			if got, _ := router.Get(tt.args.path, tt.args.f); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("Apply() = %v, want %v", got, tt.want)
 			}
 		})
@@ -912,7 +912,7 @@ func TestRouter_Add(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			if got := router.Add(tt.args.path, tt.args.f, tt.args.methods...); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+			if got, _ := router.Add(tt.args.path, tt.args.f, tt.args.methods...); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("Add() = %v, want %v", got, tt.want)
 			}
 		})
@@ -936,7 +936,11 @@ func TestRouter_ServeHTTP(t *testing.T) {
 	router.Delete("/api/deleteFoo", dummyHandler)
 	router.Put("/api/putFoo/:id", dummyHandler)
 	router.Post("/api/putBar/:id", dummyHandler)
-	router.Get("/api/foo", dummyHandler).AddFilter(dummyFilter)
+	r, err := router.Get("/api/foo", dummyHandler)
+	if err != nil {
+		t.Errorf("Error in adding route")
+	}
+	r.AddFilter(dummyFilter)
 
 	type args struct {
 		path   string
