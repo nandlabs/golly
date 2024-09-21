@@ -150,9 +150,10 @@ func TestSimpleComponentManager_StartAll(t *testing.T) {
 	}
 	manager.Register(component)
 
-	started := manager.StartAll()
-	if started != 1 {
-		t.Errorf("StartAll() started = %v, want %v", started, 1)
+	manager.StartAll()
+	time.Sleep(1 * time.Second)
+	if component.State() != Running {
+		t.Errorf("Component State = %v, want %v", component.State(), Running)
 	}
 }
 
@@ -173,8 +174,10 @@ func TestSimpleComponentManager_StopAll(t *testing.T) {
 	}
 	manager.Register(component)
 	manager.StartAll()
+	time.Sleep(500 * time.Millisecond)
 
 	manager.StopAll()
+	time.Sleep(500 * time.Millisecond)
 	if component.State() != Stopped {
 		t.Errorf("StopAll() state = %v, want %v", component.CompState, Stopped)
 	}

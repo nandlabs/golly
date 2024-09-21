@@ -4,20 +4,32 @@ import (
 	"sync"
 )
 
-// var cMutex = &sync.RWMutex{}
-// var cwg = &sync.WaitGroup{}
-
 // SimpleComponent is the struct that implements the Component interface.
 type SimpleComponent struct {
-	CompId        string
-	AfterStart    func(err error)
-	BeforeStart   func()
-	AfterStop     func(err error)
-	BeforeStop    func()
-	CompState     ComponentState
+	CompId string
+	// AfterStart is the function that will be called after the component is started
+	// The function will be called with the error returned by the StartFunc.
+	AfterStart func(err error)
+	// BeforeStart is the function that will be called before the component is started
+	BeforeStart func()
+	// AfterStop is the function that will be called after the component is stopped
+	// The function will be called with the error returned by the StopFunc.
+	AfterStop func(err error)
+	// BeforeStop is the function that will be called before the component is stopped.
+	BeforeStop func()
+	// CompState is the current state of the component.
+	CompState ComponentState
+	// OnStateChange is the function that will be called when the component state changes.
 	OnStateChange func(prevState, newState ComponentState)
-	StartFunc     func() error
-	StopFunc      func() error
+	//StartFunc is the function that will be called when the component is started.
+	// It returns an error if the component failed to start.
+	// This can be a blocking call with respect to the component.
+	// In onrder to make it non-blocking, use a go routine inside the function.
+	StartFunc func() error
+	// StopFunc is the function that will be called when the component is stopped.
+	// It returns an error if the component failed to stop.
+	// This will always be a blocking call with respect to the component.
+	StopFunc func() error
 }
 
 // ComponentId is the unique identifier for the component.
@@ -124,75 +136,90 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 }
 
 // StartAll will start all the Components. Returns the number of components started
-func (scm *SimpleComponentManager) StartAll() int {
-	scm.cMutex.Lock()
-	defer scm.cMutex.Unlock()
-	for _, component := range scm.components {
-		component.Start()
-		scm.cwg.Add(1)
-	}
-	scm.status = Running
-	return len(scm.components)
-}
-
-// StartAndWait will start all the Components. And will wait for them to be stopped.
-func (scm *SimpleComponentManager) StartAndWait() {
-	scm.cMutex.Lock()
-	for _, component := range scm.components {
-		component.Start()
-		scm.cwg.Add(1)
-	}
-	scm.status = Running
-	// unlock the mutex
-	scm.cMutex.Unlock()
-	// Wait for all the components to finish. This will block until all components are stopped.
-	//  Keeps checking the status of the components and waits until all components are stopped.
-	scm.cwg.Wait()
-}
-
-// Start will start the LifeCycle for the component with the given id. It returns if the component was started.
-func (scm *SimpleComponentManager) Start(id string) bool {
-	scm.cMutex.Lock()
-	defer scm.cMutex.Unlock()
-	component, exists := scm.components[id]
-	if exists && component.State() != Running {
-		component.Start()
-		scm.cwg.Add(1)
-		return true
-	}
-	return false
-}
-
-// StopAll will stop all the Components.
-func (scm *SimpleComponentManager) StopAll() int {
+func (scm *SimpleComponentManager) StartAll() {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	count := 0
 	for _, component := range scm.components {
-		count++
+		scm.cwg.Add(1)
+		go func(c Component) {
+			err := c.Start()
+			if err != nil {
+				c.Stop()
+				scm.cwg.Done()
+			} else {
+				count++
+			}
+		}(component)
+	}
+	scm.status = Running
+
+}
+
+// StartAndWait will start all the Components. And will wait for them to be stopped.
+func (scm *SimpleComponentManager) StartAndWait() {
+	scm.StartAll() // Start all the components
+	// Wait for all the components to finish. This will block until all components are stopped.
+	scm.cwg.Wait()
+}
+
+// Start will start the LifeCycle for the component with the given id. It returns if the component was started.
+func (scm *SimpleComponentManager) Start(id string) (err error) {
+	scm.cMutex.Lock()
+	defer scm.cMutex.Unlock()
+	component, exists := scm.components[id]
+	if exists {
+		if component.State() != Running {
+			scm.cwg.Add(1)
+			var err error = nil
+			go func(c Component) {
+				err = component.Start()
+				if err != nil {
+					component.Stop()
+					scm.cwg.Done()
+				}
+			}(component)
+			return err
+		} else {
+			return ErrCompAlreadyStarted
+		}
+	}
+	return ErrCompNotFound
+}
+
+// StopAll will stop all the Components.
+func (scm *SimpleComponentManager) StopAll() {
+	scm.cMutex.Lock()
+	defer scm.cMutex.Unlock()
+	for _, component := range scm.components {
 		if component.State() == Running {
-			component.Stop()
-			scm.cwg.Done()
+			err := component.Stop()
+			if err == nil {
+				scm.cwg.Done()
+			}
 		}
 	}
 	scm.status = Stopped
-	return count
 }
 
 // Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
-func (scm *SimpleComponentManager) Stop(id string) bool {
+func (scm *SimpleComponentManager) Stop(id string) error {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	component, exists := scm.components[id]
 	if exists {
 		if component.State() == Running {
-			component.Stop()
+			err := component.Stop()
 			scm.cwg.Done()
+			return err
+		} else if component.State() == Stopped {
+			return ErrCompAlreadyStopped
+		} else {
+			return ErrInvalidComponentState
 		}
 
-		return true
 	}
-	return false
+	return ErrCompNotFound
 }
 
 // Unregister will unregister a Component.
