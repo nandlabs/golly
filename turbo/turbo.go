@@ -34,8 +34,7 @@ type Param struct {
 // Route base struct to hold the route information
 type Route struct {
 	//name of the route fragment if this is a path variable the name of the variable will be used here.
-	path      string
-	paramType string
+	path string
 	//Checks if this is a variable. only one path variable at this level will be supported.
 	isPathVar bool
 	//childVarName varName
@@ -131,7 +130,6 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 			return nil, ErrInvalidMethod
 		}
 	}
-	logger.DebugF("Registering New Route: %s", path)
 
 	pathValue, err = sanitizePath(path)
 	if err != nil {
@@ -200,7 +198,10 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 				if i == length-1 {
 					for _, method := range methods {
 						// if the handler is already present then we will overwrite it
-						route.handlers[strings.ToUpper(method)] = http.HandlerFunc(f)
+						m := strings.ToUpper(method)
+						logger.InfoF("Registering New Route: %s:%s", m, path)
+
+						route.handlers[m] = http.HandlerFunc(f)
 					}
 				}
 			}
@@ -329,8 +330,8 @@ func (router *Router) findRoute(req *http.Request) (*Route, []Param) {
 	return route, params
 }
 
-// GetPathParams fetches the path parameters
-func (router *Router) GetPathParams(id string, r *http.Request) (string, error) {
+// GetPathParam fetches the path parameters
+func (router *Router) GetPathParam(id string, r *http.Request) (string, error) {
 	params, ok := r.Context().Value("params").([]Param)
 	if !ok {
 		logger.ErrorF("Error Fetching Path Param %s", id)
@@ -345,9 +346,9 @@ func (router *Router) GetPathParams(id string, r *http.Request) (string, error) 
 	return textutils.EmptyStr, fmt.Errorf("no such parameter %s", id)
 }
 
-// GetIntPathParams fetches the int path parameters
-func (router *Router) GetIntPathParams(id string, r *http.Request) (int, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsInt fetches the int path parameters
+func (router *Router) GetPathParamAsInt(id string, r *http.Request) (int, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return -1, err
 	}
@@ -358,9 +359,9 @@ func (router *Router) GetIntPathParams(id string, r *http.Request) (int, error) 
 	return valInt, nil
 }
 
-// GetFloatPathParams fetches the float path parameters
-func (router *Router) GetFloatPathParams(id string, r *http.Request) (float64, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsFloat fetches the float path parameters
+func (router *Router) GetPathParamAsFloat(id string, r *http.Request) (float64, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return -1, err
 	}
@@ -371,9 +372,9 @@ func (router *Router) GetFloatPathParams(id string, r *http.Request) (float64, e
 	return valFloat, nil
 }
 
-// GetBoolPathParams fetches the bool path parameters
-func (router *Router) GetBoolPathParams(id string, r *http.Request) (bool, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsBool fetches the bool path parameters
+func (router *Router) GetPathParamAsBool(id string, r *http.Request) (bool, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return false, err
 	}
@@ -384,8 +385,8 @@ func (router *Router) GetBoolPathParams(id string, r *http.Request) (bool, error
 	return valBool, nil
 }
 
-// GetQueryParams fetches the query parameters
-func (router *Router) GetQueryParams(id string, r *http.Request) (string, error) {
+// GetQueryParam fetches the query parameters
+func (router *Router) GetQueryParam(id string, r *http.Request) (string, error) {
 	val := r.URL.Query().Get(id)
 	if val == "" {
 		logger.ErrorF("Error Fetching Query Param %s", id)
@@ -394,8 +395,8 @@ func (router *Router) GetQueryParams(id string, r *http.Request) (string, error)
 	return val, nil
 }
 
-// GetIntQueryParams fetches the int query parameters
-func (router *Router) GetIntQueryParams(id string, r *http.Request) (int, error) {
+// GetQueryParamAsInt fetches the int query parameters
+func (router *Router) GetQueryParamAsInt(id string, r *http.Request) (int, error) {
 	val, ok := strconv.Atoi(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
@@ -404,8 +405,8 @@ func (router *Router) GetIntQueryParams(id string, r *http.Request) (int, error)
 	return val, nil
 }
 
-// GetFloatQueryParams fetches the float query parameters
-func (router *Router) GetFloatQueryParams(id string, r *http.Request) (float64, error) {
+// GetQueryParamAsFloat fetches the float query parameters
+func (router *Router) GetQueryParamAsFloat(id string, r *http.Request) (float64, error) {
 	val, ok := strconv.ParseFloat(r.URL.Query().Get(id), 64)
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
@@ -414,8 +415,8 @@ func (router *Router) GetFloatQueryParams(id string, r *http.Request) (float64, 
 	return val, nil
 }
 
-// GetBoolQueryParams fetches the boolean query parameters
-func (router *Router) GetBoolQueryParams(id string, r *http.Request) (bool, error) {
+// GetQueryParamAsBool fetches the boolean query parameters
+func (router *Router) GetQueryParamAsBool(id string, r *http.Request) (bool, error) {
 	val, ok := strconv.ParseBool(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
