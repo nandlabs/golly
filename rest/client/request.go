@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"bytes"
@@ -137,7 +137,7 @@ func (r *Request) SetMultipartFiles(files ...*MultipartFile) *Request {
 }
 
 func (r *Request) handleMultipart() (err error) {
-	err = validateHeaders(r.method)
+	err = IsValidMultipartVerb(r.method)
 	if err == nil {
 		r.bodyBuf = new(bytes.Buffer)
 		w := multipart.NewWriter(r.bodyBuf)
@@ -158,7 +158,7 @@ func addFile(w *multipart.Writer, fieldName, path string) error {
 		return err
 	}
 	defer ioutils.CloserFunc(file)
-	return writeMultipartFormFile(w, fieldName, filepath.Base(path), file)
+	return WriteMultipartFormFile(w, fieldName, filepath.Base(path), file)
 }
 
 func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
@@ -177,7 +177,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 					if v, ok := r.pathParams[key]; ok {
 						pathValues[i] = v
 					} else {
-						err = fmt.Errorf("Path param with name %s is not set in the request ", key)
+						err = fmt.Errorf("path param with name %s is not set in the request ", key)
 						break
 					}
 				}

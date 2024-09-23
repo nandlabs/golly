@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ func (r *Response) IsSuccess() bool {
 // GetError gets the error with status code and value
 func (r *Response) GetError() (err error) {
 	if !r.IsSuccess() {
-		err = fmt.Errorf("Server responded with status code %d and status text %s",
+		err = fmt.Errorf("server responded with status code %d and status text %s",
 			r.raw.StatusCode, r.raw.Status)
 	}
 	return

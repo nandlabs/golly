@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"fmt"
@@ -8,13 +8,15 @@ import (
 	"net/textproto"
 )
 
-func createMultipartHeader(param, fileName, contentType string) textproto.MIMEHeader {
+// CreateMultipartHeader creates a multipart header with the given parameters
+func CreateMultipartHeader(param, fileName, contentType string) textproto.MIMEHeader {
 	hdr := make(textproto.MIMEHeader)
 	hdr.Set(contentTypeHdr, "multipart/form-data")
 	return hdr
 }
 
-func writeMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r io.Reader) error {
+// WriteMultipartFormFile writes a multipart form file to the writer
+func WriteMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r io.Reader) error {
 	// Auto detect actual multipart content type
 	cbuf := make([]byte, 512)
 	size, err := r.Read(cbuf)
@@ -22,7 +24,7 @@ func writeMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r i
 		return err
 	}
 
-	partWriter, err := w.CreatePart(createMultipartHeader(fieldName, fileName, http.DetectContentType(cbuf)))
+	partWriter, err := w.CreatePart(CreateMultipartHeader(fieldName, fileName, http.DetectContentType(cbuf)))
 	if err != nil {
 		return err
 	}
@@ -35,7 +37,8 @@ func writeMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r i
 	return err
 }
 
-func validateHeaders(method string) (err error) {
+// IsValidMultipartVerb checks if the method is valid for multipart content
+func IsValidMultipartVerb(method string) (err error) {
 	if !(method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch) {
 		err = fmt.Errorf("multipart content is now allowed on [%v]", method)
 	}
