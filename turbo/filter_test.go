@@ -21,7 +21,10 @@ var testHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) 
 
 func TestFilter(t *testing.T) {
 	var router = NewRouter()
-	route := router.Get("/api/foo", testHandler)
+	route, err := router.Get("/api/foo", testHandler)
+	if err != nil {
+		t.Fatal(err)
+	}
 	path := "/api/foo"
 
 	tests := []struct {
@@ -79,7 +82,10 @@ func CreateBasicAuthAuthenticator() *BasicAuthFilter {
 
 func TestAuthenticatorFilter(t *testing.T) {
 	var router = NewRouter()
-	route := router.Get("/api/foo", testHandler)
+	route, err := router.Get("/api/foo", testHandler)
+	if err != nil {
+		t.Fatal(err)
+	}
 	path := "/api/foo"
 
 	var authenticator = CreateBasicAuthAuthenticator()
@@ -88,7 +94,6 @@ func TestAuthenticatorFilter(t *testing.T) {
 
 	var w *httptest.ResponseRecorder
 	var r *http.Request
-	var err error
 
 	w = httptest.NewRecorder()
 	r, err = http.NewRequest(GET, path, nil)

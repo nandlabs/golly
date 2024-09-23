@@ -1,6 +1,7 @@
 package turbo
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"net/http"
@@ -30,6 +31,10 @@ var Methods = map[string]string{
 	TRACE:   TRACE,
 	PATCH:   PATCH,
 }
+
+var ErrInvalidMethod = errors.New("Invalid method provided")
+var ErrInvalidPath = errors.New("Invalid path provided")
+var ErrInvalidHandler = errors.New("Invalid handler provided")
 
 // refinePath Borrowed from the golang's net/turbo package
 func refinePath(p string) string {
