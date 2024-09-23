@@ -153,7 +153,7 @@ func TestRouter_GetPathParams(t *testing.T) {
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := router.GetPathParams(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := router.GetPathParam(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
 			logger.Info(tt.args.r.Context().Value("params"))
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetPathParams() = %v, want %v", got, tt.want)
@@ -172,7 +172,7 @@ func TestRouter_GetPathParamsFail(t *testing.T) {
 		unsupportedMethodHandler: nil,
 		topLevelRoutes:           nil,
 	}
-	got, err := router.GetPathParams("foo", req)
+	got, err := router.GetPathParam("foo", req)
 	if err != nil {
 		if !strings.HasPrefix(err.Error(), "error fetching path param") {
 			t.Errorf("GetPathParams() = %v, want to start with %v", got, "error fetching path param")
@@ -241,7 +241,7 @@ func TestRouter_GetIntPathParams(t *testing.T) {
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := router.GetIntPathParams(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := router.GetPathParamAsInt(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetIntPathParams() = %v, want %v", got, tt.want)
@@ -260,7 +260,7 @@ func TestRouter_GetIntPathParamsFail(t *testing.T) {
 		unsupportedMethodHandler: nil,
 		topLevelRoutes:           nil,
 	}
-	got, err := router.GetIntPathParams("foo", req)
+	got, err := router.GetPathParamAsInt("foo", req)
 	if err != nil {
 		if got != -1 {
 			t.Errorf("GetIntPathParams() = %v, want %v", got, "err")
@@ -329,7 +329,7 @@ func TestRouter_GetFloatPathParams(t *testing.T) {
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := router.GetFloatPathParams(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := router.GetPathParamAsFloat(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetFloatPathParams() = %v, want %v", got, tt.want)
@@ -348,7 +348,7 @@ func TestRouter_GetFloatPathParamsFail(t *testing.T) {
 		unsupportedMethodHandler: nil,
 		topLevelRoutes:           nil,
 	}
-	got, err := router.GetFloatPathParams("foo", req)
+	got, err := router.GetPathParamAsFloat("foo", req)
 	if err != nil {
 		if got != -1 {
 			t.Errorf("GetFloatPathParams() = %v, want %v", got, "err")
@@ -417,7 +417,7 @@ func TestRouter_GetBoolPathParams(t *testing.T) {
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := router.GetBoolPathParams(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := router.GetPathParamAsBool(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetBoolPathParams() = %v, want %v", got, tt.want)
@@ -436,7 +436,7 @@ func TestRouter_GetBoolPathParamsFail(t *testing.T) {
 		unsupportedMethodHandler: nil,
 		topLevelRoutes:           nil,
 	}
-	got, err := router.GetBoolPathParams("foo", req)
+	got, err := router.GetPathParamAsBool("foo", req)
 	if err != nil {
 		if got != false {
 			t.Errorf("GetBoolPathParams() = %v, want %v", got, "err")
@@ -509,7 +509,7 @@ func TestRouter_GetQueryParams(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			got, _ := router.GetQueryParams(tt.args.id, tt.args.r)
+			got, _ := router.GetQueryParam(tt.args.id, tt.args.r)
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetQueryParams() Type Got = %v, want %v", got, tt.want)
 			}
@@ -586,7 +586,7 @@ func TestRouter_GetIntQueryParams(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			got, _ := router.GetIntQueryParams(tt.args.id, tt.args.r)
+			got, _ := router.GetQueryParamAsInt(tt.args.id, tt.args.r)
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetIntQueryParams() = %v, want %v", got, tt.want)
 			}
@@ -663,7 +663,7 @@ func TestRouter_GetFloatQueryParams(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			got, _ := router.GetFloatQueryParams(tt.args.id, tt.args.r)
+			got, _ := router.GetQueryParamAsFloat(tt.args.id, tt.args.r)
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetFloatQueryParams() = %v, want %v", got, tt.want)
 			}
@@ -740,7 +740,7 @@ func TestRouter_GetBoolQueryParams(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			got, _ := router.GetBoolQueryParams(tt.args.id, tt.args.r)
+			got, _ := router.GetQueryParamAsBool(tt.args.id, tt.args.r)
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetBoolQueryParams() = %v, want %v", got, tt.want)
 			}
@@ -849,7 +849,7 @@ func TestRouter_Get(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			if got := router.Get(tt.args.path, tt.args.f); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+			if got, _ := router.Get(tt.args.path, tt.args.f); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("Apply() = %v, want %v", got, tt.want)
 			}
 		})
@@ -912,7 +912,7 @@ func TestRouter_Add(t *testing.T) {
 				unsupportedMethodHandler: tt.fields.unsupportedMethodHandler,
 				topLevelRoutes:           tt.fields.topLevelRoutes,
 			}
-			if got := router.Add(tt.args.path, tt.args.f, tt.args.methods...); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+			if got, _ := router.Add(tt.args.path, tt.args.f, tt.args.methods...); reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("Add() = %v, want %v", got, tt.want)
 			}
 		})
@@ -936,7 +936,11 @@ func TestRouter_ServeHTTP(t *testing.T) {
 	router.Delete("/api/deleteFoo", dummyHandler)
 	router.Put("/api/putFoo/:id", dummyHandler)
 	router.Post("/api/putBar/:id", dummyHandler)
-	router.Get("/api/foo", dummyHandler).AddFilter(dummyFilter)
+	r, err := router.Get("/api/foo", dummyHandler)
+	if err != nil {
+		t.Errorf("Error in adding route")
+	}
+	r.AddFilter(dummyFilter)
 
 	type args struct {
 		path   string

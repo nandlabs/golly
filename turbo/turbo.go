@@ -34,8 +34,7 @@ type Param struct {
 // Route base struct to hold the route information
 type Route struct {
 	//name of the route fragment if this is a path variable the name of the variable will be used here.
-	path      string
-	paramType string
+	path string
 	//Checks if this is a variable. only one path variable at this level will be supported.
 	isPathVar bool
 	//childVarName varName
@@ -77,67 +76,84 @@ func NewRouter() *Router {
 }
 
 // Get to Add a turbo handler for GET method
-func (router *Router) Get(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Get(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, GET)
 }
 
 // Post to Add a turbo handler for POST method
-func (router *Router) Post(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Post(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, POST)
 }
 
 // Put to Add a turbo handler for PUT method
-func (router *Router) Put(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Put(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, PUT)
 }
 
 // Delete to Add a turbo handler for DELETE method
-func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.Request)) *Route {
+func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, DELETE)
 }
 
+func sanitizePath(p string) (string, error) {
+	path := strings.TrimSpace(p)
+	var sb strings.Builder
+	for _, c := range path {
+		// Path Variable can be defined using {<name>} syntax or :<name> syntax
+		// Allowed characters in the path are A-Z, a-z, 0-9, -, _, ., ~, :, /, {, }
+		if (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c == 45 || c == 95 || c == 46 || c == 126 || c == 58 || c == 47 || c == 123 || c == 125 {
+			if c == textutils.OpenBraceChar {
+				sb.WriteRune(textutils.ColonChar)
+			} else if c == textutils.CloseBraceChar {
+				logger.Debug("Ignoring char ", textutils.CloseBraceStr)
+			} else {
+				sb.WriteRune(c)
+			}
+		} else {
+			return textutils.EmptyStr, ErrInvalidPath
+		}
+
+	}
+	return sb.String(), nil
+}
+
 // Add a turbo handler for one or more HTTP methods.
-func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) *Route {
+func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) (route *Route, err error) {
 	router.lock.Lock()
 	defer router.lock.Unlock()
-	var route *Route = nil
+	var pathValue string
+	var pathValues []string
+	var length int
 	//Check if the methods provided are valid if not return error straight away
 	for _, method := range methods {
-		if _, contains := Methods[method]; !contains {
-			panic(fmt.Sprintf("Invalid/Unsupported Http method  %s provided", method))
+		if _, contains := Methods[strings.ToUpper(method)]; !contains {
+			return nil, ErrInvalidMethod
 		}
 	}
-	logger.InfoF("Registering New Route: %s", path)
-	//TODO add path check for any query variables specified.
-	pathValue := strings.TrimSpace(path)
 
-	//Adds support to path with variables in {} format instead of : prefix
-	var sb strings.Builder
-	for _, c := range pathValue {
-		if c == textutils.OpenBraceChar {
-			sb.WriteRune(textutils.ColonChar)
-		} else if c == textutils.CloseBraceChar {
-			logger.Debug("Ignoring char ", textutils.CloseBraceStr)
-		} else {
-			sb.WriteRune(c)
-		}
+	pathValue, err = sanitizePath(path)
+	if err != nil {
+		return
 	}
-	pathValue = sb.String()
+	pathValues = strings.Split(pathValue, PathSeparator)
+	// check for the leading empty path value and remove it
+	if len(pathValues) > 1 && pathValues[0] == textutils.EmptyStr {
+		pathValues = pathValues[1:]
+	}
+	length = len(pathValues)
 
-	pathValues := strings.Split(pathValue, PathSeparator)[1:]
-	length := len(pathValues)
 	if length > 0 && pathValues[0] != textutils.EmptyStr {
 		isPathVar := false
-		name := textutils.EmptyStr
+		currentPathName := textutils.EmptyStr
 		for i, pathValue := range pathValues {
 			isPathVar = pathValue[0] == textutils.ColonChar
 			if isPathVar {
-				name = pathValue[1:]
+				currentPathName = pathValue[1:]
 			} else {
-				name = pathValue
+				currentPathName = pathValue
 			}
 			currentRoute := &Route{
-				path:         name,
+				path:         currentPathName,
 				isPathVar:    isPathVar,
 				childVarName: textutils.EmptyStr,
 				hasChildVar:  false,
@@ -147,41 +163,51 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 				subRoutes:    make(map[string]*Route),
 				queryParams:  make(map[string]*QueryParam),
 			}
-			if route == nil {
-				if v, ok := router.topLevelRoutes[name]; ok {
+			if i == 0 {
+				// the route will be nil only on the first iteration
+				if v, ok := router.topLevelRoutes[currentPathName]; ok {
 					route = v
 				} else {
 					//No Parent present add the current route as route and continue
 					if currentRoute.isPathVar {
-						panic("the framework does not support path variables at root context")
+						return nil, ErrInvalidPath
 					}
-					router.topLevelRoutes[name] = currentRoute
+					router.topLevelRoutes[currentPathName] = currentRoute
 					route = currentRoute
+
 				}
 			} else {
-				if v, ok := route.subRoutes[name]; ok {
-					if v.isPathVar && isPathVar && v.path != name {
-						panic("one path cannot have multiple names")
+				// current route is not nil, it means that we are already in the middle of the path somewhere
+				if v, ok := route.subRoutes[currentPathName]; ok {
+					// if the path is already present in the subroutes then we will just move to the next path
+					if v.isPathVar && isPathVar && v.path != currentPathName {
+						return nil, ErrInvalidPath
 					}
 					route = v
+
 				} else {
-					route.subRoutes[name] = currentRoute
+					// if the path is not present in the subroutes then we will add the path to the subroutes and move to the next path
+					route.subRoutes[currentPathName] = currentRoute
 					if isPathVar {
-						route.childVarName = name
+						route.childVarName = currentPathName
 						route.hasChildVar = true
 					}
 					route = currentRoute
 				}
-			}
-			//At Last index add the method(s) to the map.
-			if i == len(pathValues)-1 {
-				for _, method := range methods {
-					currentRoute.handlers[method] = http.HandlerFunc(f)
+
+				if i == length-1 {
+					for _, method := range methods {
+						// if the handler is already present then we will overwrite it
+						m := strings.ToUpper(method)
+						logger.InfoF("Registering New Route: %s:%s", m, path)
+
+						route.handlers[m] = http.HandlerFunc(f)
+					}
 				}
 			}
+
 		}
 	} else {
-		//TODO Handle the Root context path
 		currentRoute := &Route{
 			path:         textutils.EmptyStr,
 			isPathVar:    false,
@@ -198,7 +224,7 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 		//Root route will not have any path value
 		router.topLevelRoutes[textutils.EmptyStr] = currentRoute
 	}
-	return route
+	return route, nil
 }
 
 // prepareHandler to add any default features like logging, auth... will be injected here
@@ -304,8 +330,8 @@ func (router *Router) findRoute(req *http.Request) (*Route, []Param) {
 	return route, params
 }
 
-// GetPathParams fetches the path parameters
-func (router *Router) GetPathParams(id string, r *http.Request) (string, error) {
+// GetPathParam fetches the path parameters
+func (router *Router) GetPathParam(id string, r *http.Request) (string, error) {
 	params, ok := r.Context().Value("params").([]Param)
 	if !ok {
 		logger.ErrorF("Error Fetching Path Param %s", id)
@@ -320,9 +346,9 @@ func (router *Router) GetPathParams(id string, r *http.Request) (string, error) 
 	return textutils.EmptyStr, fmt.Errorf("no such parameter %s", id)
 }
 
-// GetIntPathParams fetches the int path parameters
-func (router *Router) GetIntPathParams(id string, r *http.Request) (int, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsInt fetches the int path parameters
+func (router *Router) GetPathParamAsInt(id string, r *http.Request) (int, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return -1, err
 	}
@@ -333,9 +359,9 @@ func (router *Router) GetIntPathParams(id string, r *http.Request) (int, error) 
 	return valInt, nil
 }
 
-// GetFloatPathParams fetches the float path parameters
-func (router *Router) GetFloatPathParams(id string, r *http.Request) (float64, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsFloat fetches the float path parameters
+func (router *Router) GetPathParamAsFloat(id string, r *http.Request) (float64, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return -1, err
 	}
@@ -346,9 +372,9 @@ func (router *Router) GetFloatPathParams(id string, r *http.Request) (float64, e
 	return valFloat, nil
 }
 
-// GetBoolPathParams fetches the bool path parameters
-func (router *Router) GetBoolPathParams(id string, r *http.Request) (bool, error) {
-	val, err := router.GetPathParams(id, r)
+// GetPathParamAsBool fetches the bool path parameters
+func (router *Router) GetPathParamAsBool(id string, r *http.Request) (bool, error) {
+	val, err := router.GetPathParam(id, r)
 	if err != nil {
 		return false, err
 	}
@@ -359,8 +385,8 @@ func (router *Router) GetBoolPathParams(id string, r *http.Request) (bool, error
 	return valBool, nil
 }
 
-// GetQueryParams fetches the query parameters
-func (router *Router) GetQueryParams(id string, r *http.Request) (string, error) {
+// GetQueryParam fetches the query parameters
+func (router *Router) GetQueryParam(id string, r *http.Request) (string, error) {
 	val := r.URL.Query().Get(id)
 	if val == "" {
 		logger.ErrorF("Error Fetching Query Param %s", id)
@@ -369,8 +395,8 @@ func (router *Router) GetQueryParams(id string, r *http.Request) (string, error)
 	return val, nil
 }
 
-// GetIntQueryParams fetches the int query parameters
-func (router *Router) GetIntQueryParams(id string, r *http.Request) (int, error) {
+// GetQueryParamAsInt fetches the int query parameters
+func (router *Router) GetQueryParamAsInt(id string, r *http.Request) (int, error) {
 	val, ok := strconv.Atoi(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
@@ -379,8 +405,8 @@ func (router *Router) GetIntQueryParams(id string, r *http.Request) (int, error)
 	return val, nil
 }
 
-// GetFloatQueryParams fetches the float query parameters
-func (router *Router) GetFloatQueryParams(id string, r *http.Request) (float64, error) {
+// GetQueryParamAsFloat fetches the float query parameters
+func (router *Router) GetQueryParamAsFloat(id string, r *http.Request) (float64, error) {
 	val, ok := strconv.ParseFloat(r.URL.Query().Get(id), 64)
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
@@ -389,8 +415,8 @@ func (router *Router) GetFloatQueryParams(id string, r *http.Request) (float64, 
 	return val, nil
 }
 
-// GetBoolQueryParams fetches the boolean query parameters
-func (router *Router) GetBoolQueryParams(id string, r *http.Request) (bool, error) {
+// GetQueryParamAsBool fetches the boolean query parameters
+func (router *Router) GetQueryParamAsBool(id string, r *http.Request) (bool, error) {
 	val, ok := strconv.ParseBool(r.URL.Query().Get(id))
 	if ok != nil {
 		logger.ErrorF("Error Fetching Query Parameter %s", id)
