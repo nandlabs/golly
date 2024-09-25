@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"oss.nandlabs.io/golly/lifecycle"
+	"oss.nandlabs.io/golly/testing/assert"
 	"oss.nandlabs.io/golly/uuid"
 )
 
@@ -133,18 +134,14 @@ func TestRestServer_Opts(t *testing.T) {
 // TestRestServer_Lifecycle tests the lifecycle functions
 func TestRestServer_Lifecycle(t *testing.T) {
 	server, err := Default()
-	if err != nil {
-		t.Fatalf("DefaultServer() error = %v", err)
-	}
+	assert.NoError(t, err)
 	mgr := lifecycle.NewSimpleComponentManager()
 	mgr.Register(server)
 	err = mgr.StartAll()
 	go func() {
 		time.Sleep(1000 * time.Millisecond)
-		mgr.StopAll()
+		err := mgr.StopAll()
+		assert.NoError(t, err)
 	}()
-
-	if err != nil {
-		t.Errorf("Stop() error = %v", err)
-	}
+	assert.NoError(t, err)
 }

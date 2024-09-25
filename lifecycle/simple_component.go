@@ -145,19 +145,18 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 
 // StartAll will start all the Components. Returns the number of components started
 func (scm *SimpleComponentManager) StartAll() error {
-	var err *errutils.MultiError
+	var err *errutils.MultiError = errutils.NewMultiErr(nil)
 	for id := range scm.components {
 		e := scm.Start(id)
 		if e != nil {
-			if err == nil {
-				err = errutils.NewMultiErr(e)
-			} else {
-				err.Add(e)
-			}
+			err.Add(e)
 		}
 	}
-	return err
-
+	if err.HasErrors() {
+		return err
+	} else {
+		return nil
+	}
 }
 
 // StartAndWait will start all the Components. And will wait for them to be stopped.
