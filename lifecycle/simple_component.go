@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+
+	"oss.nandlabs.io/golly/errutils"
 )
 
 // SimpleComponent is the struct that implements the Component interface.
@@ -59,7 +61,9 @@ func (sc *SimpleComponent) Start() (err error) {
 		} else {
 			sc.CompState = Running
 		}
-		sc.OnStateChange(Starting, sc.CompState)
+		if sc.OnStateChange != nil {
+			sc.OnStateChange(Starting, sc.CompState)
+		}
 		if sc.AfterStart != nil {
 			sc.AfterStart(err)
 		}
@@ -79,7 +83,9 @@ func (sc *SimpleComponent) Stop() (err error) {
 		} else {
 			sc.CompState = Stopped
 		}
-		sc.OnStateChange(Stopping, sc.CompState)
+		if sc.OnStateChange != nil {
+			sc.OnStateChange(Stopping, sc.CompState)
+		}
 		if sc.AfterStop != nil {
 			sc.AfterStop(err)
 
@@ -97,7 +103,6 @@ func (sc *SimpleComponent) State() ComponentState {
 // SimpleComponentManager is the struct that manages the component.
 type SimpleComponentManager struct {
 	components map[string]Component
-	status     ComponentState
 	cMutex     *sync.RWMutex
 	waitChan   chan struct{}
 }
@@ -139,12 +144,19 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 }
 
 // StartAll will start all the Components. Returns the number of components started
-func (scm *SimpleComponentManager) StartAll() {
-
+func (scm *SimpleComponentManager) StartAll() error {
+	var err *errutils.MultiError
 	for id := range scm.components {
-		scm.Start(id)
+		e := scm.Start(id)
+		if e != nil {
+			if err == nil {
+				err = errutils.NewMultiErr(e)
+			} else {
+				err.Add(e)
+			}
+		}
 	}
-	scm.status = Running
+	return err
 
 }
 
@@ -165,7 +177,7 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 			var err error = nil
 			go func(c Component, scm *SimpleComponentManager) {
 				err = component.Start()
-				if err == nil {
+				if err != nil {
 					logger.ErrorF("Error starting component: %v", err)
 				}
 			}(component, scm)
@@ -178,8 +190,9 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 }
 
 // StopAll will stop all the Components.
-func (scm *SimpleComponentManager) StopAll() {
+func (scm *SimpleComponentManager) StopAll() error {
 	logger.InfoF("Stopping all components")
+	err := errutils.NewMultiErr(nil)
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	wg := &sync.WaitGroup{}
@@ -187,17 +200,23 @@ func (scm *SimpleComponentManager) StopAll() {
 		if component.State() == Running {
 			wg.Add(1)
 			go func(c Component, wg *sync.WaitGroup) {
-				err := component.Stop()
-				if err != nil {
+				e := component.Stop()
+				if e != nil {
 					logger.ErrorF("Error stopping component: %v", err)
+					err.Add(e)
 				}
+
 				wg.Done()
 			}(component, wg)
 		}
 	}
 	wg.Wait()
-	scm.status = Stopped
 	close(scm.waitChan)
+	if err.HasErrors() {
+		return err
+	} else {
+		return nil
+	}
 }
 
 // Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
@@ -208,6 +227,9 @@ func (scm *SimpleComponentManager) Stop(id string) error {
 	if exists {
 		if component.State() == Running {
 			err := component.Stop()
+			if err != nil {
+				logger.ErrorF("Error stopping component: %v", err)
+			}
 			return err
 		} else if component.State() == Stopped {
 			return ErrCompAlreadyStopped
@@ -249,7 +271,6 @@ func (scm *SimpleComponentManager) Wait() {
 func NewSimpleComponentManager() ComponentManager {
 	manager := &SimpleComponentManager{
 		components: make(map[string]Component),
-		status:     Stopped,
 		cMutex:     &sync.RWMutex{},
 		waitChan:   make(chan struct{}),
 	}
