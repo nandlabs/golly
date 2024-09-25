@@ -1,7 +1,12 @@
 package lifecycle
 
 import (
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+
+	"oss.nandlabs.io/golly/errutils"
 )
 
 // SimpleComponent is the struct that implements the Component interface.
@@ -41,9 +46,7 @@ func (sc *SimpleComponent) OnChange(prevState, newState ComponentState) {
 	}
 	if newState == Starting && sc.BeforeStart != nil {
 		sc.BeforeStart()
-	}
-
-	if newState == Stopping && sc.BeforeStop != nil {
+	} else if newState == Stopping && sc.BeforeStop != nil {
 		sc.BeforeStop()
 	}
 }
@@ -51,19 +54,21 @@ func (sc *SimpleComponent) OnChange(prevState, newState ComponentState) {
 // Start will starting the LifeCycle.
 func (sc *SimpleComponent) Start() (err error) {
 	if sc.StartFunc != nil {
-		if sc.BeforeStart != nil {
-			sc.BeforeStart()
-		}
+		sc.OnChange(sc.CompState, Starting)
 		sc.CompState = Starting
 		err = sc.StartFunc()
-		if sc.AfterStart != nil {
-			sc.AfterStart(err)
-		}
 		if err != nil {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Running
 		}
+		if sc.OnStateChange != nil {
+			sc.OnStateChange(Starting, sc.CompState)
+		}
+		if sc.AfterStart != nil {
+			sc.AfterStart(err)
+		}
+
 	}
 	return
 }
@@ -79,6 +84,14 @@ func (sc *SimpleComponent) Stop() (err error) {
 		} else {
 			sc.CompState = Stopped
 		}
+		if sc.OnStateChange != nil {
+			sc.OnStateChange(Stopping, sc.CompState)
+		}
+		if sc.AfterStop != nil {
+			sc.AfterStop(err)
+
+		}
+
 	}
 	return
 }
@@ -91,9 +104,8 @@ func (sc *SimpleComponent) State() ComponentState {
 // SimpleComponentManager is the struct that manages the component.
 type SimpleComponentManager struct {
 	components map[string]Component
-	status     ComponentState
 	cMutex     *sync.RWMutex
-	cwg        *sync.WaitGroup
+	waitChan   chan struct{}
 }
 
 // GetState will return the current state of the LifeCycle for the component with the given id.
@@ -133,28 +145,26 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 }
 
 // StartAll will start all the Components. Returns the number of components started
-func (scm *SimpleComponentManager) StartAll() {
-	scm.cMutex.Lock()
-	defer scm.cMutex.Unlock()
-	for _, component := range scm.components {
-		scm.cwg.Add(1)
-		go func(c Component) {
-			err := c.Start()
-			if err != nil {
-				c.Stop()
-				scm.cwg.Done()
-			}
-		}(component)
+func (scm *SimpleComponentManager) StartAll() error {
+	var err *errutils.MultiError = errutils.NewMultiErr(nil)
+	for id := range scm.components {
+		e := scm.Start(id)
+		if e != nil {
+			err.Add(e)
+		}
 	}
-	scm.status = Running
-
+	if err.HasErrors() {
+		return err
+	} else {
+		return nil
+	}
 }
 
 // StartAndWait will start all the Components. And will wait for them to be stopped.
 func (scm *SimpleComponentManager) StartAndWait() {
 	scm.StartAll() // Start all the components
-	// Wait for all the components to finish. This will block until all components are stopped.
-	scm.cwg.Wait()
+	scm.Wait()     // Wait for all the components to finish
+
 }
 
 // Start will start the LifeCycle for the component with the given id. It returns if the component was started.
@@ -164,15 +174,13 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 	component, exists := scm.components[id]
 	if exists {
 		if component.State() != Running {
-			scm.cwg.Add(1)
 			var err error = nil
-			go func(c Component) {
+			go func(c Component, scm *SimpleComponentManager) {
 				err = component.Start()
 				if err != nil {
-					component.Stop()
-					scm.cwg.Done()
+					logger.ErrorF("Error starting component: %v", err)
 				}
-			}(component)
+			}(component, scm)
 			return err
 		} else {
 			return ErrCompAlreadyStarted
@@ -182,20 +190,33 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 }
 
 // StopAll will stop all the Components.
-func (scm *SimpleComponentManager) StopAll() {
+func (scm *SimpleComponentManager) StopAll() error {
+	logger.InfoF("Stopping all components")
+	err := errutils.NewMultiErr(nil)
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
+	wg := &sync.WaitGroup{}
 	for _, component := range scm.components {
 		if component.State() == Running {
-			go func(c Component) {
-				err := component.Stop()
-				if err == nil {
-					scm.cwg.Done()
+			wg.Add(1)
+			go func(c Component, wg *sync.WaitGroup) {
+				e := component.Stop()
+				if e != nil {
+					logger.ErrorF("Error stopping component: %v", err)
+					err.Add(e)
 				}
-			}(component)
+
+				wg.Done()
+			}(component, wg)
 		}
 	}
-	scm.status = Stopped
+	wg.Wait()
+	close(scm.waitChan)
+	if err.HasErrors() {
+		return err
+	} else {
+		return nil
+	}
 }
 
 // Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
@@ -206,7 +227,9 @@ func (scm *SimpleComponentManager) Stop(id string) error {
 	if exists {
 		if component.State() == Running {
 			err := component.Stop()
-			scm.cwg.Done()
+			if err != nil {
+				logger.ErrorF("Error stopping component: %v", err)
+			}
 			return err
 		} else if component.State() == Stopped {
 			return ErrCompAlreadyStopped
@@ -226,7 +249,6 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 	if component, exists := scm.components[id]; exists {
 		if component.State() == Running {
 			component.Stop()
-			scm.cwg.Done()
 		}
 		delete(scm.components, id)
 	}
@@ -234,15 +256,23 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 
 // Wait will wait for all the Components to finish.
 func (scm *SimpleComponentManager) Wait() {
-	scm.cwg.Wait()
+	go func() {
+		// Wait for a signal to stop the components.
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+		<-signalChan
+		scm.StopAll()
+	}()
+	<-scm.waitChan
+
 }
 
 // NewSimpleComponentManager will return a new SimpleComponentManager.
 func NewSimpleComponentManager() ComponentManager {
-	return &SimpleComponentManager{
+	manager := &SimpleComponentManager{
 		components: make(map[string]Component),
-		status:     Stopped,
 		cMutex:     &sync.RWMutex{},
-		cwg:        &sync.WaitGroup{},
+		waitChan:   make(chan struct{}),
 	}
+	return manager
 }

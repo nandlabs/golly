@@ -1,49 +1,57 @@
-# REST Client
-This is a README file for a REST client built using the Go programming language. The client provides a simple and efficient way to interact with RESTful APIs in Go.
+# Rest Client
+
+The client provides a simple and efficient way to interact with RESTful APIs in Go.
 
 ---
+
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+
 ---
 
 ## Features
-* HTTP methods: GET, POST, PUT, DELETE
-* Query parameters 
-* Request headers 
-* Retry
-* CircuitBreaker Configuration
-* Proxy Configuration
-* TLS Configuration
-* Transport Layer Configuration
-  * MaxIdle Connections
-  * Connection Timeout
-  * TLS Handshake Timeout
-* SSL Verification and Configuration
-* CA Certs Configuration
-* Error handling
-  * ErrorOnHttpStatus : sets the list of status codes that can be considered failures
+
+- HTTP methods: GET, POST, PUT, DELETE
+- Query parameters
+- Request headers
+- Retry
+- CircuitBreaker Configuration
+- Proxy Configuration
+- TLS Configuration
+- Transport Layer Configuration
+  - MaxIdle Connections
+  - Connection Timeout
+  - TLS Handshake Timeout
+- SSL Verification and Configuration
+- CA Certs Configuration
+- Error handling
+  - ErrorOnHttpStatus : sets the list of status codes that can be considered failures
 
 ## Installation
+
 To install the REST client, use the following command:
+
 ```bash
-go get oss.nandlabs.io/golly/clients/rest
+go get oss.nandlabs.io/golly/rest/client
 ```
 
 ## Usage
 
 To use the REST client in your Go project, you first need to import the package:
+
 ```go
-import "oss.nandlabs.io/golly/clients/rest"
+import "oss.nandlabs.io/golly/rest/client"
 ```
 
 #### HTTP Methods : Sending a GET Request
+
 ```go
 package main
 
 import (
   "fmt"
-  "oss.nandlabs.io/golly/clients/rest"
+  "oss.nandlabs.io/golly/rest/client"
 )
 
 func main() {
@@ -60,6 +68,7 @@ func main() {
 ```
 
 #### Retry Configuration
+
 ```go
 package main
 
@@ -84,6 +93,7 @@ func main() {
 ```
 
 #### CircuitBreaker Configuration
+
 ```go
 package main
 
@@ -107,6 +117,7 @@ func main() {
 ```
 
 #### Proxy Configuration
+
 ```go
 package main
 
@@ -133,6 +144,7 @@ func main() {
 ```
 
 #### TLS Configuration
+
 ```go
 package main
 
@@ -160,6 +172,7 @@ func main() {
 ```
 
 #### SSL Verification and CA Certs Configuration
+
 ```go
 package main
 

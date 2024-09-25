@@ -147,6 +147,9 @@ func TestSimpleComponentManager_StartAll(t *testing.T) {
 		StartFunc: func() error {
 			return nil
 		},
+		StopFunc: func() error {
+			return nil
+		},
 	}
 	manager.Register(component)
 

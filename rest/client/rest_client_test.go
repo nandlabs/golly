@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"crypto/tls"
@@ -7,16 +7,19 @@ import (
 	"testing"
 
 	"oss.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/testing/assert"
 )
 
 var client = NewClient()
 
+// TestNewClient tests the NewClient function
 func TestNewClient(t *testing.T) {
 	if reflect.TypeOf(client) != reflect.TypeOf(NewClient()) {
 		t.Errorf("NewClient() = %v, want %v", client, NewClient())
 	}
 }
 
+// TestClientOptions tests the ClientOptions function
 func TestClientOptions(t *testing.T) {
 	gotReq := client.ReqTimeout(10)
 	if reflect.TypeOf(client) != reflect.TypeOf(gotReq) {
@@ -77,6 +80,7 @@ func TestClientOptions(t *testing.T) {
 	}
 }
 
+// TestClient_NewRequest tests the NewRequest function
 func TestClient_NewRequest(t *testing.T) {
 	req := client.NewRequest("http://localhost:8080", http.MethodGet)
 	want := &Request{
@@ -88,6 +92,7 @@ func TestClient_NewRequest(t *testing.T) {
 	}
 }
 
+// TestClient_SetCACerts
 func TestClient_SetCACerts(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -128,6 +133,7 @@ func TestClient_SetCACerts2(t *testing.T) {
 
 func TestClient_SSlVerify(t *testing.T) {
 	clientSSLVerify, err := client.SSlVerify(true)
+	assert.NoError(t, err)
 	if reflect.TypeOf(clientSSLVerify) != reflect.TypeOf(client) {
 		t.Errorf("Got: %s, want: %s", reflect.TypeOf(clientSSLVerify), reflect.TypeOf(client))
 	}

@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"crypto/tls"
@@ -21,7 +21,6 @@ const (
 	defaultIdleConnTimeout       = 90 * time.Second
 	defaultTLSHandshakeTimeout   = 10 * time.Second
 	defaultExpectContinueTimeout = 1 * time.Second
-	contentTypeHdr               = "Content-Type"
 	proxyAuthHdr                 = "Proxy-Authorization"
 )
 
