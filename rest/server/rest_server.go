@@ -2,12 +2,11 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"net/http"
 	"path"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"oss.nandlabs.io/golly/codec"
@@ -16,7 +15,6 @@ import (
 	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo"
-	"oss.nandlabs.io/golly/uuid"
 	"oss.nandlabs.io/golly/vfs"
 )
 
@@ -45,11 +43,12 @@ type Server interface {
 	Put(path string, handler HandlerFunc) (err error)
 	// AddRoute adds a route to the server
 	Delete(path string, handler HandlerFunc) (err error)
+	// Unhandled adds a handler for unhandled routes
+	Unhandled(handler HandlerFunc) (err error)
+	// Unsupported adds a handler for unsupported methods
+	Unsupported(handler HandlerFunc) (err error)
 }
 type DataTypProvider func() any
-
-var servers = make(map[string]Server)
-var mutex = &sync.RWMutex{}
 
 type restServer struct {
 	*lifecycle.SimpleComponent
@@ -61,6 +60,7 @@ type restServer struct {
 // AddRoute adds a route to the server
 func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...string) (err error) {
 	p := path
+
 	if rs.opts.PathPrefix != textutils.EmptyStr {
 		if !strings.HasPrefix(path, rest.PathSeparator) {
 			p = "/" + path
@@ -100,13 +100,37 @@ func (rs *restServer) Delete(path string, handler HandlerFunc) (err error) {
 	return rs.AddRoute(path, handler, http.MethodDelete)
 }
 
+// Unhandled adds a handler for unhandled routes
+func (rs *restServer) Unhandled(handler HandlerFunc) (err error) {
+	rs.router.SetUnmanaged(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := Context{
+			request:  r,
+			response: w,
+		}
+		handler(ctx)
+	}))
+	return
+}
+
+// Unsupported adds a handler for unsupported methods
+func (rs *restServer) Unsupported(handler HandlerFunc) (err error) {
+	rs.router.SetUnsupportedMethod(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := Context{
+			request:  r,
+			response: w,
+		}
+		handler(ctx)
+	}))
+	return
+}
+
 // Opts returns the options of the server
 func (rs *restServer) Opts() *Options {
 	return rs.opts
 }
 
 // New creates a new Server with the given configuration file of the options.
-func NewServerFrom(configPath string) (Server, error) {
+func NewFrom(configPath string) (Server, error) {
 	// Read from file.
 	vFile, err := vfs.GetManager().OpenRaw(configPath)
 	var opts *Options
@@ -125,24 +149,24 @@ func NewServerFrom(configPath string) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewServer(opts)
+	return New(opts)
 
 }
 
-// DefaultServer creates a new Server with the default options.
-func DefaultServer() (Server, error) {
+// Default creates a new Server with the default options.
+func Default() (Server, error) {
 	opts := DefaultOptions()
-	uid, err := uuid.V4()
-	if err != nil {
-		return nil, err
+	// uid, err := uuid.V4()
+	// if err != nil {
+	// 	return nil, err
 
-	}
-	opts.Id = uid.String()
-	return NewServer(opts)
+	// }
+	// opts.Id = uid.String()
+	return New(opts)
 }
 
-// NewServer creates a new Server with the given options.
-func NewServer(opts *Options) (rServer Server, err error) {
+// New creates a new Server with the given options.
+func New(opts *Options) (rServer Server, err error) {
 	if opts == nil {
 		return nil, ErrNilOptions
 	}
@@ -157,17 +181,25 @@ func NewServer(opts *Options) (rServer Server, err error) {
 		ReadTimeout:  20 * time.Millisecond,
 		WriteTimeout: 20 * time.Second,
 	}
+	var listener net.Listener
 	rServer = &restServer{
 		SimpleComponent: &lifecycle.SimpleComponent{
 			CompId: opts.Id,
 			StartFunc: func() error {
-
-				go httpServer.ListenAndServe()
-				return nil
-
+				listener, err = net.Listen("tcp", httpServer.Addr)
+				if err != nil {
+					logger.ErrorF("Error starting server: %v", err)
+				}
+				return err
 			},
+			AfterStart: func(err error) {
+				if err == nil {
+					logger.Info("Ready to server requests on ", httpServer.Addr)
+					httpServer.Serve(listener)
+				}
+			},
+
 			StopFunc: func() error {
-				fmt.Println("Stopping HTTP server")
 				return httpServer.Shutdown(context.Background())
 			},
 		},
@@ -175,8 +207,6 @@ func NewServer(opts *Options) (rServer Server, err error) {
 		router:     router,
 		httpServer: httpServer,
 	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	servers[opts.Id] = rServer
+
 	return
 }

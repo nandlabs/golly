@@ -20,7 +20,7 @@ func TestNewServerFrom(t *testing.T) {
 
 // TestDefaultServer tests the DefaultServer function
 func TestDefaultServer(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Errorf("DefaultServer() error = %v", err)
 	}
@@ -37,7 +37,7 @@ func TestNewServer(t *testing.T) {
 		t.Errorf("uuid.V4() error = %v", err)
 	}
 	opts.Id = uid.String()
-	server, err := NewServer(opts)
+	server, err := New(opts)
 	if err != nil {
 		t.Errorf("NewServer() error = %v", err)
 	}
@@ -48,7 +48,7 @@ func TestNewServer(t *testing.T) {
 
 // TestRestServer_AddRoute tests the AddRoute function
 func TestRestServer_AddRoute(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -62,7 +62,7 @@ func TestRestServer_AddRoute(t *testing.T) {
 
 // TestRestServer_Post tests the Post function
 func TestRestServer_Post(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -76,7 +76,7 @@ func TestRestServer_Post(t *testing.T) {
 
 // TestRestServer_Get tests the Get function
 func TestRestServer_Get(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -90,7 +90,7 @@ func TestRestServer_Get(t *testing.T) {
 
 // TestRestServer_Put tests the Put function
 func TestRestServer_Put(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -104,7 +104,7 @@ func TestRestServer_Put(t *testing.T) {
 
 // TestRestServer_Delete tests the Delete function
 func TestRestServer_Delete(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -118,7 +118,7 @@ func TestRestServer_Delete(t *testing.T) {
 
 // TestRestServer_Opts tests the Opts function
 func TestRestServer_Opts(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
@@ -131,7 +131,7 @@ func TestRestServer_Opts(t *testing.T) {
 
 // TestRestServer_Lifecycle tests the lifecycle functions
 func TestRestServer_Lifecycle(t *testing.T) {
-	server, err := DefaultServer()
+	server, err := Default()
 	if err != nil {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}

@@ -107,6 +107,8 @@ func NewOptionsWithDefaults() Options {
 // DefaultOptions returns the default options for the server
 func DefaultOptions() *Options {
 	return &Options{
+		PathPrefix:   "/",
+		Id:           "default-http-server",
 		ListenHost:   "localhost",
 		ListenPort:   8080,
 		ReadTimeout:  20000,
