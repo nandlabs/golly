@@ -17,10 +17,36 @@ import (
 	"oss.nandlabs.io/golly/vfs"
 )
 
+const (
+	QueryParam Paramtype = iota
+	PathParam
+)
+
+type HandlerFunc func(context Context) (err error)
+
+type Paramtype int
+
 // Server is the interface that wraps the ServeHTTP method.
 type Server interface {
 	lifecycle.Component
 	Opts() *Options
+}
+type DataTypProvider func() any
+
+type Context struct {
+	request *http.Request
+}
+
+// Options is the struct that holds the configuration for the Server.
+func (c *Context) GetParam(name string, typ Paramtype) string {
+	switch typ {
+	case QueryParam:
+		return c.request.URL.Query().Get(name)
+	case PathParam:
+		return c.request.URL.Path
+	}
+	return ""
+
 }
 
 var servers = make(map[string]Server)
