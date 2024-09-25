@@ -3,6 +3,7 @@ package server
 // Options is the configuration for the server
 type Options struct {
 	Id             string `json:"id" yaml:"id" bson:"id" mapstructure:"id"`
+	PathPrefix     string `json:"path_prefix,omitempty" yaml:"path_prefix,omitempty" bson:"path_prefix,omitempty" mapstructure:"path_prefix,omitempty"`
 	ListenHost     string `json:"listen_host" yaml:"listen_host" bson:"listen_host" mapstructure:"listen_host"`
 	ListenPort     int16  `json:"listen_port" yaml:"listen_port" bson:"listen_port" mapstructure:"listen_port"`
 	ReadTimeout    int64  `json:"read_timeout,omitempty" yaml:"read_timeout,omitempty" bson:"read_timeout,omitempty" mapstructure:"read_timeout,omitempty"`
@@ -103,6 +104,7 @@ func NewOptionsWithDefaults() Options {
 	}
 }
 
+// DefaultOptions returns the default options for the server
 func DefaultOptions() *Options {
 	return &Options{
 		ListenHost:   "localhost",

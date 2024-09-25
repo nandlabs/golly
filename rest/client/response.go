@@ -6,6 +6,7 @@ import (
 
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/rest"
 )
 
 type Response struct {
@@ -33,7 +34,7 @@ func (r *Response) Decode(v interface{}) (err error) {
 	var c codec.Codec
 	if r.IsSuccess() {
 		defer ioutils.CloserFunc(r.raw.Body)
-		contentType := r.raw.Header.Get(contentTypeHdr)
+		contentType := r.raw.Header.Get(rest.ContentTypeHeader)
 		c, err = codec.Get(contentType, r.client.codecOptions)
 		if err == nil {
 			err = c.Read(r.raw.Body, v)

@@ -15,3 +15,5 @@ var ErrInvalidConfig = errors.New("empty config path")
 var ErrInvalidID = errors.New("empty id")
 
 var ErrNilOptions = errors.New("nil options")
+
+var ErrInvalidParamType = errors.New("invalid param type provided")

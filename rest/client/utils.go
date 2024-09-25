@@ -6,12 +6,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+
+	"oss.nandlabs.io/golly/rest"
 )
 
 // CreateMultipartHeader creates a multipart header with the given parameters
 func CreateMultipartHeader(param, fileName, contentType string) textproto.MIMEHeader {
 	hdr := make(textproto.MIMEHeader)
-	hdr.Set(contentTypeHdr, "multipart/form-data")
+	hdr.Set(rest.ContentTypeHeader, "multipart/form-data")
 	return hdr
 }
 
