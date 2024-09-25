@@ -48,7 +48,18 @@ go get oss.nandlabs.io/golly
   - General consumer interface for receiving and processing messages from
     different messaging platforms.
   - A local provider interface for messaging using channels
-- [rest](clients/rest/README.md)
+- rest
+  [server](rest/server/README.md)
+
+  - HTTP methods: GET, POST, PUT, DELETE
+  - Query parameters
+  - Request headers
+  - Middleware support
+  - TLS Configuration
+  - Transport Layer Configuration
+
+  [clients](clients/rest/README.md)
+
   - HTTP methods: GET, POST, PUT, DELETE
   - Query parameters
   - Request headers
@@ -57,6 +68,7 @@ go get oss.nandlabs.io/golly
   - Transport Layer Configuration
   - SSL Configuration
   - Error handling
+
 - [semver](semver/README.md)
   - Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html)
     specification

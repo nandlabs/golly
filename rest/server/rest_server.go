@@ -196,13 +196,22 @@ func New(opts *Options) (rServer Server, err error) {
 			AfterStart: func(err error) {
 
 				if err == nil {
-					defer listener.Close()
+
 					if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
-						logger.Info("Ready to accept https requests on ", httpServer.Addr)
-						httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
+						logger.Info("starting to accept https requests on ", httpServer.Addr)
+						err = httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
+						if err != nil {
+							logger.ErrorF("Error starting https server: %v", err)
+						}
+						ioutils.CloserFunc(listener)
+
 					} else {
-						logger.Info("Ready to accept http requests on ", httpServer.Addr)
-						httpServer.Serve(listener)
+						logger.Info("starting to accept http requests on ", httpServer.Addr)
+						err = httpServer.Serve(listener)
+						if err != nil {
+							logger.ErrorF("Error starting http server: %v", err)
+						}
+						ioutils.CloserFunc(listener)
 					}
 				}
 			},
