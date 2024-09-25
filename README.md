@@ -58,7 +58,7 @@ go get oss.nandlabs.io/golly
   - TLS Configuration
   - Transport Layer Configuration
 
-  [clients](clients/rest/README.md)
+  [client](clients/rest/README.md)
 
   - HTTP methods: GET, POST, PUT, DELETE
   - Query parameters
