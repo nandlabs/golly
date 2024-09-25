@@ -186,6 +186,7 @@ func New(opts *Options) (rServer Server, err error) {
 		SimpleComponent: &lifecycle.SimpleComponent{
 			CompId: opts.Id,
 			StartFunc: func() error {
+
 				listener, err = net.Listen("tcp", httpServer.Addr)
 				if err != nil {
 					logger.ErrorF("Error starting server: %v", err)
@@ -193,13 +194,21 @@ func New(opts *Options) (rServer Server, err error) {
 				return err
 			},
 			AfterStart: func(err error) {
+
 				if err == nil {
-					logger.Info("Ready to server requests on ", httpServer.Addr)
-					httpServer.Serve(listener)
+					defer listener.Close()
+					if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
+						logger.Info("Ready to accept https requests on ", httpServer.Addr)
+						httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
+					} else {
+						logger.Info("Ready to accept http requests on ", httpServer.Addr)
+						httpServer.Serve(listener)
+					}
 				}
 			},
 
 			StopFunc: func() error {
+				logger.Info("Stopping http server at ", httpServer.Addr)
 				return httpServer.Shutdown(context.Background())
 			},
 		},
