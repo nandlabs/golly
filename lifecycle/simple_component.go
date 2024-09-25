@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 
 	"oss.nandlabs.io/golly/errutils"
 )
@@ -258,7 +259,7 @@ func (scm *SimpleComponentManager) Wait() {
 	go func() {
 		// Wait for a signal to stop the components.
 		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, os.Interrupt)
+		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
 		<-signalChan
 		scm.StopAll()
 	}()
