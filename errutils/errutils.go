@@ -3,16 +3,20 @@ package errutils
 import (
 	"errors"
 	"strings"
+	"sync"
 
 	"oss.nandlabs.io/golly/textutils"
 )
 
 type MultiError struct {
-	errs []error
+	errs  []error
+	mutex sync.Mutex
 }
 
 // Add adds an error to the MultiError. If the error is nil, it is not added.
 func (m *MultiError) Add(err error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	if err != nil {
 		m.errs = append(m.errs, err)
 	}
@@ -26,8 +30,10 @@ func (m *MultiError) GetAll() (errs []error) {
 
 // Error function implements the error.Error function of the error interface
 func (m *MultiError) Error() string {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	var sb strings.Builder
-	if m.errs != nil && len(m.errs) > 0 {
+	if m.errs != nil {
 		for i, e := range m.errs {
 			if i != 0 {
 				sb.WriteString(textutils.NewLineString)
@@ -39,8 +45,17 @@ func (m *MultiError) Error() string {
 	return sb.String()
 }
 
+// HasErrors will return true if the MultiError has any errors
+func (m *MultiError) HasErrors() bool {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return len(m.errs) > 0
+}
+
 // HasError will return true if the MultiError has any errors of the specified type
 func (m *MultiError) HasError(err error) bool {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	for _, e := range m.errs {
 		if errors.Is(e, err) {
 			return true
@@ -52,6 +67,8 @@ func (m *MultiError) HasError(err error) bool {
 // NewMultiErr creates a new MultiError and adds the given error to it.
 func NewMultiErr(err error) (multiErr *MultiError) {
 	multiErr = &MultiError{}
-	multiErr.Add(err)
+	if err != nil {
+		multiErr.Add(err)
+	}
 	return
 }

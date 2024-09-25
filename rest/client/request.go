@@ -1,4 +1,4 @@
-package rest
+package client
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 )
 
@@ -137,7 +138,7 @@ func (r *Request) SetMultipartFiles(files ...*MultipartFile) *Request {
 }
 
 func (r *Request) handleMultipart() (err error) {
-	err = validateHeaders(r.method)
+	err = IsValidMultipartVerb(r.method)
 	if err == nil {
 		r.bodyBuf = new(bytes.Buffer)
 		w := multipart.NewWriter(r.bodyBuf)
@@ -158,7 +159,7 @@ func addFile(w *multipart.Writer, fieldName, path string) error {
 		return err
 	}
 	defer ioutils.CloserFunc(file)
-	return writeMultipartFormFile(w, fieldName, filepath.Base(path), file)
+	return WriteMultipartFormFile(w, fieldName, filepath.Base(path), file)
 }
 
 func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
@@ -177,7 +178,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 					if v, ok := r.pathParams[key]; ok {
 						pathValues[i] = v
 					} else {
-						err = fmt.Errorf("Path param with name %s is not set in the request ", key)
+						err = fmt.Errorf("path param with name %s is not set in the request ", key)
 						break
 					}
 				}
@@ -222,7 +223,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 				httpReq, err = http.NewRequest(r.method, u.String(), r.bodyReader)
 				if r.header != nil {
 					if r.contentType != "" {
-						r.header.Set(contentTypeHdr, r.contentType)
+						r.header.Set(rest.ContentTypeHeader, r.contentType)
 					}
 					httpReq.Header = r.header
 				}

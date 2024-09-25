@@ -50,14 +50,14 @@ type ComponentManager interface {
 	// Register will register a new Components.
 	Register(component Component) Component
 	// StartAll will start all the Components. Returns the number of components started
-	StartAll()
+	StartAll() error
 	//StartAndWait will start all the Components and wait for them to finish.
 	StartAndWait()
 	// Start will start the LifeCycle for the component with the given id.
 	// It returns an error if the component was not found or if the component failed to start.
 	Start(id string) error
 	// StopAll will stop all the Components.
-	StopAll()
+	StopAll() error
 	// Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
 	Stop(id string) error
 	// Unregister will unregister a Component.

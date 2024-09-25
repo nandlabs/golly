@@ -66,7 +66,7 @@ type QueryParam struct {
 
 // NewRouter registers the new instance of the Turbo Framework
 func NewRouter() *Router {
-	logger.InfoF("Initiating Turbo")
+	logger.DebugF("Initiating Turbo")
 	return &Router{
 		lock:                     sync.RWMutex{},
 		unManagedRouteHandler:    endpointNotFoundHandler(),
@@ -97,6 +97,12 @@ func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.
 
 func sanitizePath(p string) (string, error) {
 	path := strings.TrimSpace(p)
+	if path == textutils.EmptyStr {
+		return textutils.EmptyStr, ErrInvalidPath
+	}
+	if !strings.HasPrefix(path, textutils.ForwardSlashStr) {
+		path = textutils.ForwardSlashStr + path
+	}
 	var sb strings.Builder
 	for _, c := range path {
 		// Path Variable can be defined using {<name>} syntax or :<name> syntax
@@ -195,14 +201,14 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 					route = currentRoute
 				}
 
-				if i == length-1 {
-					for _, method := range methods {
-						// if the handler is already present then we will overwrite it
-						m := strings.ToUpper(method)
-						logger.InfoF("Registering New Route: %s:%s", m, path)
+			}
+			if i == length-1 {
+				for _, method := range methods {
+					// if the handler is already present then we will overwrite it
+					m := strings.ToUpper(method)
+					logger.InfoF("Registering New Route: %s:%s", m, path)
 
-						route.handlers[m] = http.HandlerFunc(f)
-					}
+					route.handlers[m] = http.HandlerFunc(f)
 				}
 			}
 
@@ -285,6 +291,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(context.WithValue(r.Context(), "params", params))
 	}
 	handler.ServeHTTP(w, r)
+}
+
+func (r *Router) SetUnmanaged(handler http.Handler) *Router {
+	r.unManagedRouteHandler = handler
+	return r
+}
+
+func (r *Router) SetUnsupportedMethod(handler http.Handler) *Router {
+	r.unsupportedMethodHandler = handler
+	return r
 }
 
 // findRoute performs the function checks for the incoming request path whether it matches with any registered route's path
