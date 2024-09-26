@@ -54,7 +54,7 @@ func TestOptions_Getters(t *testing.T) {
 
 // TestOptions_Setters tests the setter functions
 func TestOptions_Setters(t *testing.T) {
-	opts := Options{}
+	opts := &Options{}
 	opts = opts.SetListenHost("localhost")
 	if opts.ListenHost != "localhost" {
 		t.Errorf("SetListenHost() = %v, want %v", opts.ListenHost, "localhost")
