@@ -145,3 +145,22 @@ func TestRestServer_Lifecycle(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 }
+
+// TestRestServer_TLS tests the TLS functions
+func TestRestServer_TLS(t *testing.T) {
+
+	opts := DefaultOptions().SetEnableTLS(true).
+		SetCertPath("testdata/server.crt").
+		SetPrivateKeyPath("testdata/server.key")
+	server, err := New(opts)
+	assert.NoError(t, err)
+	mgr := lifecycle.NewSimpleComponentManager()
+	mgr.Register(server)
+	go func() {
+		time.Sleep(3 * time.Second)
+		err := mgr.StopAll()
+		assert.NoError(t, err)
+	}()
+	mgr.StartAndWait()
+
+}

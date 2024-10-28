@@ -14,7 +14,7 @@ type Options struct {
 }
 
 // Validate validates the server options
-func (o Options) Validate() error {
+func (o *Options) Validate() error {
 	if o.Id == "" {
 		return ErrInvalidID
 	}
@@ -36,69 +36,69 @@ func (o Options) Validate() error {
 }
 
 // GetListenHost returns the listen host
-func (o Options) GetListenHost() string {
+func (o *Options) GetListenHost() string {
 	return o.ListenHost
 }
 
 // GetListenPort returns the listen port
-func (o Options) GetListenPort() int16 {
+func (o *Options) GetListenPort() int16 {
 	return o.ListenPort
 }
 
 // GetEnableTLS returns the enable TLS value
-func (o Options) GetEnableTLS() bool {
+func (o *Options) GetEnableTLS() bool {
 	return o.EnableTLS
 }
 
 // GetPrivateKeyPath returns the private key path
-func (o Options) GetPrivateKeyPath() string {
+func (o *Options) GetPrivateKeyPath() string {
 	return o.PrivateKeyPath
 }
 
 // GetCertPath returns the cert path
-func (o Options) GetCertPath() string {
+func (o *Options) GetCertPath() string {
 	return o.CertPath
 }
 
 // SetListenHost sets the listen host
-func (o Options) SetListenHost(host string) Options {
+func (o *Options) SetListenHost(host string) *Options {
 	o.ListenHost = host
 	return o
 }
 
 // SetListenPort sets the listen port
-func (o Options) SetListenPort(port int16) Options {
+func (o *Options) SetListenPort(port int16) *Options {
 
 	o.ListenPort = port
 	return o
 }
 
 // SetEnableTLS sets the enable TLS value
-func (o Options) SetEnableTLS(enableTLS bool) Options {
+func (o *Options) SetEnableTLS(enableTLS bool) *Options {
 	o.EnableTLS = enableTLS
 	return o
 }
 
 // SetPrivateKeyPath sets the private key path
-func (o Options) SetPrivateKeyPath(privateKeyPath string) Options {
+func (o *Options) SetPrivateKeyPath(privateKeyPath string) *Options {
 	o.PrivateKeyPath = privateKeyPath
 	return o
 }
 
 // SetCertPath sets the cert path
-func (o Options) SetCertPath(certPath string) Options {
+func (o *Options) SetCertPath(certPath string) *Options {
 	o.CertPath = certPath
 	return o
 }
 
 // NewOptions returns a new server options
-func NewOptions() Options {
-	return Options{}
+func NewOptions() *Options {
+	return &Options{}
 }
 
 // NewOptionsWithDefaults returns a new server options with default values
-func NewOptionsWithDefaults() Options {
-	return Options{
+func NewOptionsWithDefaults() *Options {
+	return &Options{
 		ListenHost: "localhost",
 		ListenPort: 8080,
 	}
