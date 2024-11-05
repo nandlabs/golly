@@ -4,9 +4,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"oss.nandlabs.io/golly/clients"
@@ -34,6 +36,7 @@ type Client struct {
 	httpTransport  *http.Transport
 	tlsConfig      *tls.Config
 	codecOptions   map[string]interface{}
+	baseUrl        *url.URL
 }
 
 // NewClient creates a new REST client with default values.
@@ -53,6 +56,22 @@ func NewClient() *Client {
 		httpClient:    httpClient,
 		httpTransport: transport,
 	}
+}
+
+func (c *Client) SetBaseUrl(baseurl string) (err error) {
+	if baseurl == textutils.EmptyStr {
+		return
+	}
+	var u *url.URL
+	u, err = url.Parse(baseurl)
+	if err == nil && u.Scheme == textutils.EmptyStr && u.Host == textutils.EmptyStr {
+		err = errors.New("invalid base url")
+	} else {
+		if !strings.HasSuffix(u.Path, textutils.ForwardSlashStr) {
+			u.Path = u.Path + textutils.ForwardSlashStr
+		}
+	}
+	return
 }
 
 // ReqTimeout sets the overall client timeout for a request.
@@ -203,9 +222,18 @@ func (c *Client) UseCircuitBreaker(failureThreshold, successThreshold uint64, ma
 }
 
 // NewRequest creates a new request object for the client.
-func (c *Client) NewRequest(url, method string) *Request {
+func (c *Client) NewRequest(reqUrl, method string) *Request {
+	finalUrl := reqUrl
+	u, err := url.Parse(reqUrl)
+	if err == nil {
+		if u.Scheme == textutils.EmptyStr && u.Host == textutils.EmptyStr {
+			if c.baseUrl != nil {
+				finalUrl = c.baseUrl.String() + u.Path
+			}
+		}
+	}
 	return &Request{
-		url:    url,
+		url:    finalUrl,
 		method: method,
 		header: map[string][]string{},
 		client: c,

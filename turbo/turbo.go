@@ -123,8 +123,8 @@ func sanitizePath(p string) (string, error) {
 	return sb.String(), nil
 }
 
-// Add a turbo handler for one or more HTTP methods.
-func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) (route *Route, err error) {
+func (router *Router) AddHandler(path string, h http.Handler, methods ...string) (route *Route, err error) {
+
 	router.lock.Lock()
 	defer router.lock.Unlock()
 	var pathValue string
@@ -208,7 +208,7 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 					m := strings.ToUpper(method)
 					logger.InfoF("Registering New Route: %s:%s", m, path)
 
-					route.handlers[m] = http.HandlerFunc(f)
+					route.handlers[m] = h
 				}
 			}
 
@@ -225,12 +225,19 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 			logger:       logger,
 		}
 		for _, method := range methods {
-			currentRoute.handlers[method] = prepareHandler(method, http.HandlerFunc(f))
+			currentRoute.handlers[method] = prepareHandler(method, h)
 		}
 		//Root route will not have any path value
 		router.topLevelRoutes[textutils.EmptyStr] = currentRoute
 	}
 	return route, nil
+
+}
+
+// Add a turbo handler for one or more HTTP methods.
+func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Request), methods ...string) (route *Route, err error) {
+
+	return router.AddHandler(path, http.HandlerFunc(f), methods...)
 }
 
 // prepareHandler to add any default features like logging, auth... will be injected here
