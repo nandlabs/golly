@@ -2,7 +2,6 @@ package assertion
 
 import (
 	"reflect"
-	"testing"
 )
 
 // Equal compares the expected and actual values and logs an error if they are not equal
@@ -62,7 +61,7 @@ func ListHas(value any, list ...any) bool {
 }
 
 // ListMissing logs an error if the list contains the value
-func ListMissing(t *testing.T, value any, list ...any) bool {
+func ListMissing(value any, list ...any) bool {
 	for _, v := range list {
 		if reflect.DeepEqual(v, value) {
 			return false
