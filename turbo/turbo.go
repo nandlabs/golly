@@ -12,6 +12,7 @@ import (
 	"oss.nandlabs.io/golly/l3"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo/auth"
+	"oss.nandlabs.io/golly/turbo/filters"
 )
 
 // Router struct that holds the router configuration
@@ -82,6 +83,17 @@ func (router *Router) AddGlobalFilter(filter ...FilterFunc) *Router {
 	router.lock.Lock()
 	defer router.lock.Unlock()
 	router.globalFilters = append(router.globalFilters, filter...)
+	return router
+}
+
+func (router *Router) AddCorsFilter(corsOpts *filters.CorsOptions) *Router {
+	if corsOpts != nil {
+		filter := corsOpts.NewFilter()
+		filterFunc := func(handler http.Handler) http.Handler {
+			return filter.HandleCors(handler)
+		}
+		router.AddGlobalFilter(filterFunc)
+	}
 	return router
 }
 
