@@ -121,7 +121,7 @@ func ListHas(t *testing.T, value any, list ...any) bool {
 
 // ListMissing logs an error if the list contains the value
 func ListMissing(t *testing.T, value any, list ...any) bool {
-	val := assertion.ListMissing(t, value, list...)
+	val := assertion.ListMissing(value, list...)
 	if !val {
 		t.Errorf("Expected: %v not to be in %v", value, list)
 	}
