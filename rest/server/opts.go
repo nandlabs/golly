@@ -112,6 +112,19 @@ func NewOptionsWithDefaults() *Options {
 }
 
 // DefaultOptions returns the default options for the server
+// The default options are:
+//   - PathPrefix: "/"
+//   - Id: "default-http-server"
+//   - ListenHost: "localhost"
+//   - ListenPort: 8080
+//   - ReadTimeout: 20000
+//   - WriteTimeout: 20000
+//   - Cors: &filters.CorsOptions{
+//     MaxAge:         0,
+//     AllowedOrigins: []string{"*"},
+//     AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+//     ResponseStatus: http.StatusNoContent,
+//     }
 func DefaultOptions() *Options {
 	return &Options{
 		PathPrefix:   "/",
