@@ -138,14 +138,14 @@ func TestListHas(t *testing.T) {
 	// Test case 1
 	value := 1
 	list := []interface{}{1, 2, 3}
-	if !ListHas(value, list...) {
+	if !ListHas(value, list) {
 		t.Errorf("ListHas() = false, want true")
 	}
 
 	// Test case 2
 	value = 4
 	list = []interface{}{1, 2, 3}
-	if ListHas(value, list...) {
+	if ListHas(value, list) {
 		t.Errorf("ListHas() = true, want false")
 	}
 }
@@ -154,14 +154,14 @@ func TestListMissing(t *testing.T) {
 	// Test case 1
 	value := 1
 	list := []interface{}{1, 2, 3}
-	if ListMissing(t, value, list...) {
+	if ListMissing(value, list) {
 		t.Errorf("ListMissing() = true, want false")
 	}
 
 	// Test case 2
 	value = 4
 	list = []interface{}{1, 2, 3}
-	if !ListMissing(t, value, list...) {
+	if !ListMissing(value, list) {
 		t.Errorf("ListMissing() = false, want true")
 	}
 }

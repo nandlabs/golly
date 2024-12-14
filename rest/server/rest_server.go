@@ -175,6 +175,8 @@ func New(opts *Options) (rServer Server, err error) {
 		return
 	}
 	router := turbo.NewRouter()
+	router.AddCorsFilter(opts.Cors)
+
 	httpServer := &http.Server{
 		Handler:      router,
 		Addr:         opts.ListenHost + ":" + strconv.Itoa(int(opts.ListenPort)),
