@@ -18,7 +18,7 @@ const (
 	MaxAgeHeader                 = "Access-Control-Max-Age"
 	ExposeHeaders                = "Access-Control-Expose-Headers"
 	AccessControlReqHeaders      = "Access-Control-Request-Headers"
-	AccessConrtolReqMethodHdr    = "Access-Control-Request-Method"
+	AccessControlReqMethodHdr    = "Access-Control-Request-Method"
 	AccessControlPvtNetworkHdr   = "Access-Control-Allow-Private-Network"
 	OriginHeader                 = "Origin"
 	VaryHeader                   = "Vary"
@@ -141,7 +141,7 @@ func (cf *CorsFilter) SetResponseStatus(status int) {
 // SetAllowPvtNetwork sets the allow private network
 func (cf *CorsFilter) SetAllowPvtNetwork(allow bool) {
 	cf.AllowPvtNetwork = allow
-	cf.PreFlightVary = []string{OriginHeader, AccessConrtolReqMethodHdr, AccessControlReqHeaders}
+	cf.PreFlightVary = []string{OriginHeader, AccessControlReqMethodHdr, AccessControlReqHeaders}
 	if allow {
 		cf.PreFlightVary = append(cf.PreFlightVary, AccessControlPvtNetworkHdr)
 	}
@@ -179,12 +179,12 @@ func (cf *CorsFilter) handlePreflight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the method is allowed.
-	if originAllowed := cf.isMethodAllowed(r.Header.Get(AccessConrtolReqMethodHdr)); !originAllowed {
+	if methodAllowed := cf.isMethodAllowed(r.Header.Get(AccessControlReqMethodHdr)); !methodAllowed {
 
 		return
 	}
 	w.Header().Set(AllowOriginHeader, origin)
-	w.Header().Set(AllowMethodsHeader, r.Header.Get(AccessConrtolReqMethodHdr))
+	w.Header().Set(AllowMethodsHeader, r.Header.Get(AccessControlReqMethodHdr))
 
 	if len(cf.AllowedHeaders) > 0 {
 		// Set the allowed headers
@@ -219,7 +219,7 @@ func (cf *CorsFilter) HandleActualRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 	// check if the method is allowed
-	if originAllowed := cf.isMethodAllowed(r.Method); !originAllowed {
+	if methodAllowed := cf.isMethodAllowed(r.Method); !methodAllowed {
 		return
 	}
 	w.Header().Set(AllowOriginHeader, origin)
