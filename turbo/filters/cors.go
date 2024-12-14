@@ -76,9 +76,10 @@ func (co *CorsOptions) NewFilter() *CorsFilter {
 // CorsFilter represents the CORS filter
 type CorsFilter struct {
 	*CorsOptions
-	PreFlightVary   []string `json:"-"`
-	AllowAllOrigins bool     `json:"-" yaml:"-"`
-	AllowAllMethods bool     `json:"-" yaml:"-"`
+	accessControlReqHdrsStr string   `json:"-"`
+	PreFlightVary           []string `json:"-"`
+	AllowAllOrigins         bool     `json:"-" yaml:"-"`
+	AllowAllMethods         bool     `json:"-" yaml:"-"`
 }
 
 // NewCorsFilter creates a new CorsFilter
@@ -94,7 +95,12 @@ func NewCorsFilter(allowedOrigins ...string) *CorsFilter {
 
 // SetAllowedHeaders sets the allowed headers
 func (cf *CorsFilter) SetAllowedHeaders(headers ...string) {
-	cf.AllowedHeaders = headers
+	hdrs := make([]string, len(headers))
+	for i, h := range headers {
+		hdrs[i] = strings.ToLower(h)
+	}
+	cf.accessControlReqHdrsStr = strings.Join(headers, ",")
+	cf.AllowedHeaders = hdrs
 }
 
 // SetAllowedMethods sets the allowed methods
@@ -181,6 +187,10 @@ func (cf *CorsFilter) handlePreflight(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(AllowMethodsHeader, r.Header.Get(AccessConrtolReqMethodHdr))
 
 	if len(cf.AllowedHeaders) > 0 {
+		// Set the allowed headers
+		w.Header().Set(AllowHeadersHeader, cf.accessControlReqHdrsStr)
+	} else {
+		// Set the allowed headers
 		w.Header().Set(AllowHeadersHeader, r.Header.Get(AccessControlReqHeaders))
 	}
 
