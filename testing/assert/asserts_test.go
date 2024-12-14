@@ -102,7 +102,7 @@ func TestHasValue(t *testing.T) {
 func TestListHas(t *testing.T) {
 	// Test when the list contains the value
 	list := []interface{}{"value1", "value2", "value3"}
-	if !ListHas(t, "value2", list...) {
+	if !ListHas(t, "value2", list) {
 		t.Errorf("ListHas failed: expected value to be present in the list, but it is missing")
 	}
 }
@@ -110,7 +110,7 @@ func TestListHas(t *testing.T) {
 func TestListMissing(t *testing.T) {
 	// Test when the list does not contain the value
 	list := []interface{}{"value1", "value2", "value3"}
-	if !ListMissing(t, "value4", list...) {
+	if !ListMissing(t, "value4", list) {
 		t.Errorf("ListMissing failed: expected value to be missing from the list, but it is present")
 	}
 }

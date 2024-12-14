@@ -12,6 +12,7 @@ import (
 	"oss.nandlabs.io/golly/l3"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo/auth"
+	"oss.nandlabs.io/golly/turbo/filters"
 )
 
 // Router struct that holds the router configuration
@@ -23,6 +24,8 @@ type Router struct {
 	unsupportedMethodHandler http.Handler
 	//Routes Managed by this router
 	topLevelRoutes map[string]*Route
+	//global filters
+	globalFilters []FilterFunc
 }
 
 // Param to hold key value
@@ -73,6 +76,25 @@ func NewRouter() *Router {
 		unsupportedMethodHandler: methodNotAllowedHandler(),
 		topLevelRoutes:           make(map[string]*Route),
 	}
+}
+
+// AddGlobalFilter to add a global filter to the router
+func (router *Router) AddGlobalFilter(filter ...FilterFunc) *Router {
+	router.lock.Lock()
+	defer router.lock.Unlock()
+	router.globalFilters = append(router.globalFilters, filter...)
+	return router
+}
+
+func (router *Router) AddCorsFilter(corsOpts *filters.CorsOptions) *Router {
+	if corsOpts != nil {
+		filter := corsOpts.NewFilter()
+		filterFunc := func(handler http.Handler) http.Handler {
+			return filter.HandleCors(handler)
+		}
+		router.AddGlobalFilter(filterFunc)
+	}
+	return router
 }
 
 // Get to Add a turbo handler for GET method
@@ -277,8 +299,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	match, params := router.findRoute(r)
 	if match != nil {
 		handler = match.handlers[r.Method]
+		//Global Middlewares added
+		if router.globalFilters != nil {
+			for i := range router.globalFilters {
+				handler = router.globalFilters[len(router.globalFilters)-1-i](handler)
+			}
+		}
+		//Route specific Middlewares added
 		if len(match.filters) > 0 {
-			//Middlewares added
 			for i := range match.filters {
 				handler = match.filters[len(match.filters)-1-i](handler)
 			}
