@@ -10,22 +10,22 @@ import (
 )
 
 const (
-	AllowCredentials           = "Access-Control-Allow-Credentials"
-	AllowExposeHeaders         = "Access-Control-Expose-Headers"
-	AllowHeadersHeader         = "Access-Control-Allow-Headers"
-	AllowMethodsHeader         = "Access-Control-Allow-Methods"
-	AllowOriginHeader          = "Access-Control-Allow-Origin"
-	MaxAgeHeader               = "Access-Control-Max-Age"
-	ExposeHeaders              = "Access-Control-Expose-Headers"
-	AccessControlReqHeaders    = "Access-Control-Request-Headers"
-	AccessConrtolReqMethodHdr  = "Access-Control-Request-Method"
-	AccessControlPvtNetworkHdr = "Access-Control-Allow-Private-Network"
-	OriginHeader               = "Origin"
-	VaryHeader                 = "Vary"
-	AllowAllOrigins            = "*"
-	// DefaultMaxAge is the default value for the MaxAge field
-	DefaultMaxAge = 0
-	trueStr       = "true"
+	AllowCredentials             = "Access-Control-Allow-Credentials"
+	AllowExposeHeaders           = "Access-Control-Expose-Headers"
+	AllowHeadersHeader           = "Access-Control-Allow-Headers"
+	AllowMethodsHeader           = "Access-Control-Allow-Methods"
+	AllowOriginHeader            = "Access-Control-Allow-Origin"
+	MaxAgeHeader                 = "Access-Control-Max-Age"
+	ExposeHeaders                = "Access-Control-Expose-Headers"
+	AccessControlReqHeaders      = "Access-Control-Request-Headers"
+	AccessConrtolReqMethodHdr    = "Access-Control-Request-Method"
+	AccessControlPvtNetworkHdr   = "Access-Control-Allow-Private-Network"
+	OriginHeader                 = "Origin"
+	VaryHeader                   = "Vary"
+	AccessControlAllowAllOrigins = "*"
+	// DefaultAccessControlMaxAge is the default value for the MaxAge field
+	DefaultAccessControlMaxAge = 0
+	trueStr                    = "true"
 )
 
 // CorsOptions represents the options for the CORS filter
@@ -57,7 +57,7 @@ func (co *CorsOptions) NewFilter() *CorsFilter {
 
 	cf.SetAllowPvtNetwork(false)
 	for _, origin := range co.AllowedOrigins {
-		if origin == AllowAllOrigins {
+		if origin == AccessControlAllowAllOrigins {
 			cf.AllowAllOrigins = true
 			break
 		}
@@ -85,7 +85,7 @@ type CorsFilter struct {
 // NewCorsFilter creates a new CorsFilter
 func NewCorsFilter(allowedOrigins ...string) *CorsFilter {
 	co := &CorsOptions{
-		MaxAge:         DefaultMaxAge,
+		MaxAge:         DefaultAccessControlMaxAge,
 		AllowedOrigins: allowedOrigins,
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		ResponseStatus: http.StatusNoContent,
@@ -150,7 +150,7 @@ func (cf *CorsFilter) SetAllowPvtNetwork(allow bool) {
 // isOriginAllowed checks if the origin is allowed
 func (cf *CorsFilter) isOriginAllowed(origin string) (bool, string) {
 	if cf.AllowAllOrigins {
-		return true, AllowAllOrigins
+		return true, AccessControlAllowAllOrigins
 	}
 	return assertion.ListHas(strings.ToLower(origin), cf.AllowedOrigins), origin
 }

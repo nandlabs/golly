@@ -1,6 +1,10 @@
 package server
 
-import "oss.nandlabs.io/golly/turbo/filters"
+import (
+	"net/http"
+
+	"oss.nandlabs.io/golly/turbo/filters"
+)
 
 // Options is the configuration for the server
 type Options struct {
@@ -116,5 +120,11 @@ func DefaultOptions() *Options {
 		ListenPort:   8080,
 		ReadTimeout:  20000,
 		WriteTimeout: 20000,
+		Cors: &filters.CorsOptions{
+			MaxAge:         filters.DefaultAccessControlMaxAge,
+			AllowedOrigins: []string{filters.AccessControlAllowAllOrigins},
+			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+			ResponseStatus: http.StatusNoContent,
+		},
 	}
 }
