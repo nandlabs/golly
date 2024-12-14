@@ -51,9 +51,9 @@ func HasValue(m map[string]any, value any) bool {
 }
 
 // ListHas logs an error if the list does not contain the value
-func ListHas(value any, list ...any) bool {
-	for _, v := range list {
-		if reflect.DeepEqual(v, value) {
+func ListHas[S ~[]E, E any](val any, list S) bool {
+	for _, e := range list {
+		if reflect.DeepEqual(val, e) {
 			return true
 		}
 	}
@@ -61,9 +61,9 @@ func ListHas(value any, list ...any) bool {
 }
 
 // ListMissing logs an error if the list contains the value
-func ListMissing(value any, list ...any) bool {
-	for _, v := range list {
-		if reflect.DeepEqual(v, value) {
+func ListMissing[S ~[]E, E any](val any, list S) bool {
+	for _, e := range list {
+		if reflect.DeepEqual(val, e) {
 			return false
 		}
 	}

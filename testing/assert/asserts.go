@@ -111,8 +111,8 @@ func HasValue(t *testing.T, m map[string]any, value any) bool {
 }
 
 // ListHas logs an error if the list does not contain the value
-func ListHas(t *testing.T, value any, list ...any) bool {
-	val := assertion.ListHas(value, list...)
+func ListHas[S ~[]E, E any](t *testing.T, value any, list S) bool {
+	val := assertion.ListHas(value, list)
 	if !val {
 		t.Errorf("Expected: %v to be in %v", value, list)
 	}
@@ -120,8 +120,8 @@ func ListHas(t *testing.T, value any, list ...any) bool {
 }
 
 // ListMissing logs an error if the list contains the value
-func ListMissing(t *testing.T, value any, list ...any) bool {
-	val := assertion.ListMissing(value, list...)
+func ListMissing[S ~[]E, E any](t *testing.T, value any, list S) bool {
+	val := assertion.ListMissing(value, list)
 	if !val {
 		t.Errorf("Expected: %v not to be in %v", value, list)
 	}

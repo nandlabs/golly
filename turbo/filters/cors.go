@@ -146,12 +146,12 @@ func (cf *CorsFilter) isOriginAllowed(origin string) (bool, string) {
 	if cf.AllowAllOrigins {
 		return true, AllowAllOrigins
 	}
-	return assertion.ListHas(cf.AllowedOrigins, strings.ToLower(origin)), origin
+	return assertion.ListHas(strings.ToLower(origin), cf.AllowedOrigins), origin
 }
 
 // isMethodAllowed checks if the method is allowed
 func (cf *CorsFilter) isMethodAllowed(method string) bool {
-	return cf.AllowAllMethods || assertion.ListHas(cf.AllowedMethods, method)
+	return cf.AllowAllMethods || assertion.ListHas(method, cf.AllowedMethods)
 }
 
 // handlePreflight handles the preflight request
