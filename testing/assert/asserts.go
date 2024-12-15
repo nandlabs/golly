@@ -36,7 +36,7 @@ func True(t *testing.T, condition bool) bool {
 
 // False logs an error if the condition is true
 func False(t *testing.T, condition bool) bool {
-	if !condition {
+	if condition {
 		t.Errorf("Expected: false, Actual: true")
 	}
 	return true
