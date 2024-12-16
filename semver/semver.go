@@ -12,6 +12,9 @@ const (
 	RegexPreRelease = `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)`
 )
 
+// SemVer is a struct that represents a semantic version
+// with major, minor, patch, pre-release and build metadata.
+// For more information on semantic versioning, see https://semver.org/spec/v2.0.0.html
 type SemVer struct {
 	major      int
 	minor      int
@@ -20,6 +23,44 @@ type SemVer struct {
 	build      string
 }
 
+// Major returns the major version of the SemVer struct.
+func (s *SemVer) Major() int {
+	return s.major
+}
+
+// Minor returns the minor version of the SemVer struct.
+func (s *SemVer) Minor() int {
+	return s.minor
+}
+
+// Patch returns the patch version of the SemVer struct.
+func (s *SemVer) Patch() int {
+	return s.patch
+}
+
+// PreRelease returns the pre-release metadata of the SemVer struct.
+func (s *SemVer) PreRelease() string {
+	return s.preRelease
+}
+
+// Build returns the build metadata of the SemVer struct.
+func (s *SemVer) Build() string {
+	return s.build
+}
+
+func (s *SemVer) IsPreRelease() bool {
+	input := s.String()
+	input = strings.TrimPrefix(input, "v")
+	input = strings.TrimPrefix(input, " ")
+	semverRegex := regexp.MustCompile(RegexPreRelease)
+	match := semverRegex.FindStringSubmatch(input)
+	if match == nil {
+		return false
+	}
+	return true
+}
+
+// New creates a new SemVer struct with the given major, minor, and patch versions.
 func (s *SemVer) String() string {
 	if s.preRelease != "" && s.build != "" {
 		return fmt.Sprintf("%d.%d.%d-%s+%s", s.major, s.minor, s.patch, s.preRelease, s.build)
@@ -31,6 +72,8 @@ func (s *SemVer) String() string {
 	return fmt.Sprintf("%d.%d.%d", s.major, s.minor, s.patch)
 }
 
+// Parse will parse the given input string and provide a semver struct
+// If the input string is not a valid semver string, an error will be returned
 func Parse(input string) (*SemVer, error) {
 	parsed, err := parse(input)
 	return parsed, err
@@ -62,6 +105,7 @@ func (s *SemVer) Compare(v *SemVer) (int, error) {
 	return ok, err
 }
 
+// Next Major Increments the major version
 func (s *SemVer) NextMajor() *SemVer {
 	s.major = s.major + 1
 	s.minor = 0
@@ -69,6 +113,7 @@ func (s *SemVer) NextMajor() *SemVer {
 	return s
 }
 
+// NextMinor Increments the minor version
 func (s *SemVer) NextMinor() *SemVer {
 
 	s.minor = s.minor + 1
@@ -76,27 +121,17 @@ func (s *SemVer) NextMinor() *SemVer {
 	return s
 }
 
+// NextPatch Increments the patch version
 func (s *SemVer) NextPatch() *SemVer {
 
 	s.patch = s.patch + 1
 	return s
 }
 
-func (s *SemVer) PreRelease(tag string) *SemVer {
+// NextPreRelease
+func (s *SemVer) NextPreRelease(tag string) *SemVer {
 	s.preRelease = tag
 	return s
-}
-
-func (s *SemVer) IsPreRelease() bool {
-	input := s.String()
-	input = strings.TrimPrefix(input, "v")
-	input = strings.TrimPrefix(input, " ")
-	semverRegex := regexp.MustCompile(RegexPreRelease)
-	match := semverRegex.FindStringSubmatch(input)
-	if match == nil {
-		return false
-	}
-	return true
 }
 
 func parse(version string) (*SemVer, error) {
@@ -124,9 +159,16 @@ func parse(version string) (*SemVer, error) {
 	if err != nil {
 		return &SemVer{}, err
 	}
+	preRelease := ""
+	build := ""
+	if len(match) > 3 {
 
-	preRelease := match[5]
-	build := match[8]
+		preRelease = match[5]
+	}
+	if len(match) > 6 {
+		build = match[8]
+
+	}
 
 	return &SemVer{
 		major:      major,
