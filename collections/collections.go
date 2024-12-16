@@ -40,18 +40,10 @@ type Collection[T any] interface {
 	Clear()
 	// Contains checks if an element is in the collection
 	Contains(elem T) bool
-	// GetFirst returns the first element in the list
-	GetFirst() (T, error)
-	// GetLast returns the last element in the list
-	GetLast() (T, error)
 	// Return true if the collection is empty
 	IsEmpty() bool
 	// Remove an element from the collection
 	Remove(elem T) bool
-	// RemoveFirst removes the first element from the list
-	RemoveFirst() (T, error)
-	// RemoveLast removes the last element from the list
-	RemoveLast() (T, error)
 	// Return the number of elements in the collection
 	Size() int
 	// String returns a string representation of the collection

@@ -36,6 +36,10 @@ type List[T any] interface {
 	AddAt(index int, elem T) error
 	// Get returns the element at the specified index
 	Get(index int) (T, error)
+	// GetFirst returns the first element in the list
+	GetFirst() (T, error)
+	// GetLast returns the last element in the list
+	GetLast() (T, error)
 	// IndexOf returns the index of the specified element
 	IndexOf(elem T) int
 	// IsEmpty checks if the list is empty
@@ -44,4 +48,8 @@ type List[T any] interface {
 	LastIndexOf(elem T) int
 	// RemoveAt removes the element at the specified index
 	RemoveAt(index int) (T, error)
+	// RemoveFirst removes the first element from the list
+	RemoveFirst() (T, error)
+	// RemoveLast removes the last element from the list
+	RemoveLast() (T, error)
 }
