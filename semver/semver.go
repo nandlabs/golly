@@ -24,31 +24,31 @@ type SemVer struct {
 }
 
 // Major returns the major version of the SemVer struct.
-func (s *SemVer) Major() int {
+func (s *SemVer) CurrentMajor() int {
 	return s.major
 }
 
 // Minor returns the minor version of the SemVer struct.
-func (s *SemVer) Minor() int {
+func (s *SemVer) CurrentMinor() int {
 	return s.minor
 }
 
 // Patch returns the patch version of the SemVer struct.
-func (s *SemVer) Patch() int {
+func (s *SemVer) CurrentPatch() int {
 	return s.patch
 }
 
 // PreRelease returns the pre-release metadata of the SemVer struct.
-func (s *SemVer) PreRelease() string {
+func (s *SemVer) CurrentPreRelease() string {
 	return s.preRelease
 }
 
 // Build returns the build metadata of the SemVer struct.
-func (s *SemVer) Build() string {
+func (s *SemVer) CurrentBuild() string {
 	return s.build
 }
 
-func (s *SemVer) IsPreRelease() bool {
+func (s *SemVer) IsCurrentPreRelease() bool {
 	input := s.String()
 	input = strings.TrimPrefix(input, "v")
 	input = strings.TrimPrefix(input, " ")
