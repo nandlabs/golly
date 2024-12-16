@@ -308,7 +308,7 @@ func TestNextPatch(t *testing.T) {
 	}
 }
 
-func TestIsPreRelease(t *testing.T) {
+func TestIsCurrentPreRelease(t *testing.T) {
 	tests := []struct {
 		name    string
 		version string
@@ -332,7 +332,7 @@ func TestIsPreRelease(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error :: got %t, expected %t", err, tt.want)
 			}
-			got := ver.IsPreRelease()
+			got := ver.IsCurrentPreRelease()
 			if tt.want != got {
 				t.Errorf("Error in testing IsPreRelease :: got %t, want %t", got, tt.want)
 			}
@@ -368,9 +368,96 @@ func TestSemVer_PreRelease(t *testing.T) {
 		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "rc.1", build: "SNAPSHOT"}, "pre02", "1.2.3-pre02+SNAPSHOT"},
 	}
 	for _, tt := range tests {
-		got := tt.version.PreRelease(tt.tag).String()
+		got := tt.version.NextPreRelease(tt.tag).String()
 		if got != tt.want {
 			t.Errorf("Invalid output :: want %+v, got :: %+v", tt.want, got)
+		}
+	}
+}
+func TestCurrentMajor(t *testing.T) {
+	tests := []struct {
+		version *SemVer
+		want    int
+	}{
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: ""}, 1},
+		{&SemVer{major: 2, minor: 0, patch: 0, preRelease: "alpha", build: ""}, 2},
+		{&SemVer{major: 0, minor: 1, patch: 1, preRelease: "", build: "build"}, 0},
+	}
+
+	for _, tt := range tests {
+		got := tt.version.CurrentMajor()
+		if got != tt.want {
+			t.Errorf("Invalid output :: want %d, got %d", tt.want, got)
+		}
+	}
+}
+func TestCurrentMinor(t *testing.T) {
+	tests := []struct {
+		version *SemVer
+		want    int
+	}{
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: ""}, 2},
+		{&SemVer{major: 2, minor: 0, patch: 0, preRelease: "alpha", build: ""}, 0},
+		{&SemVer{major: 0, minor: 1, patch: 1, preRelease: "", build: "build"}, 1},
+	}
+
+	for _, tt := range tests {
+		got := tt.version.CurrentMinor()
+		if got != tt.want {
+			t.Errorf("Invalid output :: want %d, got %d", tt.want, got)
+		}
+	}
+}
+func TestCurrentPatch(t *testing.T) {
+	tests := []struct {
+		version *SemVer
+		want    int
+	}{
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: ""}, 3},
+		{&SemVer{major: 2, minor: 0, patch: 0, preRelease: "alpha", build: ""}, 0},
+		{&SemVer{major: 0, minor: 1, patch: 1, preRelease: "", build: "build"}, 1},
+	}
+
+	for _, tt := range tests {
+		got := tt.version.CurrentPatch()
+		if got != tt.want {
+			t.Errorf("Invalid output :: want %d, got %d", tt.want, got)
+		}
+	}
+}
+func TestCurrentPreRelease(t *testing.T) {
+	tests := []struct {
+		version *SemVer
+		want    string
+	}{
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "alpha", build: ""}, "alpha"},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "beta.1", build: ""}, "beta.1"},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: ""}, ""},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "rc.1", build: "build.1"}, "rc.1"},
+	}
+
+	for _, tt := range tests {
+		got := tt.version.CurrentPreRelease()
+		if got != tt.want {
+			t.Errorf("Invalid output :: want %s, got %s", tt.want, got)
+		}
+	}
+}
+func TestCurrentBuild(t *testing.T) {
+	tests := []struct {
+		version *SemVer
+		want    string
+	}{
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: "build.1"}, "build.1"},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "alpha", build: "build.2"}, "build.2"},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "", build: ""}, ""},
+		{&SemVer{major: 1, minor: 2, patch: 3, preRelease: "beta", build: "build.3"}, "build.3"},
+	}
+
+	for _, tt := range tests {
+		got := tt.version.CurrentBuild()
+		if got != tt.want {
+			t.Errorf("Invalid output :: want %s, got %s", tt.want, got)
 		}
 	}
 }

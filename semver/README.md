@@ -20,10 +20,10 @@ go get oss.nandlabs.io/golly/semver
 
 ### Features
 
-* Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html) specification
-* Easy to use API for parsing, comparing and generating SemVer versions
-* Supports pre-release and build metadata
-* Written in modern Golang and follows best practices
+- Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html) specification
+- Easy to use API for parsing, comparing and generating SemVer versions
+- Supports pre-release and build metadata
+- Written in modern Golang and follows best practices
 
 ### Usage
 
@@ -42,19 +42,17 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("Major :: %d", version.major)
-	fmt.Printf("Minor :: %d", version.minor)
-	fmt.Printf("Patch :: %d", version.patch)
-	
+	fmt.Printf("Major :: %d", version.CurrentMajor())
+	fmt.Printf("Minor :: %d", version.CurrentMinor())
+	fmt.Printf("Patch :: %d", version.CurrentPatch())
+
 	metadataVersion, err := semver.Parse("v1.2.3-SNAPSHOT")
 	if err != nil {
 		fmt.Println(err)
     }
-	fmt.Printf("Major :: %d", metadataVersion.major)
-	fmt.Printf("Minor :: %d", metadataVersion.minor)
-	fmt.Printf("Patch :: %d", metadataVersion.patch)
-	fmt.Printf("Pre-Release :: %s", metadataVersion.preRelease)
+	fmt.Printf("Major :: %d", metadataVersion.CurrentMajor())
+	fmt.Printf("Minor :: %d", metadataVersion.CurrentMinor())
+	fmt.Printf("Patch :: %d", metadataVersion.CurrentPatch())
+	fmt.Printf("Pre-Release :: %s", metadataVersion.CurrentPreRelease)
 }
 ```
-
-
