@@ -28,7 +28,7 @@ func TestTrue(t *testing.T) {
 }
 func TestFalse(t *testing.T) {
 	// Test when the condition is false
-	if !False(t, true) {
+	if !False(t, false) {
 		t.Errorf("False failed: expected condition to be false, but it is true")
 	}
 }
