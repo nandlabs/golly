@@ -41,6 +41,10 @@ go get oss.nandlabs.io/golly
   - A collection of generic data structures
   - Stack, Queue, List,LinkedList, Set
   - Synchronized versions of the above
+- [genai](genai/README.md)
+  - Interact with generative AI models
+  - Manage sessions, exchanges, and models
+  - Handle memory and templates
 - [l3](l3/README.md)
   - Lightweight Levelled Logger
   - Multiple logging levels `OFF,ERROR,INFO,DEBUG,TRACE`
