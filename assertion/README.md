@@ -16,6 +16,7 @@ The `assertion` package provides a set of utility functions for making assertion
   - [Empty](#empty)
   - [NotEmpty](#notempty)
   - [Len](#len)
+  - [ElementsMatch](#elementsmatch)
   - [True](#true)
   - [False](#false)
   - [Nil](#nil)
@@ -267,6 +268,29 @@ func main() {
         fmt.Println("Length is equal to expected length")
     } else {
         fmt.Println("Length is not equal to expected length")
+    }
+}
+```
+
+### ElementsMatch
+
+The `ElementsMatch` function checks if the elements of a list match the expected elements.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/nandlabs/golly/assertion"
+)
+
+func main() {
+    list := []int{1, 2, 3, 4, 5}
+    expected := []int{1, 2, 3, 4, 5}
+    if assertion.ElementsMatch(list, expected...) {
+        fmt.Println("Elements match")
+    } else {
+        fmt.Println("Elements do not match")
     }
 }
 ```
