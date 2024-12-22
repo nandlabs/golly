@@ -154,3 +154,12 @@ func Len(t *testing.T, obj any, length int) bool {
 	}
 	return val
 }
+
+// ElementsMatch checks if the elements in the arrays are the same
+func ElementsMatch[S ~[]E, E any](t *testing.T, list S, expectedElements ...E) bool {
+	val := assertion.ElementsMatch(list, expectedElements...)
+	if !val {
+		t.Errorf("Expected: %v, Actual: %v", expectedElements, list)
+	}
+	return val
+}
