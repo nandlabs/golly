@@ -21,6 +21,9 @@ go get oss.nandlabs.io/golly
 
 ## Core Packages
 
+- [assertion](assertion/README.md)
+  - Unified interface for asserting conditions
+  - Supports various assertion functions for different types of conditions
 - [clients](clients/README.md)
   - A common package for all types of client
   - Checkout clients that leverage this package.
@@ -34,6 +37,14 @@ go get oss.nandlabs.io/golly
   - Multiformat support
   - Unifed interface for Endcoding and Decoding data from structured format
   - Out of the box support for `XML` `JSON` & `YAML`
+- [collections](collections/README.md)
+  - A collection of generic data structures
+  - Stack, Queue, List,LinkedList, Set
+  - Synchronized versions of the above
+- [genai](genai/README.md)
+  - Interact with generative AI models
+  - Manage sessions, exchanges, and models
+  - Handle memory and templates
 - [l3](l3/README.md)
   - Lightweight Levelled Logger
   - Multiple logging levels `OFF,ERROR,INFO,DEBUG,TRACE`

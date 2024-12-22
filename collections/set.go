@@ -26,8 +26,4 @@ type Set[T comparable] interface {
 	IsProperSuperset(set Set[T]) bool
 	// IsDisjoint checks if this set has no elements in common with another set
 	IsDisjoint(set Set[T]) bool
-	// Remove an element from the set
-	Remove(elem T) bool
-	// Size returns the number of elements in the set
-	Size() int
 }
