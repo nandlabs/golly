@@ -1,172 +1,378 @@
 package collections
 
-// type HashSet[T comparable] struct {
-// 	elements map[T]struct{}
-// }
+import (
+	"fmt"
+	"sync"
+)
 
-// // NewHashSet creates a new HashSet
-// func NewHashSet[T comparable]() *HashSet[T] {
-// 	return &HashSet[T]{elements: make(map[T]struct{})}
-// }
+// Byte value to be used as a placeholder in the map
 
-// // Add an element to the set
-// func (hs *HashSet[T]) Add(elem T) {
-// 	hs.elements[elem] = struct{}{}
-// }
+// HashSet is a an implementation of a Set interface using a hash map.
+type HashSet[T comparable] struct {
+	hashMap map[T]any
+}
 
-// // Clear removes all elements from the set
-// func (hs *HashSet[T]) Clear() {
-// 	hs.elements = make(map[T]struct{})
-// }
+// NewHashSet creates a new HashSet.
+func NewHashSet[T comparable]() *HashSet[T] {
+	return &HashSet[T]{hashMap: make(map[T]any)}
+}
 
-// // Contains checks if an element is in the set
-// func (hs *HashSet[T]) Contains(elem T) bool {
-// 	_, ok := hs.elements[elem]
-// 	return ok
-// }
+// Add an element to the set.
+func (hs *HashSet[T]) Add(elem T) error {
+	hs.hashMap[elem] = nil
+	return nil
+}
 
-// // Iterator returns an Iterator for the set
-// func (hs *HashSet[T]) Iterator() Iterator[T] {
-// 	return NewHashSetIterator[T](hs)
-// }
+// AddAll adds all elements from another set to this set.
+func (hs *HashSet[T]) AddAll(set Collection[T]) error {
+	it := set.Iterator()
+	for it.HasNext() {
+		hs.Add(it.Next())
+	}
+	return nil
+}
 
-// // Remove an element from the set
-// func (hs *HashSet[T]) Remove(elem T) bool {
-// 	if hs.Contains(elem) {
-// 		delete(hs.elements, elem)
-// 		return true
-// 	}
-// 	return false
-// }
+// Clear removes all elements from the set.
+func (hs *HashSet[T]) Clear() {
+	hs.hashMap = make(map[T]any)
+}
 
-// // Size returns the number of elements in the set
-// func (hs *HashSet[T]) Size() int {
-// 	return len(hs.elements)
-// }
+// Contains checks if the set contains an element.
+func (hs *HashSet[T]) Contains(elem T) bool {
+	_, ok := hs.hashMap[elem]
+	return ok
+}
 
-// // AddAll adds all elements from another set to this set
-// func (hs *HashSet[T]) AddAll(set *HashSet[T]) {
-// 	for elem := range set.elements {
-// 		hs.Add(elem)
-// 	}
-// }
+// Remove
+func (hs *HashSet[T]) Remove(elem T) bool {
+	_, ok := hs.hashMap[elem]
+	if ok {
+		delete(hs.hashMap, elem)
+		return true
+	} else {
+		return false
+	}
+}
 
-// // Union returns a new set containing all elements from this set and another set
-// func (hs *HashSet[T]) Union(set *HashSet[T]) *HashSet[T] {
-// 	result := NewHashSet[T]()
-// 	result.AddAll(hs)
-// 	result.AddAll(set)
-// 	return result
-// }
+// Size returns the number of elements in the set.
+func (hs *HashSet[T]) Size() int {
+	return len(hs.hashMap)
+}
 
-// // Intersection returns a new set containing only elements that are present in both this set and another set
-// func (hs *HashSet[T]) Intersection(set *HashSet[T]) *HashSet[T] {
-// 	result := NewHashSet[T]()
-// 	for elem := range hs.elements {
-// 		if set.Contains(elem) {
-// 			result.Add(elem)
-// 		}
-// 	}
-// 	return result
-// }
+// ContainsAll checks if the set contains all elements from another set.
+func (hs *HashSet[T]) ContainsAll(set Set[T]) bool {
+	it := set.Iterator()
+	for it.HasNext() {
+		if !hs.Contains(it.Next()) {
+			return false
+		}
+	}
+	return true
+}
 
-// // Difference returns a new set containing only elements that are present in this set but not in another set
-// func (hs *HashSet[T]) Difference(set *HashSet[T]) *HashSet[T] {
-// 	result := NewHashSet[T]()
-// 	for elem := range hs.elements {
-// 		if !set.Contains(elem) {
-// 			result.Add(elem)
-// 		}
-// 	}
-// 	return result
-// }
+// IsEmpty checks if the set is empty.
+func (hs *HashSet[T]) IsEmpty() bool {
+	return len(hs.hashMap) == 0
+}
 
-// // SymmetricDifference returns a new set containing only elements that are present in either this set or another set, but not in both
-// func (hs *HashSet[T]) SymmetricDifference(set *HashSet[T]) *HashSet[T] {
-// 	result := NewHashSet[T]()
-// 	for elem := range hs.elements {
-// 		if !set.Contains(elem) {
-// 			result.Add(elem)
-// 		}
-// 	}
-// 	for elem := range set.elements {
-// 		if !hs.Contains(elem) {
-// 			result.Add(elem)
-// 		}
-// 	}
-// 	return result
-// }
+// Iterator returns an iterator over the elements in the set.
+func (hs *HashSet[T]) Iterator() Iterator[T] {
+	keys := make([]T, 0, len(hs.hashMap))
+	for key := range hs.hashMap {
+		keys = append(keys, key)
+	}
+	return &hashSetIterator[T]{keys: keys, hashMap: hs}
+}
 
-// // IsSubsetOf checks if this set is a subset of another set
-// func (hs *HashSet[T]) IsSubsetOf(set *HashSet[T]) bool {
-// 	for elem := range hs.elements {
-// 		if !set.Contains(elem) {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
+// String returns a string representation of the set.
+func (hs *HashSet[T]) String() string {
+	str := "{"
+	it := hs.Iterator()
+	for it.HasNext() {
+		str += fmt.Sprintf("%v", it.Next())
+		if it.HasNext() {
+			str += ", "
+		}
+	}
+	str += "}"
+	return str
+}
 
-// // IsSupersetOf checks if this set is a superset of another set
-// func (hs *HashSet[T]) IsSupersetOf(set *HashSet[T]) bool {
-// 	return set.IsSubsetOf(hs)
-// }
+// Union returns a new set containing all elements from this set and another set.
+func (hs *HashSet[T]) Union(set Set[T]) Set[T] {
+	union := NewHashSet[T]()
+	union.AddAll(hs)
+	union.AddAll(set)
+	return union
+}
 
-// // IsProperSubsetOf checks if this set is a proper subset of another set
-// func (hs *HashSet[T]) IsProperSubsetOf(set *HashSet[T]) bool {
-// 	return hs.Size() < set.Size() && hs.IsSubsetOf(set)
-// }
+// Intersection returns a new set containing only the elements that are in both this set and another set.
+func (hs *HashSet[T]) Intersection(set Set[T]) Set[T] {
+	intersection := NewHashSet[T]()
+	it := hs.Iterator()
+	for it.HasNext() {
+		elem := it.Next()
+		if set.Contains(elem) {
+			intersection.Add(elem)
+		}
+	}
+	return intersection
+}
 
-// // IsProperSupersetOf checks if this set is a proper superset of another set
-// func (hs *HashSet[T]) IsProperSupersetOf(set *HashSet[T]) bool {
-// 	return hs.Size() > set.Size() && hs.IsSupersetOf(set)
-// }
+// Difference returns a new set containing only the elements that are in this set but not in another set.
+func (hs *HashSet[T]) Difference(set Set[T]) Set[T] {
+	difference := NewHashSet[T]()
+	it := hs.Iterator()
+	for it.HasNext() {
+		elem := it.Next()
+		if !set.Contains(elem) {
+			difference.Add(elem)
+		}
+	}
+	return difference
+}
 
-// // IsDisjointWith checks if this set has no elements in common with another set
-// func (hs *HashSet[T]) IsDisjointWith(set *HashSet[T]) bool {
-// 	for elem := range hs.elements {
-// 		if set.Contains(elem) {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
+// IsSubset checks if this set is a subset of another set.
+func (hs *HashSet[T]) IsSubset(set Set[T]) bool {
+	it := hs.Iterator()
+	for it.HasNext() {
+		if !set.Contains(it.Next()) {
+			return false
+		}
+	}
+	return true
+}
 
-// // Equal checks if this set is equal to another set
-// func (hs *HashSet[T]) Equal(set *HashSet[T]) bool {
-// 	return hs.IsSubsetOf(set) && hs.IsSupersetOf(set)
-// }
+// IsSuperset checks if this set is a superset of another set.
+func (hs *HashSet[T]) IsSuperset(set Set[T]) bool {
+	return set.IsSubset(hs)
+}
 
-// // Clone returns a shallow copy of this set
-// func (hs *HashSet[T]) Clone() *HashSet[T] {
-// 	result := NewHashSet[T]()
-// 	result.AddAll(hs)
-// 	return result
-// }
+// IsProperSubset checks if this set is a proper subset of another set.
+func (hs *HashSet[T]) IsProperSubset(set Set[T]) bool {
+	return hs.IsSubset(set) && !hs.IsSuperset(set)
+}
 
-// type HashSetIterator[T comparable] struct {
-// 	elements map[T]struct{}
-// 	index    int
-// }
+// IsProperSuperset checks if this set is a proper superset of another set.
+func (hs *HashSet[T]) IsProperSuperset(set Set[T]) bool {
+	return hs.IsSuperset(set) && !hs.IsSubset(set)
+}
 
-// // NewHashSetIterator creates a new HashSetIterator
-// func NewHashSetIterator[T comparable](set *HashSet[T]) *HashSetIterator[T] {
-// 	return &HashSetIterator[T]{elements: set.elements}
-// }
+// IsDisjoint checks if this set has no elements in common with another set.
+func (hs *HashSet[T]) IsDisjoint(set Set[T]) bool {
+	it := hs.Iterator()
+	for it.HasNext() {
+		if set.Contains(it.Next()) {
+			return false
+		}
+	}
+	return true
+}
 
-// // HasNext returns true if there are more elements in the collection
-// func (it *HashSetIterator[T]) HasNext() bool {
-// 	return it.index < len(it.elements)
-// }
+// SymmetricDifference returns a new set containing only the elements that are in either this set or another set, but not in both.
+func (hs *HashSet[T]) SymmetricDifference(set Set[T]) Set[T] {
+	union := hs.Union(set)
+	intersection := hs.Intersection(set)
+	return union.Difference(intersection)
+}
 
-// // Next returns the next element in the collection
-// func (it *HashSetIterator[T]) Next() T {
-// 	for elem := range it.elements {
-// 		if it.index == 0 {
-// 			it.index++
-// 			return elem
-// 		}
-// 		it.index++
-// 	}
-// 	return nil
-// }
+type hashSetIterator[T comparable] struct {
+	keys    []T
+	index   int
+	hashMap *HashSet[T]
+}
+
+// HasNext returns true if the iteration has more elements.
+func (hsi *hashSetIterator[T]) HasNext() bool {
+	return hsi.index < len(hsi.keys)
+}
+
+// Next returns the next element in the iteration.
+func (hsi *hashSetIterator[T]) Next() T {
+	elem := hsi.keys[hsi.index]
+	hsi.index++
+	return elem
+}
+
+// Remove removes the last element returned by the iterator.
+func (hsi *hashSetIterator[T]) Remove() {
+	if (hsi.index >= len(hsi.keys)) || (hsi.index < 0) {
+		return
+	} else if hsi.index < len(hsi.keys)-1 {
+		copy(hsi.keys[hsi.index:], hsi.keys[hsi.index+1:])
+
+	}
+	hsi.index--
+
+	hsi.keys = append(hsi.keys[:hsi.index], hsi.keys[hsi.index+1:]...)
+	hsi.hashMap.Remove(hsi.keys[hsi.index])
+}
+
+type SyncSet[T comparable] struct {
+	// set is the underlying set
+	set Set[T]
+	// mutex is used to synchronize access to the underlying set
+	mutex sync.RWMutex
+}
+
+// NewSyncSet creates a new synchronized set.
+func NewSyncSet[T comparable]() Set[T] {
+	return &SyncSet[T]{set: NewHashSet[T]()}
+}
+
+// AsSyncSet wraps a set with a mutex to create a synchronized set.
+func AsSyncSet[T comparable](set Set[T]) Set[T] {
+	return &SyncSet[T]{set: set}
+}
+
+// Add adds an element to the set.
+func (ss *SyncSet[T]) Add(elem T) error {
+	ss.mutex.Lock()
+	defer ss.mutex.Unlock()
+	return ss.set.Add(elem)
+}
+
+// AddAll adds all elements from another Colelction to this set.
+func (ss *SyncSet[T]) AddAll(set Collection[T]) error {
+	ss.mutex.Lock()
+	defer ss.mutex.Unlock()
+	return ss.set.AddAll(set)
+}
+
+// Clear removes all elements from the set.
+func (ss *SyncSet[T]) Clear() {
+	ss.mutex.Lock()
+	defer ss.mutex.Unlock()
+	ss.set.Clear()
+}
+
+// Contains checks if the set contains an element.
+func (ss *SyncSet[T]) Contains(elem T) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.Contains(elem)
+}
+
+// Remove removes an element from the set.
+func (ss *SyncSet[T]) Remove(elem T) bool {
+	ss.mutex.Lock()
+	defer ss.mutex.Unlock()
+	return ss.set.Remove(elem)
+}
+
+// Size returns the number of elements in the set.
+func (ss *SyncSet[T]) Size() int {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.Size()
+}
+
+// IsEmpty checks if the set is empty.
+func (ss *SyncSet[T]) IsEmpty() bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsEmpty()
+}
+
+// Iterator returns an iterator over the elements in the set.
+func (ss *SyncSet[T]) Iterator() Iterator[T] {
+
+	return &syncHashSetIterator[T]{iterator: ss.set.Iterator(), mutex: &ss.mutex}
+}
+
+// String returns a string representation of the set.
+func (ss *SyncSet[T]) String() string {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.String()
+}
+
+// Union returns a new set containing all elements from this set and another set.
+func (ss *SyncSet[T]) Union(set Set[T]) Set[T] {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.Union(set)
+}
+
+// Intersection returns a new set containing only the elements that are in both this set and another set.
+func (ss *SyncSet[T]) Intersection(set Set[T]) Set[T] {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.Intersection(set)
+}
+
+// Difference returns a new set containing only the elements that are in this set but not in another set.
+func (ss *SyncSet[T]) Difference(set Set[T]) Set[T] {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.Difference(set)
+}
+
+// IsSubset checks if this set is a subset of another set.
+func (ss *SyncSet[T]) IsSubset(set Set[T]) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsSubset(set)
+}
+
+// IsSuperset checks if this set is a superset of another set.
+func (ss *SyncSet[T]) IsSuperset(set Set[T]) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsSuperset(set)
+}
+
+// IsProperSubset checks if this set is a proper subset of another set.
+func (ss *SyncSet[T]) IsProperSubset(set Set[T]) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsProperSubset(set)
+}
+
+// IsProperSuperset checks if this set is a proper superset of another set.
+func (ss *SyncSet[T]) IsProperSuperset(set Set[T]) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsProperSuperset(set)
+}
+
+// IsDisjoint checks if this set has no elements in common with another set.
+func (ss *SyncSet[T]) IsDisjoint(set Set[T]) bool {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.IsDisjoint(set)
+}
+
+// SymmetricDifference returns a new set containing only the elements that are in either this set or another set, but not in both.
+func (ss *SyncSet[T]) SymmetricDifference(set Set[T]) Set[T] {
+	ss.mutex.RLock()
+	defer ss.mutex.RUnlock()
+	return ss.set.SymmetricDifference(set)
+}
+
+// syncHashSetIterator is an iterator for a synchronized set.
+type syncHashSetIterator[T comparable] struct {
+	iterator Iterator[T]
+	mutex    *sync.RWMutex
+}
+
+// HasNext returns true if the iteration has more elements.
+func (si *syncHashSetIterator[T]) HasNext() bool {
+	si.mutex.RLock()
+	defer si.mutex.RUnlock()
+	return si.iterator.HasNext()
+}
+
+// Next returns the next element in the iteration.
+func (si *syncHashSetIterator[T]) Next() T {
+	si.mutex.RLock()
+	defer si.mutex.RUnlock()
+	return si.iterator.Next()
+}
+
+// Remove removes the last element returned by the iterator.
+func (si *syncHashSetIterator[T]) Remove() {
+	si.mutex.Lock()
+	defer si.mutex.Unlock()
+	si.iterator.Remove()
+}

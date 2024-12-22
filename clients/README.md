@@ -1,68 +1,127 @@
-# clients
+# Clients
 
-golly clients is a versatile client library written in Go that provides a
-unified interface for interacting with various services with the aim of common
-set of features like circuit breaker and retry handler. It allows you to
-communicate with different types of services, including REST APIs and messaging
-systems along using a consistent and easy-to-use interface.
+The `clients` package provides utility features for building robust and resilient client implementations in Go. This package includes support for retry handling and circuit breaker patterns, which are essential for creating fault-tolerant applications.
 
----
+## Index
 
+- [Installation](#installation)
 - [Features](#features)
-- [Sub-Clients](#sub-clients)
-- [Getting Started](#getting-started)
-- [Documentation](#documentation)
+  - [RetryHandler](#retryhandler)
+    - [Usage](#usage)
+  - [CircuitBreaker](#circuitbreaker)
+    - [Usage](#usage-1)
+    - [CircuitBreaker States](#circuitbreaker-states)
+    - [Configuration Parameters](#configuration-parameters)
+- [License](#license)
 
----
+## Installation
 
-### Features
+To install the package, use the following command:
 
-The Generic Golang Client offers the following features:
+```sh
+go get github.com/nandlabs/golly/clients
+```
 
-1. **Modularity**: The client is designed with a modular architecture, allowing
-   you to use specific sub-clients for different types of services.
-2. **Sub-clients**: The library provides sub-clients for interacting with
-   different services, including REST, messaging, and more. You can selectively
-   import and use the required sub-client(s) based on your needs.
+## Features
 
-### Sub-clients
+### RetryHandler
 
-The Generic Golang Client includes the following sub-clients:
+The `RetryHandler` feature allows you to configure retry logic for your client operations. This is useful for handling transient errors and ensuring that your client can recover from temporary failures.
 
-1. **REST Client**<br> The REST client enables communication with RESTful APIs.
-   It provides methods for making HTTP requests, handling responses, and
-   managing authentication.
-2. **Messaging Client**<br> The messaging client allows you to interact with
-   messaging systems such as RabbitMQ or Apache Kafka. It provides functionality
-   for sending and receiving messages, managing message queues, and handling
-   message processing.
+#### Usage
 
-## Getting Started
+To use the `RetryHandler`, you need to define the retry configuration using the `RetryInfo` struct.
 
-To start using the Generic Golang Client, follow these steps:
+```go
+package main
 
-1. Install Go and set up your Go development environment.
-2. Import the Generic Golang Client into your project:
-   ```go
-   import "oss.nandlabs.io/golly/clients"
-   ```
-3. Depending on the service you want to interact with, import the relevant
-   sub-client:
-   ```go
-   import "oss.nandlabs.io/golly/clients/rest"
-   ```
-   or
-   ```go
-   import "oss.nandlabs.io/golly/clients/messaging"
-   ```
-   You can import multiple sub-clients if needed.
-4. Initialize the sub-client and start using its functionality. Refer to the
-   sub-client's documentation for detailed instructions on how to use it.
+import (
+    "fmt"
+    "time"
+    "github.com/nandlabs/golly/clients"
+)
 
-### Documentation
+func main() {
+    retryInfo := clients.RetryInfo{
+        MaxRetries: 3,
+        Wait:       1000, // Wait time in milliseconds
+    }
 
-For detailed information on how to use the Generic Golang Client and its
-sub-clients, refer to the following documentation:
+    for i := 0; i < retryInfo.MaxRetries; i++ {
+        err := performOperation()
+        if err == nil {
+            fmt.Println("Operation succeeded")
+            break
+        }
+        fmt.Printf("Operation failed: %v. Retrying...\n", err)
+        time.Sleep(time.Duration(retryInfo.Wait) * time.Millisecond)
+    }
+}
 
-- [REST Client](rest/README.md)
-- [Messaging Client](messaging/README.md)
+func performOperation() error {
+    // Simulate an operation that may fail
+    return fmt.Errorf("simulated error")
+}
+```
+
+### CircuitBreaker
+
+The `CircuitBreaker` feature helps you to prevent cascading failures and improve the resilience of your client by stopping requests to a failing service. It transitions between different states (closed, open, half-open) based on the success or failure of requests.
+
+#### Usage
+
+To use the `CircuitBreaker`, you need to create an instance of the `CircuitBreaker` struct with the desired configuration.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/nandlabs/golly/clients"
+)
+
+func main() {
+    breakerInfo := &clients.BreakerInfo{
+        FailureThreshold: 3,
+        SuccessThreshold: 3,
+        MaxHalfOpen:      5,
+        Timeout:          300, // Timeout in seconds
+    }
+
+    cb := clients.NewCB(breakerInfo)
+
+    for i := 0; i < 10; i++ {
+        err := cb.CanExecute()
+        if err != nil {
+            fmt.Println("Circuit breaker is open. Cannot execute operation.")
+            continue
+        }
+
+        err = performOperation()
+        cb.OnExecution(err == nil)
+        if err != nil {
+            fmt.Printf("Operation failed: %v\n", err)
+        } else {
+            fmt.Println("Operation succeeded")
+        }
+    }
+}
+
+func performOperation() error {
+    // Simulate an operation that may fail
+    return fmt.Errorf("simulated error")
+}
+```
+
+#### CircuitBreaker States
+
+- `circuitClosed`: The circuit is closed, and requests can flow through.
+- `circuitHalfOpen`: The circuit is partially open and allows limited requests for testing.
+- `circuitOpen`: The circuit is open, and requests are blocked.
+
+#### Configuration Parameters
+
+- `FailureThreshold`: Number of consecutive failures required to open the circuit.
+- `SuccessThreshold`: Number of consecutive successes required to close the circuit.
+- `MaxHalfOpen`: Maximum number of requests allowed in the half-open state.
+- `Timeout`: Timeout duration for the circuit to transition from open to half-open state.
