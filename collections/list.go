@@ -34,6 +34,11 @@ type List[T any] interface {
 	Collection[T]
 	// AddAt adds an element at the specified index
 	AddAt(index int, elem T) error
+	// AddFirst adds an element at the beginning of the list
+	AddFirst(elem T) error
+	// AddLast adds an element at the end of the list
+	AddLast(elem T) error
+	// Clear removes all elements from the list
 	// Get returns the element at the specified index
 	Get(index int) (T, error)
 	// GetFirst returns the first element in the list

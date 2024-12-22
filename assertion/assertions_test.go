@@ -334,3 +334,53 @@ func TestNotEmpty(t *testing.T) {
 		t.Errorf("NotEmpty() = false, want true")
 	}
 }
+func TestElementsMatch(t *testing.T) {
+	// Test case 1
+	list1 := []int{1, 2, 3}
+	expectedElements1 := []int{1, 2, 3}
+	if !ElementsMatch(list1, expectedElements1...) {
+		t.Errorf("Elements() = false, want true")
+	}
+
+	// Test case 2
+	list2 := []string{"a", "b", "c"}
+	expectedElements2 := []string{"a", "b", "c"}
+	if !ElementsMatch(list2, expectedElements2...) {
+		t.Errorf("Elements() = false, want true")
+	}
+
+	// Test case 3
+	list3 := []float64{1.1, 2.2, 3.3}
+	expectedElements3 := []float64{1.1, 2.2, 3.3}
+	if !ElementsMatch(list3, expectedElements3...) {
+		t.Errorf("Elements() = false, want true")
+	}
+
+	// Test case 4
+	list4 := []int{1, 2, 3}
+	expectedElements4 := []int{3, 2, 1}
+	if ElementsMatch(list4, expectedElements4...) {
+		t.Errorf("Elements() = true, want false")
+	}
+
+	// Test case 5
+	list5 := []string{"a", "b", "c"}
+	expectedElements5 := []string{"a", "b"}
+	if ElementsMatch(list5, expectedElements5...) {
+		t.Errorf("Elements() = true, want false")
+	}
+
+	// Test case 6
+	list6 := []interface{}{1, "two", 3.0}
+	expectedElements6 := []interface{}{1, "two", 3.0}
+	if !ElementsMatch(list6, expectedElements6...) {
+		t.Errorf("Elements() = false, want true")
+	}
+
+	// Test case 7
+	list7 := []interface{}{1, "two", 3.0}
+	expectedElements7 := []interface{}{1, "two", 4.0}
+	if ElementsMatch(list7, expectedElements7...) {
+		t.Errorf("Elements() = true, want false")
+	}
+}

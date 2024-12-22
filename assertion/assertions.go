@@ -129,3 +129,16 @@ func Len(obj any, expected int) bool {
 		return false
 	}
 }
+
+// ElementsMatch the elements of the list with the expected elements
+func ElementsMatch[S ~[]E, E any](list S, expectedElements ...E) bool {
+	if len(list) != len(expectedElements) {
+		return false
+	}
+	for i, e := range list {
+		if !reflect.DeepEqual(e, expectedElements[i]) {
+			return false
+		}
+	}
+	return true
+}
