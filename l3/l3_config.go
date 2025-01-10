@@ -1,6 +1,6 @@
 package l3
 
-//LogConfig - Configuration & Settings for the logger.
+// LogConfig - Configuration & Settings for the logger.
 type LogConfig struct {
 
 	//Format of the log. valid values are text,json
@@ -38,7 +38,7 @@ type PackageConfig struct {
 	Level string `json:"level" yaml:"level"`
 }
 
-//WriterConfig struct
+// WriterConfig struct
 type WriterConfig struct {
 	//File reference. Non mandatory but one of file or console logger is required.
 	File *FileConfig `json:"file,omitempty" yaml:"file,omitempty"`
@@ -46,7 +46,7 @@ type WriterConfig struct {
 	Console *ConsoleConfig `json:"console,omitempty" yaml:"console,omitempty"`
 }
 
-//FileConfig - Configuration of file based logging
+// FileConfig - Configuration of file based logging
 type FileConfig struct {
 	//FilePath for the file based log writer
 	DefaultPath string `json:"defaultPath" yaml:"defaultPath"`

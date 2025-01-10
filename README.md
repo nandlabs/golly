@@ -1,7 +1,7 @@
+[![report](https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/oss.nandlabs.io/golly)
 [![testing](https://img.shields.io/github/actions/workflow/status/nandlabs/golly/go_ci.yml?branch=main&event=push&color=228B22)](https://github.com/nandlabs/golly/actions?query=event%3Apush+branch%3Amain+)
 [![release](https://img.shields.io/github/v/release/nandlabs/golly?label=Latest&color=228B22)](https://github.com/nandlabs/golly/releases/latest)
-[![releaseDate](https://img.shields.io/github/release-date/nandlabs/golly?label=Released&color=228B22)](https://github.com/nandlabs/golly/releases/latest)
-![Go Version](https://img.shields.io/github/go-mod/go-version/nandlabs/golly?label=Go&color=00ADD8)
+[![releaseDate](https://img.shields.io/github/release-date/nandlabs/golly?label=Released&color=00ADD8)](https://github.com/nandlabs/golly/releases/latest)
 [![godoc](https://godoc.org/oss.nandlabs.io/golly?status.svg)](https://pkg.go.dev/oss.nandlabs.io/golly)
 
 # golly
