@@ -1,6 +1,6 @@
 package config
 
-// Interface Attirbutes is the interface that represents the attributes of a message
+// Interface Attributes is the interface that represents the attributes of a message
 type Attributes interface {
 	// Set adds a new attribute to the message
 	Set(k string, v any)

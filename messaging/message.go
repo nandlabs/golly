@@ -6,6 +6,8 @@ import (
 
 // Header defines all the header interfaces required by the messaging clients
 type Header interface {
+	// Id returns the message id of the message
+	Id() string
 	// SetHeader sets the byte header value for the Message header
 	SetHeader(key string, value []byte)
 	// SetStrHeader sets the string header value for the Message header
@@ -79,9 +81,9 @@ type Body interface {
 }
 
 // Message interface wil be implemented by all third party implementation such as
-//aws - sns, sqs,
-//gcp -> pub/sub, gcm,
-//messaging -> amqp, kafka
+// aws - sns, sqs,
+// gcp -> pub/sub, gcm,
+// messaging -> amqp, kafka
 type Message interface {
 	Header
 	Body

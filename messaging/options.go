@@ -23,7 +23,7 @@ type OptionsResolver struct {
 func NewOptionsResolver(options ...Option) (optsResolver *OptionsResolver) {
 	optsResolver = &OptionsResolver{opts: make(map[string]interface{})}
 
-	if options != nil && len(options) > 0 {
+	if len(options) > 0 {
 		for _, option := range options {
 			optsResolver.opts[option.Key] = option.Value
 		}
