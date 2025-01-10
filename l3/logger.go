@@ -15,10 +15,10 @@ const (
 	Trace
 )
 
-//Level specifies the log level
+// Level specifies the log level
 type Level int
 
-//Levels of the logging by severity
+// Levels of the logging by severity
 var Levels = [...]string{
 	"OFF",
 	"ERROR",
@@ -38,7 +38,7 @@ var LevelsBytes = [...][]byte{
 	[]byte("TRACE"),
 }
 
-//LevelsMap of the logging by Level string Level type
+// LevelsMap of the logging by Level string Level type
 var LevelsMap = map[string]Level{
 	"OFF":   Off,
 	"ERROR": Err,

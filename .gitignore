@@ -6,3 +6,4 @@
 .DS_Store
 
 main.go
+log-config.json

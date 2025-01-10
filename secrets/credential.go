@@ -37,7 +37,7 @@ func (c *Credential) Str() (s string) {
 	return
 }
 
-//Type Returns the type of the credential
+// Type Returns the type of the credential
 func (c *Credential) Type() (s string) {
 	s = TextSecret
 	if c.MetaData != nil {

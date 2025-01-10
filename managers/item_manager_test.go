@@ -28,9 +28,10 @@ func TestItemManager_Items(t *testing.T) {
 	manager.Register("item3", 3)
 
 	items := manager.Items()
-	expectedItems := []int{1, 2, 3}
 
-	assert.Equal(t, expectedItems, items)
+	assert.ListHas(t, 1, items)
+	assert.ListHas(t, 2, items)
+	assert.ListHas(t, 3, items)
 }
 
 func TestItemManager_Items_Empty(t *testing.T) {

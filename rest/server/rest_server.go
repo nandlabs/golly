@@ -214,7 +214,10 @@ func New(opts *Options) (rServer Server, err error) {
 						logger.Info("starting to accept http requests on ", httpServer.Addr)
 						err = httpServer.Serve(listener)
 						if err != nil {
-							logger.ErrorF("Error starting http server: %v", err)
+							// if the server was closed intentionally, do not log the error
+							if err != http.ErrServerClosed {
+								logger.ErrorF("Error starting https server: %v", err)
+							}
 						}
 						ioutils.CloserFunc(listener)
 					}

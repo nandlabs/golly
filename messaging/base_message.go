@@ -3,14 +3,20 @@ package messaging
 import (
 	"bytes"
 	"io"
-	"oss.nandlabs.io/golly/codec"
 	"reflect"
+
+	"oss.nandlabs.io/golly/codec"
 )
 
 type BaseMessage struct {
+	id          string
 	headers     map[string]interface{}
 	headerTypes map[string]reflect.Kind
 	body        *bytes.Buffer
+}
+
+func (bm *BaseMessage) Id() string {
+	return bm.id
 }
 
 func (bm *BaseMessage) SetBodyStr(input string) (n int, err error) {

@@ -5,12 +5,15 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"oss.nandlabs.io/golly/testing/assert"
 )
 
 func TestLocalMessage_SetBodyBytes(t *testing.T) {
-	message := NewLocalMessage()
+	message, err := NewLocalMessage()
+	assert.NoError(t, err)
 	input := []byte("this is a test string")
-	_, err := message.SetBodyBytes(input)
+	_, err = message.SetBodyBytes(input)
 	if err != nil {
 		t.Errorf("Error SetBodyBytes: %v", err)
 	}

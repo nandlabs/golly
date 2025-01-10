@@ -3,11 +3,14 @@ package messaging
 import (
 	"net/url"
 	"testing"
+
+	"oss.nandlabs.io/golly/testing/assert"
 )
 
 func TestLocalProvider_Send(t *testing.T) {
-	lms := Get()
+	lms := GetManager()
 	msg, err := lms.NewMessage("chan")
+	assert.NoError(t, err)
 	input := "this is a test string"
 	_, err = msg.SetBodyStr(input)
 	if err != nil {
@@ -18,7 +21,6 @@ func TestLocalProvider_Send(t *testing.T) {
 	if got != nil {
 		t.Errorf("Error got :: %v", got)
 	}
-
 	uriErr, _ := url.Parse("http://localhost:8080")
 	got = lms.Send(uriErr, msg)
 	if got.Error() != "unsupported scheme http" {
@@ -27,14 +29,16 @@ func TestLocalProvider_Send(t *testing.T) {
 }
 
 func TestLocalProvider_SendBatch(t *testing.T) {
-	lms := Get()
+	lms := GetManager()
 	msg1, err := lms.NewMessage("chan")
+	assert.NoError(t, err)
 	input1 := "this is a test string 1"
 	_, err = msg1.SetBodyStr(input1)
 	if err != nil {
 		t.Errorf("Error SetBodyStr:: %v", err)
 	}
 	msg2, err := lms.NewMessage("chan")
+	assert.NoError(t, err)
 	input2 := "this is a test string 2"
 	_, err = msg2.SetBodyStr(input2)
 	if err != nil {
@@ -49,7 +53,7 @@ func TestLocalProvider_SendBatch(t *testing.T) {
 }
 
 func TestLocalProvider_AddListener(t *testing.T) {
-	lms := Get()
+	lms := GetManager()
 	uri, _ := url.Parse("chan://localhost2:8080")
 	input1 := "this is a listener test"
 	go func() {
@@ -64,6 +68,7 @@ func TestLocalProvider_AddListener(t *testing.T) {
 	}()
 
 	msg1, err := lms.NewMessage("chan")
+	assert.NoError(t, err)
 	_, err = msg1.SetBodyStr(input1)
 	if err != nil {
 		t.Errorf("Error SetBodyStr:: %v", err)
