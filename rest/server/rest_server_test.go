@@ -56,7 +56,7 @@ func TestRestServer_AddRoute(t *testing.T) {
 	}
 	rs := server.(*restServer)
 	handler := func(ctx Context) {}
-	err = rs.AddRoute("/test", handler, http.MethodGet)
+	_, err = rs.AddRoute("/test", handler, http.MethodGet)
 	if err != nil {
 		t.Errorf("AddRoute() error = %v", err)
 	}
@@ -70,7 +70,7 @@ func TestRestServer_Post(t *testing.T) {
 	}
 	rs := server.(*restServer)
 	handler := func(ctx Context) {}
-	err = rs.Post("/test", handler)
+	_, err = rs.Post("/test", handler)
 	if err != nil {
 		t.Errorf("Post() error = %v", err)
 	}
@@ -84,7 +84,7 @@ func TestRestServer_Get(t *testing.T) {
 	}
 	rs := server.(*restServer)
 	handler := func(ctx Context) {}
-	err = rs.Get("/test", handler)
+	_, err = rs.Get("/test", handler)
 	if err != nil {
 		t.Errorf("Get() error = %v", err)
 	}
@@ -98,7 +98,7 @@ func TestRestServer_Put(t *testing.T) {
 	}
 	rs := server.(*restServer)
 	handler := func(ctx Context) {}
-	err = rs.Put("/test", handler)
+	_, err = rs.Put("/test", handler)
 	if err != nil {
 		t.Errorf("Put() error = %v", err)
 	}
@@ -112,7 +112,7 @@ func TestRestServer_Delete(t *testing.T) {
 	}
 	rs := server.(*restServer)
 	handler := func(ctx Context) {}
-	err = rs.Delete("/test", handler)
+	_, err = rs.Delete("/test", handler)
 	if err != nil {
 		t.Errorf("Delete() error = %v", err)
 	}
@@ -163,4 +163,17 @@ func TestRestServer_TLS(t *testing.T) {
 	}()
 	mgr.StartAndWait()
 
+}
+
+// TestRestServer_Router tests the Router function
+func TestRestServer_Router(t *testing.T) {
+	server, err := Default()
+	if err != nil {
+		t.Fatalf("DefaultServer() error = %v", err)
+	}
+	rs := server.(*restServer)
+	router := rs.Router()
+	if router == nil {
+		t.Errorf("Router() = nil, want non-nil")
+	}
 }
