@@ -8,8 +8,6 @@ import (
 	"oss.nandlabs.io/golly/errutils"
 )
 
-var LocalScheme = "chan"
-
 var defaultManager Manager
 var mutex sync.Mutex
 
