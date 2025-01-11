@@ -34,19 +34,23 @@ type Server interface {
 	// Opts returns the options of the server
 	Opts() *Options
 	// AddRoute adds a route to the server
-	AddRoute(path string, handler HandlerFunc, method ...string) (err error)
+	AddRoute(path string, handler HandlerFunc, method ...string) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
-	Post(path string, handler HandlerFunc) (err error)
+	Post(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
-	Get(path string, handler HandlerFunc) (err error)
+	Get(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
-	Put(path string, handler HandlerFunc) (err error)
+	Put(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
-	Delete(path string, handler HandlerFunc) (err error)
+	Delete(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// Unhandled adds a handler for unhandled routes
 	Unhandled(handler HandlerFunc) (err error)
 	// Unsupported adds a handler for unsupported methods
 	Unsupported(handler HandlerFunc) (err error)
+	// AddGlobalFilter adds a global filter to the server
+	AddGlobalFilter(filter turbo.FilterFunc) (err error)
+	//Turbo returns the turbo router
+	Router() *turbo.Router
 }
 type DataTypProvider func() any
 
@@ -58,9 +62,8 @@ type restServer struct {
 }
 
 // AddRoute adds a route to the server
-func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...string) (err error) {
+func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...string) (route *turbo.Route, err error) {
 	p := path
-
 	if rs.opts.PathPrefix != textutils.EmptyStr {
 		if !strings.HasPrefix(path, rest.PathSeparator) {
 			p = "/" + path
@@ -70,7 +73,7 @@ func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...stri
 		}
 	}
 	p = rs.opts.PathPrefix + p
-	_, err = rs.router.Add(p, func(w http.ResponseWriter, r *http.Request) {
+	route, err = rs.router.Add(p, func(w http.ResponseWriter, r *http.Request) {
 		ctx := Context{
 			request:  r,
 			response: w,
@@ -81,22 +84,22 @@ func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...stri
 }
 
 // Post adds a route to the server
-func (rs *restServer) Post(path string, handler HandlerFunc) (err error) {
+func (rs *restServer) Post(path string, handler HandlerFunc) (route *turbo.Route, err error) {
 	return rs.AddRoute(path, handler, http.MethodPost)
 }
 
 // Get adds a route to the server
-func (rs *restServer) Get(path string, handler HandlerFunc) (err error) {
+func (rs *restServer) Get(path string, handler HandlerFunc) (route *turbo.Route, err error) {
 	return rs.AddRoute(path, handler, http.MethodGet)
 }
 
 // Put adds a route to the server
-func (rs *restServer) Put(path string, handler HandlerFunc) (err error) {
+func (rs *restServer) Put(path string, handler HandlerFunc) (route *turbo.Route, err error) {
 	return rs.AddRoute(path, handler, http.MethodPut)
 }
 
 // Delete adds a route to the server
-func (rs *restServer) Delete(path string, handler HandlerFunc) (err error) {
+func (rs *restServer) Delete(path string, handler HandlerFunc) (route *turbo.Route, err error) {
 	return rs.AddRoute(path, handler, http.MethodDelete)
 }
 
@@ -122,6 +125,17 @@ func (rs *restServer) Unsupported(handler HandlerFunc) (err error) {
 		handler(ctx)
 	}))
 	return
+}
+
+// AddFilter adds a filter to the server
+func (rs *restServer) AddGlobalFilter(filter turbo.FilterFunc) (err error) {
+	rs.router.AddGlobalFilter(filter)
+	return
+}
+
+// Router returns the turbo router
+func (rs *restServer) Router() *turbo.Router {
+	return rs.router
 }
 
 // Opts returns the options of the server
