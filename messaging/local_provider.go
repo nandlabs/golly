@@ -1,6 +1,7 @@
 package messaging
 
 import (
+	"math/rand"
 	"net/url"
 	"sync"
 
@@ -8,7 +9,8 @@ import (
 )
 
 const (
-	LocalMsgScheme = "chan"
+	LocalMsgScheme   = "chan"
+	unnamedListeners = "__unnamed_listeners__"
 )
 
 var localProviderSchemes = []string{LocalMsgScheme}
@@ -17,7 +19,7 @@ var localProviderSchemes = []string{LocalMsgScheme}
 type LocalProvider struct {
 	mutex        sync.Mutex
 	destinations map[string]chan Message
-	listeners    map[string][]func(msg Message)
+	listeners    map[string]map[string][]func(msg Message)
 }
 
 func (lp *LocalProvider) Id() string {
@@ -84,16 +86,33 @@ func (lp *LocalProvider) AddListener(url *url.URL, listener func(msg Message), o
 	defer lp.mutex.Unlock()
 	createListener := false
 	if _, ok := lp.listeners[url.Host]; !ok {
-		lp.listeners[url.Host] = []func(msg Message){}
+
+		lp.listeners[url.Host] = make(map[string][]func(msg Message))
+
 		createListener = true
 	}
-	lp.listeners[url.Host] = append(lp.listeners[url.Host], listener)
+
+	optionsResolver := NewOptionsResolver(options...)
+	namedListener, hasNamed := ResolveOptValue[string]("NamedListener", optionsResolver)
+	if hasNamed {
+		lp.listeners[url.Host][namedListener] = append(lp.listeners[url.Host][namedListener], listener)
+	} else {
+		lp.listeners[url.Host][unnamedListeners] = append(lp.listeners[url.Host][unnamedListeners], listener)
+	}
+
 	if createListener {
 		go func() {
 
 			for m := range channel {
-				for _, listener := range lp.listeners[url.Host] {
-					listener(m)
+				for name, listener := range lp.listeners[url.Host] {
+					if name == unnamedListeners {
+						for _, l := range listener {
+							go l(m)
+						}
+					} else {
+						lIDx := rand.Intn(len(listener))
+						go listener[lIDx](m)
+					}
 				}
 			}
 		}()
@@ -104,7 +123,7 @@ func (lp *LocalProvider) AddListener(url *url.URL, listener func(msg Message), o
 func (lp *LocalProvider) Setup() (err error) {
 	lp.mutex = sync.Mutex{}
 	lp.destinations = make(map[string]chan Message)
-	lp.listeners = make(map[string][]func(msg Message))
+	lp.listeners = make(map[string]map[string][]func(msg Message))
 	return nil
 }
 
