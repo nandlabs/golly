@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"oss.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 type BaseMessage struct {
@@ -35,12 +36,12 @@ func (bm *BaseMessage) SetFrom(content io.Reader) (n int64, err error) {
 }
 
 func (bm *BaseMessage) WriteJSON(input interface{}) (err error) {
-	err = bm.WriteContent(input, codec.JSON)
+	err = bm.WriteContent(input, ioutils.MimeApplicationJSON)
 	return
 }
 
 func (bm *BaseMessage) WriteXML(input interface{}) (err error) {
-	err = bm.WriteContent(input, codec.XML)
+	err = bm.WriteContent(input, ioutils.MimeTextXML)
 	return
 }
 
@@ -67,12 +68,12 @@ func (bm *BaseMessage) ReadAsStr() string {
 }
 
 func (bm *BaseMessage) ReadJSON(out interface{}) (err error) {
-	err = bm.ReadContent(out, codec.JSON)
+	err = bm.ReadContent(out, ioutils.MimeApplicationJSON)
 	return
 }
 
 func (bm *BaseMessage) ReadXML(out interface{}) (err error) {
-	err = bm.ReadContent(out, codec.XML)
+	err = bm.ReadContent(out, ioutils.MimeTextXML)
 	return
 }
 

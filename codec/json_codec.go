@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"oss.nandlabs.io/golly/codec/validator"
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 const (
@@ -13,6 +14,7 @@ const (
 )
 
 var structValidator = validator.NewStructValidator()
+var jsonmimeTypes = []string{ioutils.MimeApplicationJSON}
 
 type jsonRW struct {
 	options map[string]interface{}
@@ -44,4 +46,9 @@ func (j *jsonRW) Write(v interface{}, w io.Writer) error {
 func (j *jsonRW) Read(r io.Reader, v interface{}) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(v)
+}
+
+// MimeTypes provides the list of mimetypes supported by the codec
+func (j *jsonRW) MimeTypes() []string {
+	return jsonmimeTypes
 }

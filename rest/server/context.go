@@ -6,10 +6,20 @@ import (
 	"strings"
 
 	"oss.nandlabs.io/golly/codec"
+	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo"
 )
+
+// jsonCodec is the default codec for json
+var jsonCodec = codec.JsonCodec()
+
+// xmlCodec is the default codec for xml
+var xmlCodec = codec.XmlCodec()
+
+// yamlCodec is the default codec for yaml
+var yamlCodec = codec.YamlCodec()
 
 // Context is the struct that holds the request and response of the server.
 type Context struct {
@@ -74,6 +84,24 @@ func (c *Context) Read(obj interface{}) error {
 	}
 	err = codec.Read(c.request.Body, obj)
 	return err
+}
+
+// WriteJSON writes the object to the response in JSON format.
+func (c *Context) WriteJSON(data interface{}) error {
+	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeApplicationJSON)
+	return jsonCodec.Write(data, c.response)
+}
+
+// WriteXML writes the object to the response in XML format.
+func (c *Context) WriteXML(data interface{}) error {
+	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeApplicationXML)
+	return xmlCodec.Write(data, c.response)
+}
+
+// WriteYAML writes the object to the response in YAML format.
+func (c *Context) WriteYAML(data interface{}) error {
+	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeTextYAML)
+	return yamlCodec.Write(data, c.response)
 }
 
 // Write writes the object to the response with the given content type and status code.

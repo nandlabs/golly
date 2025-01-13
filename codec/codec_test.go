@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"oss.nandlabs.io/golly/ioutils"
 )
 
 type Message struct {
@@ -26,7 +28,7 @@ type Message2 struct {
 
 func TestNewJson(t *testing.T) {
 	m := Message2{"TestUser", "Hello", 123124124}
-	c, _ := Get("application/json", nil)
+	c, _ := Get(ioutils.MimeApplicationJSON, nil)
 	buf := new(bytes.Buffer)
 	if err := c.Write(m, buf); err != nil {
 		t.Errorf("error in write: %d", err)
@@ -40,7 +42,7 @@ func TestNewJson(t *testing.T) {
 
 func TestNewDefaultJson(t *testing.T) {
 	m := Message2{"TestUser", "Hello", 123124124}
-	c, _ := GetDefault("application/json")
+	c, _ := GetDefault(ioutils.MimeApplicationJSON)
 	buf := new(bytes.Buffer)
 	if err := c.Write(m, buf); err != nil {
 		t.Errorf("error in write: %d", err)
@@ -54,7 +56,7 @@ func TestNewDefaultJson(t *testing.T) {
 
 func TestNewJsonCodec2(t *testing.T) {
 	var m Message
-	c, _ := Get("application/json", nil)
+	c, _ := Get(ioutils.MimeApplicationJSON, nil)
 	const input = `{"name":"Test","body":"Hello","time":123124124}`
 	b := strings.NewReader(input)
 	if err := c.Read(b, &m); err != nil {
@@ -72,7 +74,7 @@ func TestNewJsonCodec2(t *testing.T) {
 
 func TestNewXmlCodec(t *testing.T) {
 	m := XMLMessage{"Test", "Hello", 123124124}
-	c, _ := Get("text/xml", nil)
+	c := XmlCodec()
 	buf := new(bytes.Buffer)
 	if err := c.Write(m, buf); err != nil {
 		t.Errorf("error in write: %d", err)
@@ -85,7 +87,7 @@ func TestNewXmlCodec(t *testing.T) {
 
 func TestNewXmlCodec2(t *testing.T) {
 	var m XMLMessage
-	c, _ := Get("text/xml", nil)
+	c, _ := Get(ioutils.MimeTextXML, nil)
 	const input = `<XMLMessage><name>Test</name><body>Hello</body><time>123124124</time></XMLMessage>`
 	b := strings.NewReader(input)
 	if err := c.Read(b, &m); err != nil {
