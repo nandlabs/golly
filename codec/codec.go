@@ -7,22 +7,22 @@ import (
 	"strings"
 	"sync"
 
+	"oss.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/managers"
 	"oss.nandlabs.io/golly/textutils"
 )
 
 const (
-	JSON                      = "application/json"
-	XML                       = "text/xml"
-	XmlApplicationContentType = "application/xml"
-	YAML                      = "text/yaml"
-	defaultValidateOnRead     = false
-	defaultValidateBefWrite   = false
-	ValidateOnRead            = "ValidateOnRead"
-	ValidateBefWrite          = "ValidateBefWrite"
-	Charset                   = "charset"
-	JsonEscapeHTML            = "JsonEscapeHTML"
-	PrettyPrint               = "PrettyPrint"
+	defaultValidateOnRead   = false
+	defaultValidateBefWrite = false
+	ValidateOnRead          = "ValidateOnRead"
+	ValidateBefWrite        = "ValidateBefWrite"
+	Charset                 = "charset"
+	JsonEscapeHTML          = "JsonEscapeHTML"
+	PrettyPrint             = "PrettyPrint"
 )
+
+var codecManager = managers.NewItemManager[ReaderWriter]()
 
 // StringEncoder Interface
 type StringEncoder interface {
@@ -60,13 +60,26 @@ type Decoder interface {
 	BytesDecoder
 }
 
+// ReaderWriter is an interface that defines methods for writing and reading
+// data to and from an io.Writer and io.Reader, respectively.
+//
+// Write writes the given value to the provided writer.
+// It takes an interface{} value and an io.Writer, and returns an error if the write operation fails.
+//
+// Read reads data from the provided reader into the given value.
+// It takes an io.Reader and an interface{} value, and returns an error if the read operation fails.
 type ReaderWriter interface {
 	//Write a type to writer
 	Write(v interface{}, w io.Writer) error
 	//Read a type from a reader
 	Read(r io.Reader, v interface{}) error
+	//MimeTypes returns a slice of strings representing the MIME types
+	MimeTypes() []string
 }
 
+// Validator is an interface that defines a method for validating an object.
+// The Validate method returns a boolean indicating whether the validation was
+// successful, and a slice of errors detailing any validation issues.
 type Validator interface {
 	Validate() (bool, []error)
 }
@@ -80,6 +93,9 @@ type Codec interface {
 	SetOption(key string, value interface{})
 }
 
+// BaseCodec is a struct that encapsulates a ReaderWriter interface, a set of options,
+// and a sync.Once instance to ensure that certain operations are only performed once.
+// It is designed to handle encoding and decoding operations with customizable options.
 type BaseCodec struct {
 	readerWriter ReaderWriter
 	options      map[string]interface{}
@@ -95,6 +111,13 @@ func getDefaultCodecOption() (defaultCodecOption map[string]interface{}) {
 
 }
 
+// SetOption sets an option for the BaseCodec instance. It initializes the options map
+// if it hasn't been initialized yet. This method is thread-safe and can be called
+// concurrently.
+//
+// Parameters:
+//   - key: The option key as a string.
+//   - value: The option value as an interface{}.
 func (bc *BaseCodec) SetOption(key string, value interface{}) {
 	bc.once.Do(func() {
 		if bc.options == nil {
@@ -105,12 +128,51 @@ func (bc *BaseCodec) SetOption(key string, value interface{}) {
 	bc.options[key] = value
 }
 
+// MimeTypes
+func (bc *BaseCodec) MimeTypes() []string {
+	return bc.readerWriter.MimeTypes()
+}
+
 // GetDefault function creates an instance of codec based on the contentType and defaultOptions
 func GetDefault(contentType string) (Codec, error) {
 	return Get(contentType, getDefaultCodecOption())
 }
 
-// Get function creates an instance of codec based on the contentType and Options
+// JsonCodec Provides a JSONCodec
+// JsonCodec returns a Codec for handling JSON data.
+// It retrieves the default Codec for the MIME type "application/json".
+// If there is an error during retrieval, it is ignored and the default Codec is returned.
+func JsonCodec() Codec {
+	c, _ := GetDefault(ioutils.MimeApplicationJSON)
+	return c
+}
+
+// XmlCodec returns a Codec for handling XML data.
+// It retrieves the default Codec associated with the MIME type for XML text.
+// The function ignores any error that might occur during the retrieval process.
+func XmlCodec() Codec {
+	c, _ := GetDefault(ioutils.MimeTextXML)
+	return c
+}
+
+// YamlCodec Provides a YamlCodec
+func YamlCodec() Codec {
+	c, _ := GetDefault(ioutils.MimeTextYAML)
+	return c
+}
+
+// Get returns a Codec based on the provided content type and options.
+// It supports JSON, XML, and YAML content types. If the content type
+// contains a charset, it is added to the options but not used by the
+// known JSON, XML, and YAML Read Writers.
+//
+// Parameters:
+//   - contentType: A string representing the MIME type of the content.
+//   - options: A map of options to configure the Codec.
+//
+// Returns:
+//   - c: A Codec configured for the specified content type.
+//   - err: An error if the content type is unsupported.
 func Get(contentType string, options map[string]interface{}) (c Codec, err error) {
 
 	bc := &BaseCodec{
@@ -137,21 +199,27 @@ func Get(contentType string, options map[string]interface{}) (c Codec, err error
 	}
 
 	switch typ {
-	case JSON:
+	case ioutils.MimeApplicationJSON:
 		{
 			bc.readerWriter = &jsonRW{options: options}
 
 		}
-	case XML, XmlApplicationContentType:
+	case ioutils.MimeTextXML, ioutils.MimeApplicationXML:
 		{
 			bc.readerWriter = &xmlRW{options: options}
 		}
-	case YAML:
+	case ioutils.MimeTextYAML:
 		{
 			bc.readerWriter = &yamlRW{options: options}
 		}
 	default:
-		err = fmt.Errorf("Unsupported contentType %s", contentType)
+
+		readerWriter := codecManager.Get(contentType)
+		if readerWriter != nil {
+			bc.readerWriter = readerWriter
+		} else {
+			err = fmt.Errorf("unsupported contentType %s", contentType)
+		}
 	}
 
 	if err == nil {
@@ -216,4 +284,8 @@ func (bc *BaseCodec) Write(v interface{}, w io.Writer) (err error) {
 		err = bc.readerWriter.Write(v, w)
 	}
 	return
+}
+
+func Register(contentType string, readerWriter ReaderWriter) {
+	codecManager.Register(contentType, readerWriter)
 }
