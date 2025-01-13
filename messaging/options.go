@@ -5,6 +5,7 @@ import "oss.nandlabs.io/golly/clients"
 const (
 	CircuitBreakerOpts = "CircuitBreakerOption"
 	RetryOpts          = "CircuitBreakerOption"
+	NamedListener      = "NamedListener"
 )
 
 type Option struct {
@@ -68,19 +69,39 @@ func (ob *OptionsBuilder) AddRetryHandler(maxRetries, wait int) *OptionsBuilder 
 	return ob.Add(RetryOpts, retryInfo)
 }
 
-func (or *OptionsResolver) GetCircuitBreaker() (breakerInfo *clients.BreakerInfo, has bool) {
-	var v interface{}
-	if v, has = or.opts[CircuitBreakerOpts]; has {
-		breakerInfo = v.(*clients.BreakerInfo) // TODO check if this is of the type breaker info
+func (ob *OptionsBuilder) AddNamedListener(name string) *OptionsBuilder {
+	return ob.Add(NamedListener, name)
+}
+
+func GetOptValue[T any](key string, opts ...Option) (value T, has bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			has = false
+		}
+	}()
+	for _, opt := range opts {
+		if opt.Key == key {
+			value = opt.Value.(T)
+			has = true
+			return
+		}
 	}
 	return
 }
 
-func (or *OptionsResolver) GetRetryInfo() (retryInfo *clients.RetryInfo, has bool) {
-	var v interface{}
-	if v, has = or.opts[RetryOpts]; has {
-		retryInfo = v.(*clients.RetryInfo) // TODO check if this is of the type breaker info
+func ResolveOptValue[T any](key string, optionsResolver *OptionsResolver) (value T, has bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			has = false
+		}
+	}()
+
+	var val any
+	val, has = optionsResolver.opts[key]
+	if has {
+		value = val.(T)
 	}
+
 	return
 }
 
