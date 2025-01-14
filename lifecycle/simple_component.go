@@ -61,6 +61,7 @@ func (sc *SimpleComponent) Start() (err error) {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Running
+
 		}
 		if sc.OnStateChange != nil {
 			sc.OnStateChange(Starting, sc.CompState)
@@ -274,5 +275,17 @@ func NewSimpleComponentManager() ComponentManager {
 		cMutex:     &sync.RWMutex{},
 		waitChan:   make(chan struct{}),
 	}
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func(manager ComponentManager) {
+		sig := <-sigs
+		logger.ErrorF("Received signal: %v, Stopping all components", sig)
+		err := manager.StopAll()
+		if err != nil {
+			logger.ErrorF("Error stopping components: %v", err)
+		}
+	}(manager)
 	return manager
 }
