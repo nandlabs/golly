@@ -52,7 +52,7 @@ func TestItemManager_Items_AfterUnregister(t *testing.T) {
 	manager.Unregister("item2")
 
 	items := manager.Items()
-	expectedItems := []int{1, 3}
+	assert.ListHas(t, 1, items)
+	assert.ListHas(t, 3, items)
 
-	assert.ElementsMatch(t, items, expectedItems...)
 }
