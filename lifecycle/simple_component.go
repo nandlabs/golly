@@ -211,7 +211,12 @@ func (scm *SimpleComponentManager) StopAll() error {
 		}
 	}
 	wg.Wait()
-	close(scm.waitChan)
+	select {
+	case <-scm.waitChan:
+		logger.Info("All components stopped")
+	default:
+		close(scm.waitChan)
+	}
 	if err.HasErrors() {
 		return err
 	} else {
