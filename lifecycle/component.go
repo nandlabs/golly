@@ -31,8 +31,9 @@ var ErrInvalidComponentState = errors.New("invalid component state")
 type Component interface {
 	// Id is the unique identifier for the component.
 	Id() string
-	//OnChange is the function that will be called when the component state changes.
-	OnChange(prevState, newState ComponentState)
+	// OnChange is the function that will be called when the component state changes.
+	// It will be called with the previous state and the new state.
+	OnChange(f func(prevState, newState ComponentState))
 	// Start will starting the LifeCycle.
 	Start() error
 	// Stop will stop the LifeCycle.
@@ -47,6 +48,8 @@ type ComponentManager interface {
 	GetState(id string) ComponentState
 	//List will return a list of all the Components.
 	List() []Component
+	// OnChange is the function that will be called when the component state changes.
+	OnChange(id string, f func(prevState, newState ComponentState))
 	// Register will register a new Components.
 	Register(component Component) Component
 	// StartAll will start all the Components. Returns the number of components started

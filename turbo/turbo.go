@@ -438,12 +438,7 @@ func GetPathParamAsBool(id string, r *http.Request) (bool, error) {
 
 // GetQueryParam fetches the query parameters
 func GetQueryParam(id string, r *http.Request) (string, error) {
-	val := r.URL.Query().Get(id)
-	if val == "" {
-		logger.ErrorF("Error Fetching Query Param %s", id)
-		return "err", fmt.Errorf("error fetching query param %s", id)
-	}
-	return val, nil
+	return r.URL.Query().Get(id), nil
 }
 
 // GetQueryParamAsInt fetches the int query parameters
