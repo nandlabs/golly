@@ -11,6 +11,11 @@ import (
 
 // SimpleComponent is the struct that implements the Component interface.
 type SimpleComponent struct {
+	// stateChangeFuncs
+	stateChangeFuncs []func(prevState, newState ComponentState)
+	//mutex
+	mutex sync.RWMutex
+	// CompId is the unique identifier for the component.
 	CompId string
 	// AfterStart is the function that will be called after the component is started
 	// The function will be called with the error returned by the StartFunc.
@@ -24,8 +29,6 @@ type SimpleComponent struct {
 	BeforeStop func()
 	// CompState is the current state of the component.
 	CompState ComponentState
-	// OnStateChange is the function that will be called when the component state changes.
-	OnStateChange func(prevState, newState ComponentState)
 	//StartFunc is the function that will be called when the component is started.
 	// It returns an error if the component failed to start.
 	StartFunc func() error
@@ -34,15 +37,13 @@ type SimpleComponent struct {
 	StopFunc func() error
 }
 
-// ComponentId is the unique identifier for the component.
-func (sc *SimpleComponent) Id() string {
-	return sc.CompId
-}
-
-// OnChange is the function that will be called when the component state changes.
-func (sc *SimpleComponent) OnChange(prevState, newState ComponentState) {
-	if sc.OnStateChange != nil {
-		sc.OnStateChange(prevState, newState)
+// handleStateChange is the function that will be called when the component state changes.
+func (sc *SimpleComponent) handleStateChange(prevState, newState ComponentState) {
+	// if sc.OnStateChange != nil {
+	// 	sc.OnStateChange(prevState, newState)
+	// }
+	for _, f := range sc.stateChangeFuncs {
+		f(prevState, newState)
 	}
 	if newState == Starting && sc.BeforeStart != nil {
 		sc.BeforeStart()
@@ -51,10 +52,22 @@ func (sc *SimpleComponent) OnChange(prevState, newState ComponentState) {
 	}
 }
 
+// ComponentId is the unique identifier for the component.
+func (sc *SimpleComponent) Id() string {
+	return sc.CompId
+}
+
+// OnChange is the function that will be called when the component state changes.
+func (sc *SimpleComponent) OnChange(f func(prevState, newState ComponentState)) {
+	sc.mutex.Lock()
+	defer sc.mutex.Unlock()
+	sc.stateChangeFuncs = append(sc.stateChangeFuncs, f)
+}
+
 // Start will starting the LifeCycle.
 func (sc *SimpleComponent) Start() (err error) {
 	if sc.StartFunc != nil {
-		sc.OnChange(sc.CompState, Starting)
+		sc.handleStateChange(sc.CompState, Starting)
 		sc.CompState = Starting
 		err = sc.StartFunc()
 		if err != nil {
@@ -63,9 +76,7 @@ func (sc *SimpleComponent) Start() (err error) {
 			sc.CompState = Running
 
 		}
-		if sc.OnStateChange != nil {
-			sc.OnStateChange(Starting, sc.CompState)
-		}
+		sc.handleStateChange(Starting, sc.CompState)
 		if sc.AfterStart != nil {
 			sc.AfterStart(err)
 		}
@@ -77,7 +88,7 @@ func (sc *SimpleComponent) Start() (err error) {
 // Stop will stop the LifeCycle.
 func (sc *SimpleComponent) Stop() (err error) {
 	if sc.StopFunc != nil {
-		sc.OnChange(sc.CompState, Stopping)
+		sc.handleStateChange(sc.CompState, Stopping)
 		sc.CompState = Stopping
 		err = sc.StopFunc()
 		if err != nil {
@@ -85,9 +96,7 @@ func (sc *SimpleComponent) Stop() (err error) {
 		} else {
 			sc.CompState = Stopped
 		}
-		if sc.OnStateChange != nil {
-			sc.OnStateChange(Stopping, sc.CompState)
-		}
+		sc.handleStateChange(Stopping, sc.CompState)
 		if sc.AfterStop != nil {
 			sc.AfterStop(err)
 
@@ -104,9 +113,10 @@ func (sc *SimpleComponent) State() ComponentState {
 
 // SimpleComponentManager is the struct that manages the component.
 type SimpleComponentManager struct {
-	components map[string]Component
-	cMutex     *sync.RWMutex
-	waitChan   chan struct{}
+	components   map[string]Component
+	componentIds []string
+	cMutex       *sync.RWMutex
+	waitChan     chan struct{}
 }
 
 // GetState will return the current state of the LifeCycle for the component with the given id.
@@ -126,10 +136,20 @@ func (scm *SimpleComponentManager) List() []Component {
 	defer scm.cMutex.RUnlock()
 	// Create a slice of Component and iterate over the components map and append the components to the slice.
 	components := make([]Component, 0, len(scm.components))
-	for _, component := range scm.components {
-		components = append(components, component)
+	for _, compId := range scm.componentIds {
+		components = append(components, scm.components[compId])
 	}
 	return components
+}
+
+// OnChange is the function that will be called when the component state changes.
+func (scm *SimpleComponentManager) OnChange(id string, f func(prevState, newState ComponentState)) {
+	scm.cMutex.Lock()
+	defer scm.cMutex.Unlock()
+	component, exists := scm.components[id]
+	if exists {
+		component.OnChange(f)
+	}
 }
 
 // Register will register a new Components.
@@ -141,31 +161,9 @@ func (scm *SimpleComponentManager) Register(component Component) Component {
 	oldComponent, exists := scm.components[component.Id()]
 	if !exists {
 		scm.components[component.Id()] = component
+		scm.componentIds = append(scm.componentIds, component.Id())
 	}
 	return oldComponent
-}
-
-// StartAll will start all the Components. Returns the number of components started
-func (scm *SimpleComponentManager) StartAll() error {
-	var err *errutils.MultiError = errutils.NewMultiErr(nil)
-	for id := range scm.components {
-		e := scm.Start(id)
-		if e != nil {
-			err.Add(e)
-		}
-	}
-	if err.HasErrors() {
-		return err
-	} else {
-		return nil
-	}
-}
-
-// StartAndWait will start all the Components. And will wait for them to be stopped.
-func (scm *SimpleComponentManager) StartAndWait() {
-	scm.StartAll() // Start all the components
-	scm.Wait()     // Wait for all the components to finish
-
 }
 
 // Start will start the LifeCycle for the component with the given id. It returns if the component was started.
@@ -190,6 +188,29 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 	return ErrCompNotFound
 }
 
+// StartAll will start all the Components. Returns the number of components started
+func (scm *SimpleComponentManager) StartAll() error {
+	var err *errutils.MultiError = errutils.NewMultiErr(nil)
+	for _, id := range scm.componentIds {
+		e := scm.Start(id)
+		if e != nil {
+			err.Add(e)
+		}
+	}
+	if err.HasErrors() {
+		return err
+	} else {
+		return nil
+	}
+}
+
+// StartAndWait will start all the Components. And will wait for them to be stopped.
+func (scm *SimpleComponentManager) StartAndWait() {
+	scm.StartAll() // Start all the components
+	scm.Wait()     // Wait for all the components to finish
+
+}
+
 // StopAll will stop all the Components.
 func (scm *SimpleComponentManager) StopAll() error {
 	logger.InfoF("Stopping all components")
@@ -197,7 +218,8 @@ func (scm *SimpleComponentManager) StopAll() error {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	wg := &sync.WaitGroup{}
-	for _, component := range scm.components {
+	for i := len(scm.componentIds) - 1; i >= 0; i-- {
+		component := scm.components[scm.componentIds[i]]
 		if component.State() == Running {
 			wg.Add(1)
 			go func(c Component, wg *sync.WaitGroup) {
@@ -257,18 +279,24 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 			component.Stop()
 		}
 		delete(scm.components, id)
+		for i, compId := range scm.componentIds {
+			if compId == id {
+				scm.componentIds = append(scm.componentIds[:i], scm.componentIds[i+1:]...)
+				break
+			}
+		}
 	}
 }
 
 // Wait will wait for all the Components to finish.
 func (scm *SimpleComponentManager) Wait() {
-	go func() {
-		// Wait for a signal to stop the components.
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-		<-signalChan
-		scm.StopAll()
-	}()
+	// go func() {
+	// 	// Wait for a signal to stop the components.
+	// 	signalChan := make(chan os.Signal, 1)
+	// 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+	// 	<-signalChan
+	// 	scm.StopAll()
+	// }()
 	<-scm.waitChan
 
 }

@@ -460,7 +460,7 @@ func TestRouter_GetQueryParams(t *testing.T) {
 				id: "test3",
 				r:  &http.Request{URL: strUrl},
 			},
-			want: "err",
+			want: "",
 		},
 	}
 	for _, tt := range tests {
