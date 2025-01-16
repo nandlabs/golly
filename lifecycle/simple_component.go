@@ -218,7 +218,8 @@ func (scm *SimpleComponentManager) StopAll() error {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	wg := &sync.WaitGroup{}
-	for _, component := range scm.components {
+	for i := len(scm.componentIds) - 1; i >= 0; i-- {
+		component := scm.components[scm.componentIds[i]]
 		if component.State() == Running {
 			wg.Add(1)
 			go func(c Component, wg *sync.WaitGroup) {
@@ -289,13 +290,13 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 
 // Wait will wait for all the Components to finish.
 func (scm *SimpleComponentManager) Wait() {
-	go func() {
-		// Wait for a signal to stop the components.
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-		<-signalChan
-		scm.StopAll()
-	}()
+	// go func() {
+	// 	// Wait for a signal to stop the components.
+	// 	signalChan := make(chan os.Signal, 1)
+	// 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+	// 	<-signalChan
+	// 	scm.StopAll()
+	// }()
 	<-scm.waitChan
 
 }
