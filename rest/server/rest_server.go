@@ -212,34 +212,36 @@ func New(opts *Options) (rServer Server, err error) {
 			AfterStart: func(err error) {
 
 				if err == nil {
+					go func() {
 
-					if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
-						logger.Info("starting to accept https requests on ", httpServer.Addr)
-						err = httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
-						if err != nil {
-							// if the server was closed intentionally, do not log the error
-							if err != http.ErrServerClosed {
-								logger.ErrorF("Error starting https server: %v", err)
+						if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
+							logger.InfoF("Starting to accept rest(https) requests on %s", httpServer.Addr)
+							err = httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
+							if err != nil {
+								// if the server was closed intentionally, do not log the error
+								if err != http.ErrServerClosed {
+									logger.ErrorF("Error starting https server: %v", err)
+								}
 							}
-						}
-						ioutils.CloserFunc(listener)
+							ioutils.CloserFunc(listener)
 
-					} else {
-						logger.Info("starting to accept http requests on ", httpServer.Addr)
-						err = httpServer.Serve(listener)
-						if err != nil {
-							// if the server was closed intentionally, do not log the error
-							if err != http.ErrServerClosed {
-								logger.ErrorF("Error starting https server: %v", err)
+						} else {
+							logger.InfoF("Starting to accept rest (http) requests on %s", httpServer.Addr)
+							err = httpServer.Serve(listener)
+							if err != nil {
+								// if the server was closed intentionally, do not log the error
+								if err != http.ErrServerClosed {
+									logger.ErrorF("Error starting https server: %v", err)
+								}
 							}
+							ioutils.CloserFunc(listener)
 						}
-						ioutils.CloserFunc(listener)
-					}
+					}()
 				}
 			},
 
 			StopFunc: func() error {
-				logger.Info("Stopping server at ", httpServer.Addr)
+				logger.Info("Stopping rest server at ", httpServer.Addr)
 				return httpServer.Shutdown(context.Background())
 			},
 		},
