@@ -6,6 +6,7 @@ import (
 	"sync"
 	"syscall"
 
+	"oss.nandlabs.io/golly/collections"
 	"oss.nandlabs.io/golly/errutils"
 )
 
@@ -117,6 +118,31 @@ type SimpleComponentManager struct {
 	componentIds []string
 	cMutex       *sync.RWMutex
 	waitChan     chan struct{}
+	dependencies map[string]collections.List[string]
+}
+
+// AddDependency will add a dependency between the two components.
+func (scm *SimpleComponentManager) AddDependency(id, dependsOn string) (err error) {
+	scm.cMutex.Lock()
+	defer scm.cMutex.Unlock()
+	if _, exists := scm.components[id]; !exists {
+		return ErrCompNotFound
+	}
+	if _, exists := scm.components[dependsOn]; !exists {
+		return ErrCompNotFound
+	}
+
+	//detect cyclic dependencies
+	if v, ok := scm.dependencies[dependsOn]; ok && v.Contains(id) {
+		return ErrCyclicDependency
+	}
+
+	if _, exists := scm.dependencies[id]; !exists {
+		scm.dependencies[id] = collections.NewArrayList[string]()
+	}
+	scm.dependencies[id].Add(dependsOn)
+	logger.InfoF("Added dependency %s depends on %s:", id, dependsOn)
+	return
 }
 
 // GetState will return the current state of the LifeCycle for the component with the given id.
@@ -171,21 +197,54 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
 	component, exists := scm.components[id]
-	if exists {
-		if component.State() != Running {
-			var err error = nil
-			go func(c Component, scm *SimpleComponentManager) {
-				err = component.Start()
-				if err != nil {
-					logger.ErrorF("Error starting component: %v", err)
-				}
-			}(component, scm)
-			return err
-		} else {
-			return ErrCompAlreadyStarted
-		}
+	if !exists {
+		return ErrCompNotFound
 	}
-	return ErrCompNotFound
+	if component.State() == Running {
+		return
+	}
+	// Start the dependencies first
+	if v, ok := scm.dependencies[id]; ok {
+		logger.DebugF("Component %s has dependencies. Starting dependencies", id)
+		dependecyWait := sync.WaitGroup{}
+		var multiError *errutils.MultiError = errutils.NewMultiErr(nil)
+		for ite := v.Iterator(); ite.HasNext(); {
+			dependentComp := scm.components[ite.Next()]
+			if dependentComp.State() != Running {
+				dependecyWait.Add(1)
+				go func(c Component, scm *SimpleComponentManager) {
+					logger.DebugF("Starting dependent component %s", dependentComp.Id())
+					err = dependentComp.Start()
+					if err != nil {
+						multiError.Add(err)
+						logger.ErrorF("Error starting component: %v", err)
+					} else {
+						logger.DebugF("Started dependent component %s", dependentComp.Id())
+					}
+					dependecyWait.Done()
+				}(dependentComp, scm)
+			} else {
+				logger.DebugF("Dependent component %s already running", dependentComp.Id())
+			}
+		}
+		dependecyWait.Wait()
+
+		if multiError.HasErrors() {
+			return multiError
+		} else {
+			logger.Info("All dependencies started")
+		}
+
+	}
+	logger.DebugF("Starting component %s", id)
+	err = component.Start()
+	if err != nil {
+		logger.ErrorF("Error starting component: %v", err)
+	} else {
+		logger.DebugF("Started component %s", id)
+	}
+
+	return
 }
 
 // StartAll will start all the Components. Returns the number of components started
@@ -211,32 +270,79 @@ func (scm *SimpleComponentManager) StartAndWait() {
 
 }
 
+// Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
+func (scm *SimpleComponentManager) Stop(id string) (err error) {
+
+	component, exists := scm.components[id]
+	if !exists {
+		return ErrCompNotFound
+	}
+	if component.State() == Stopped {
+		return
+	}
+	// check if the component has dependencies
+	if v, ok := scm.dependencies[id]; ok {
+		logger.DebugF("Component %s has dependencies", id)
+		dependecyWait := sync.WaitGroup{}
+		var multiError *errutils.MultiError = errutils.NewMultiErr(nil)
+		for ite := v.Iterator(); ite.HasNext(); {
+			dependentComp := scm.components[ite.Next()]
+			logger.DebugF("Checking dependent component %s", dependentComp.Id())
+			if dependentComp.State() != Stopped {
+				dependecyWait.Add(1)
+				go func(c Component, scm *SimpleComponentManager) {
+					logger.InfoF("Stopping dependent component %s", c.Id())
+					err = dependentComp.Stop()
+					if err != nil {
+						multiError.Add(err)
+						logger.ErrorF("Error stopping component: %v", err)
+					} else {
+						logger.DebugF("Stopped dependent component %s", c.Id())
+					}
+					dependecyWait.Done()
+
+				}(dependentComp, scm)
+			} else {
+				logger.InfoF("Dependent component %s already stopped", dependentComp.Id())
+			}
+		}
+		dependecyWait.Wait()
+		if multiError.HasErrors() {
+			return multiError
+		} else {
+			logger.DebugF("All dependencies stopped proceeding to stop component %s", id)
+		}
+	}
+	scm.cMutex.Lock()
+	defer scm.cMutex.Unlock()
+	if component.State() == Running {
+		logger.Debug("Stopping component ", id)
+		err := component.Stop()
+
+		if err != nil {
+			logger.ErrorF("Error stopping component: %v", err)
+		} else {
+			logger.InfoF("Stopped component %s", id)
+		}
+
+	}
+	return
+}
+
 // StopAll will stop all the Components.
 func (scm *SimpleComponentManager) StopAll() error {
 	logger.InfoF("Stopping all components")
 	err := errutils.NewMultiErr(nil)
-	scm.cMutex.Lock()
-	defer scm.cMutex.Unlock()
-	wg := &sync.WaitGroup{}
 	for i := len(scm.componentIds) - 1; i >= 0; i-- {
-		component := scm.components[scm.componentIds[i]]
-		if component.State() == Running {
-			wg.Add(1)
-			go func(c Component, wg *sync.WaitGroup) {
-				e := component.Stop()
-				if e != nil {
-					logger.ErrorF("Error stopping component: %v", err)
-					err.Add(e)
-				}
-
-				wg.Done()
-			}(component, wg)
+		e := scm.Stop(scm.componentIds[i])
+		if e != nil {
+			logger.ErrorF("Error stopping component: %v", err)
+			err.Add(e)
 		}
 	}
-	wg.Wait()
+	logger.Info("All components stopped")
 	select {
 	case <-scm.waitChan:
-		logger.Info("All components stopped")
 	default:
 		close(scm.waitChan)
 	}
@@ -245,28 +351,6 @@ func (scm *SimpleComponentManager) StopAll() error {
 	} else {
 		return nil
 	}
-}
-
-// Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
-func (scm *SimpleComponentManager) Stop(id string) error {
-	scm.cMutex.Lock()
-	defer scm.cMutex.Unlock()
-	component, exists := scm.components[id]
-	if exists {
-		if component.State() == Running {
-			err := component.Stop()
-			if err != nil {
-				logger.ErrorF("Error stopping component: %v", err)
-			}
-			return err
-		} else if component.State() == Stopped {
-			return ErrCompAlreadyStopped
-		} else {
-			return ErrInvalidComponentState
-		}
-
-	}
-	return ErrCompNotFound
 }
 
 // Unregister will unregister a Component.
@@ -304,9 +388,10 @@ func (scm *SimpleComponentManager) Wait() {
 // NewSimpleComponentManager will return a new SimpleComponentManager.
 func NewSimpleComponentManager() ComponentManager {
 	manager := &SimpleComponentManager{
-		components: make(map[string]Component),
-		cMutex:     &sync.RWMutex{},
-		waitChan:   make(chan struct{}),
+		components:   make(map[string]Component),
+		cMutex:       &sync.RWMutex{},
+		waitChan:     make(chan struct{}),
+		dependencies: make(map[string]collections.List[string]),
 	}
 	sigs := make(chan os.Signal, 1)
 

@@ -27,6 +27,8 @@ var ErrCompAlreadyStopped = errors.New("component already stopped")
 
 var ErrInvalidComponentState = errors.New("invalid component state")
 
+var ErrCyclicDependency = errors.New("cyclic dependency")
+
 // Component is the interface that wraps the basic Start and Stop methods.
 type Component interface {
 	// Id is the unique identifier for the component.
@@ -44,6 +46,8 @@ type Component interface {
 
 // ComponentManager is the interface that manages multiple components.
 type ComponentManager interface {
+	// AddDependency will add a dependency between the two components.
+	AddDependency(id, dependsOn string) error
 	// GetState will return the current state of the LifeCycle for the component with the given id.
 	GetState(id string) ComponentState
 	//List will return a list of all the Components.

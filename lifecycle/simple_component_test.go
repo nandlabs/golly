@@ -166,24 +166,89 @@ func TestSimpleComponentManager_StartAll(t *testing.T) {
 // It checks if the StartAndWait method waits for the components to finish.
 func TestSimpleComponentManager_StopAll(t *testing.T) {
 	manager := NewSimpleComponentManager()
-	component := &SimpleComponent{
-		CompId: "test",
+	componentA := &SimpleComponent{
+		CompId: "comp-a",
 		StopFunc: func() error {
+			logger.InfoF("Stopping component %s", "comp-a")
 			return nil
 		},
 		StartFunc: func() error {
+			logger.InfoF("Starting component %s", "comp-a")
 			return nil
 		},
 	}
-	manager.Register(component)
+	componentB := &SimpleComponent{
+		CompId: "comp-b",
+		StopFunc: func() error {
+			logger.InfoF("Stopping component %s", "comp-b")
+			return nil
+		},
+		StartFunc: func() error {
+			logger.InfoF("Starting component %s", "comp-b")
+			return nil
+		},
+	}
+	manager.Register(componentA)
+	manager.Register(componentB)
 	manager.StartAll()
 	time.Sleep(500 * time.Millisecond)
 
 	manager.StopAll()
 	time.Sleep(500 * time.Millisecond)
-	if component.State() != Stopped {
-		t.Errorf("StopAll() state = %v, want %v", component.CompState, Stopped)
+	if componentA.State() != Stopped {
+		t.Errorf("StopAll() state = %v, want %v", componentA.CompState, Stopped)
 	}
+
+	if componentB.State() != Stopped {
+		t.Errorf("StopAll() state = %v, want %v", componentB.CompState, Stopped)
+	}
+
+}
+
+// TestSimpleComponentManager_StartAndWait tests the StartAndWait method of the SimpleComponentManager struct.
+// It verifies the behavior of the StartAndWait method by checking if the components are started correctly.
+// The test case includes starting a component with a StartFunc that returns no error.
+// It checks if the StartAndWait method waits for the components to finish.
+func TestSimpleComponentManager_DependencyCheck(t *testing.T) {
+	manager := NewSimpleComponentManager()
+	componentA := &SimpleComponent{
+		CompId: "comp-a",
+		StopFunc: func() error {
+			logger.InfoF("Stopping component %s", "comp-a")
+			return nil
+		},
+		StartFunc: func() error {
+			logger.InfoF("Starting component %s", "comp-a")
+			return nil
+		},
+	}
+	componentB := &SimpleComponent{
+		CompId: "comp-b",
+		StopFunc: func() error {
+			logger.InfoF("Stopping component %s", "comp-b")
+			return nil
+		},
+		StartFunc: func() error {
+			logger.InfoF("Starting component %s", "comp-b")
+			return nil
+		},
+	}
+	manager.Register(componentA)
+	manager.Register(componentB)
+	manager.AddDependency("comp-a", "comp-b")
+	manager.StartAll()
+	time.Sleep(500 * time.Millisecond)
+
+	manager.StopAll()
+	time.Sleep(500 * time.Millisecond)
+	if componentA.State() != Stopped {
+		t.Errorf("StopAll() state = %v, want %v", componentA.CompState, Stopped)
+	}
+
+	if componentB.State() != Stopped {
+		t.Errorf("StopAll() state = %v, want %v", componentB.CompState, Stopped)
+	}
+
 }
 
 // TestSimpleComponentManager_Unregister tests the Unregister method of the SimpleComponentManager struct.
