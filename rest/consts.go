@@ -13,7 +13,7 @@ const (
 	YAMLContentType = "text/yaml"
 
 	// ProxyAuthorizationHeader
-	ProxyAuthorizatio = "Proxy-Authorization"
+	ProxyAuthorization = "Proxy-Authorization"
 	// AuthorizationHeader
 	Authorization
 	// AcceptHeader

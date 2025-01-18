@@ -1,4 +1,4 @@
-package server
+package rest
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/lifecycle"
-	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo"
 	"oss.nandlabs.io/golly/vfs"
@@ -65,10 +64,10 @@ type restServer struct {
 func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...string) (route *turbo.Route, err error) {
 	p := path
 	if rs.opts.PathPrefix != textutils.EmptyStr {
-		if !strings.HasPrefix(path, rest.PathSeparator) {
+		if !strings.HasPrefix(path, PathSeparator) {
 			p = "/" + path
 		}
-		if strings.HasSuffix(rs.opts.PathPrefix, rest.PathSeparator) {
+		if strings.HasSuffix(rs.opts.PathPrefix, PathSeparator) {
 			p = path[1:]
 		}
 	}

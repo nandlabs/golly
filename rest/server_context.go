@@ -1,4 +1,4 @@
-package server
+package rest
 
 import (
 	"io"
@@ -7,7 +7,6 @@ import (
 
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
-	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 	"oss.nandlabs.io/golly/turbo"
 )
@@ -77,7 +76,7 @@ func (c *Context) GetRequest() *http.Request {
 
 // Read reads the body of the request into the given object.
 func (c *Context) Read(obj interface{}) error {
-	contentType := c.request.Header.Get(rest.ContentTypeHeader)
+	contentType := c.request.Header.Get(ContentTypeHeader)
 	codec, err := codec.GetDefault(contentType)
 	if err != nil {
 		return err
@@ -88,19 +87,19 @@ func (c *Context) Read(obj interface{}) error {
 
 // WriteJSON writes the object to the response in JSON format.
 func (c *Context) WriteJSON(data interface{}) error {
-	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeApplicationJSON)
+	c.SetHeader(ContentTypeHeader, ioutils.MimeApplicationJSON)
 	return jsonCodec.Write(data, c.response)
 }
 
 // WriteXML writes the object to the response in XML format.
 func (c *Context) WriteXML(data interface{}) error {
-	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeApplicationXML)
+	c.SetHeader(ContentTypeHeader, ioutils.MimeApplicationXML)
 	return xmlCodec.Write(data, c.response)
 }
 
 // WriteYAML writes the object to the response in YAML format.
 func (c *Context) WriteYAML(data interface{}) error {
-	c.SetHeader(rest.ContentTypeHeader, ioutils.MimeTextYAML)
+	c.SetHeader(ContentTypeHeader, ioutils.MimeTextYAML)
 	return yamlCodec.Write(data, c.response)
 }
 
@@ -110,7 +109,7 @@ func (c *Context) Write(data interface{}, contentType string) error {
 	if err != nil {
 		return err
 	}
-	c.SetHeader(rest.ContentTypeHeader, contentType)
+	c.SetHeader(ContentTypeHeader, contentType)
 	return codec.Write(data, c.response)
 }
 
@@ -132,7 +131,7 @@ func (c *Context) SetHeader(name, value string) {
 
 // SetContentType sets the content type of the response.
 func (c *Context) SetContentType(contentType string) {
-	c.response.Header().Set(rest.ContentTypeHeader, contentType)
+	c.response.Header().Set(ContentTypeHeader, contentType)
 }
 
 // SetStatusCode sets the status code of the response.

@@ -1,4 +1,4 @@
-package client
+package rest
 
 import (
 	"bytes"
@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"oss.nandlabs.io/golly/rest"
 )
 
 // TestCreateMultipartHeader tests the CreateMultipartHeader function
@@ -18,8 +16,8 @@ func TestCreateMultipartHeader(t *testing.T) {
 	contentType := "text/plain"
 
 	hdr := CreateMultipartHeader(param, fileName, contentType)
-	if hdr.Get(rest.ContentTypeHeader) != "multipart/form-data" {
-		t.Errorf("CreateMultipartHeader() = %v, want %v", hdr.Get(rest.ContentTypeHeader), "multipart/form-data")
+	if hdr.Get(ContentTypeHeader) != "multipart/form-data" {
+		t.Errorf("CreateMultipartHeader() = %v, want %v", hdr.Get(ContentTypeHeader), "multipart/form-data")
 	}
 }
 
@@ -42,10 +40,10 @@ func TestWriteMultipartFormFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	req.Header.Set(rest.ContentTypeHeader, w.FormDataContentType())
+	req.Header.Set(ContentTypeHeader, w.FormDataContentType())
 
-	if req.Header.Get(rest.ContentTypeHeader) != w.FormDataContentType() {
-		t.Errorf("Content-Type header = %v, want %v", req.Header.Get(rest.ContentTypeHeader), w.FormDataContentType())
+	if req.Header.Get(ContentTypeHeader) != w.FormDataContentType() {
+		t.Errorf("Content-Type header = %v, want %v", req.Header.Get(ContentTypeHeader), w.FormDataContentType())
 	}
 }
 
