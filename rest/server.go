@@ -143,7 +143,7 @@ func (rs *restServer) Opts() *Options {
 }
 
 // New creates a new Server with the given configuration file of the options.
-func NewFrom(configPath string) (Server, error) {
+func NewServerFrom(configPath string) (Server, error) {
 	// Read from file.
 	vFile, err := vfs.GetManager().OpenRaw(configPath)
 	var opts *Options
@@ -162,24 +162,24 @@ func NewFrom(configPath string) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(opts)
+	return NewServer(opts)
 
 }
 
-// Default creates a new Server with the default options.
-func Default() (Server, error) {
-	opts := DefaultOptions()
+// DefaultServer creates a new Server with the default options.
+func DefaultServer() (Server, error) {
+	opts := DefaultSrvOptions()
 	// uid, err := uuid.V4()
 	// if err != nil {
 	// 	return nil, err
 
 	// }
 	// opts.Id = uid.String()
-	return New(opts)
+	return NewServer(opts)
 }
 
-// New creates a new Server with the given options.
-func New(opts *Options) (rServer Server, err error) {
+// NewServer creates a new Server with the given options.
+func NewServer(opts *Options) (rServer Server, err error) {
 	if opts == nil {
 		return nil, ErrNilOptions
 	}

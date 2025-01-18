@@ -111,7 +111,7 @@ func NewOptionsWithDefaults() *Options {
 	}
 }
 
-// DefaultOptions returns the default options for the server
+// DefaultSrvOptions returns the default options for the server
 // The default options are:
 //   - PathPrefix: "/"
 //   - Id: "default-http-server"
@@ -125,7 +125,7 @@ func NewOptionsWithDefaults() *Options {
 //     AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 //     ResponseStatus: http.StatusNoContent,
 //     }
-func DefaultOptions() *Options {
+func DefaultSrvOptions() *Options {
 	return &Options{
 		PathPrefix:   "/",
 		Id:           "default-http-server",

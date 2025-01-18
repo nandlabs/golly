@@ -95,7 +95,7 @@ func TestNewOptionsWithDefaults(t *testing.T) {
 
 // TestDefaultOptions tests the DefaultOptions function
 func TestDefaultOptions(t *testing.T) {
-	opts := DefaultOptions()
+	opts := DefaultSrvOptions()
 	if opts.ListenHost != "localhost" || opts.ListenPort != 8080 || opts.ReadTimeout != 20000 || opts.WriteTimeout != 20000 {
 		t.Errorf("DefaultOptions() = %v, want default values", opts)
 	}
