@@ -21,6 +21,7 @@ This package is built on top of the `oss.nandlabs.io/golly/turbo` package and pr
     - [Serve a Put Request](#serve-a-put-request)
     - [Serve a Delete Request](#serve-a-delete-request)
     - [Serve a Request with Parameters](#serve-a-request-with-parameters)
+- [Documentation](#documentation)
 
 ---
 
@@ -426,5 +427,7 @@ func main() {
 }
 
 ```
+
+### Documentation
 
 See rest package [documentation](https://pkg.go.dev/oss.nandlabs.io/golly/rest) for more details.
