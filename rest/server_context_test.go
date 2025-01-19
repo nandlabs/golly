@@ -1,4 +1,4 @@
-package server
+package rest
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"oss.nandlabs.io/golly/rest"
 )
 
 // TestContext_GetParam tests the GetParam function
@@ -102,7 +100,7 @@ func TestContext_GetRequest(t *testing.T) {
 func TestContext_Read(t *testing.T) {
 	body := `{"key":"value"}`
 	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(body))
-	req.Header.Set(rest.ContentTypeHeader, "application/json")
+	req.Header.Set(ContentTypeHeader, "application/json")
 	ctx := &Context{request: req}
 
 	var obj map[string]string
@@ -125,8 +123,8 @@ func TestContext_Write(t *testing.T) {
 	if err != nil {
 		t.Errorf("Write() error = %v", err)
 	}
-	if rec.Header().Get(rest.ContentTypeHeader) != "application/json" {
-		t.Errorf("Write() Content-Type = %v, want %v", rec.Header().Get(rest.ContentTypeHeader), "application/json")
+	if rec.Header().Get(ContentTypeHeader) != "application/json" {
+		t.Errorf("Write() Content-Type = %v, want %v", rec.Header().Get(ContentTypeHeader), "application/json")
 	}
 }
 
@@ -177,8 +175,8 @@ func TestContext_SetContentType(t *testing.T) {
 	ctx := &Context{response: rec}
 
 	ctx.SetContentType("application/json")
-	if rec.Header().Get(rest.ContentTypeHeader) != "application/json" {
-		t.Errorf("SetContentType() = %v, want %v", rec.Header().Get(rest.ContentTypeHeader), "application/json")
+	if rec.Header().Get(ContentTypeHeader) != "application/json" {
+		t.Errorf("SetContentType() = %v, want %v", rec.Header().Get(ContentTypeHeader), "application/json")
 	}
 }
 

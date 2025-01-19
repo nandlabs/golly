@@ -1,4 +1,4 @@
-package server
+package rest
 
 import (
 	"testing"
@@ -8,14 +8,14 @@ import (
 func TestOptions_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		options Options
+		options SrvOptions
 		wantErr bool
 	}{
-		{"Valid options", Options{Id: "123", ListenHost: "localhost", ListenPort: 8080}, false},
-		{"Invalid ID", Options{ListenHost: "localhost", ListenPort: 8080}, true},
-		{"Invalid ListenHost", Options{Id: "123", ListenPort: 8080}, true},
-		{"Invalid ListenPort", Options{Id: "123", ListenHost: "localhost"}, true},
-		{"Invalid TLS options", Options{Id: "123", ListenHost: "localhost", ListenPort: 8080, EnableTLS: true}, true},
+		{"Valid options", SrvOptions{Id: "123", ListenHost: "localhost", ListenPort: 8080}, false},
+		{"Invalid ID", SrvOptions{ListenHost: "localhost", ListenPort: 8080}, true},
+		{"Invalid ListenHost", SrvOptions{Id: "123", ListenPort: 8080}, true},
+		{"Invalid ListenPort", SrvOptions{Id: "123", ListenHost: "localhost"}, true},
+		{"Invalid TLS options", SrvOptions{Id: "123", ListenHost: "localhost", ListenPort: 8080, EnableTLS: true}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestOptions_Validate(t *testing.T) {
 
 // TestOptions_Getters tests the getter functions
 func TestOptions_Getters(t *testing.T) {
-	opts := Options{
+	opts := SrvOptions{
 		ListenHost:     "localhost",
 		ListenPort:     8080,
 		EnableTLS:      true,
@@ -54,7 +54,7 @@ func TestOptions_Getters(t *testing.T) {
 
 // TestOptions_Setters tests the setter functions
 func TestOptions_Setters(t *testing.T) {
-	opts := &Options{}
+	opts := &SrvOptions{}
 	opts = opts.SetListenHost("localhost")
 	if opts.ListenHost != "localhost" {
 		t.Errorf("SetListenHost() = %v, want %v", opts.ListenHost, "localhost")
@@ -79,23 +79,15 @@ func TestOptions_Setters(t *testing.T) {
 
 // TestNewOptions tests the NewOptions function
 func TestNewOptions(t *testing.T) {
-	opts := NewOptions()
+	opts := EmptySrvOptions()
 	if opts.ListenHost != "" || opts.ListenPort != 0 {
 		t.Errorf("NewOptions() = %v, want default values", opts)
 	}
 }
 
-// TestNewOptionsWithDefaults tests the NewOptionsWithDefaults function
-func TestNewOptionsWithDefaults(t *testing.T) {
-	opts := NewOptionsWithDefaults()
-	if opts.ListenHost != "localhost" || opts.ListenPort != 8080 {
-		t.Errorf("NewOptionsWithDefaults() = %v, want default values", opts)
-	}
-}
-
 // TestDefaultOptions tests the DefaultOptions function
 func TestDefaultOptions(t *testing.T) {
-	opts := DefaultOptions()
+	opts := DefaultSrvOptions()
 	if opts.ListenHost != "localhost" || opts.ListenPort != 8080 || opts.ReadTimeout != 20000 || opts.WriteTimeout != 20000 {
 		t.Errorf("DefaultOptions() = %v, want default values", opts)
 	}

@@ -1,4 +1,4 @@
-package client
+package rest
 
 import (
 	"bytes"
@@ -14,7 +14,6 @@ import (
 
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
-	"oss.nandlabs.io/golly/rest"
 	"oss.nandlabs.io/golly/textutils"
 )
 
@@ -223,7 +222,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 				httpReq, err = http.NewRequest(r.method, u.String(), r.bodyReader)
 				if r.header != nil {
 					if r.contentType != "" {
-						r.header.Set(rest.ContentTypeHeader, r.contentType)
+						r.header.Set(ContentTypeHeader, r.contentType)
 					}
 					httpReq.Header = r.header
 				}
