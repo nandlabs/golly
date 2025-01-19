@@ -6,8 +6,8 @@ import (
 	"oss.nandlabs.io/golly/turbo/filters"
 )
 
-// Options is the configuration for the server
-type Options struct {
+// SrvOptions is the configuration for the server
+type SrvOptions struct {
 	Id             string               `json:"id" yaml:"id" bson:"id" mapstructure:"id"`
 	PathPrefix     string               `json:"path_prefix,omitempty" yaml:"path_prefix,omitempty" bson:"path_prefix,omitempty" mapstructure:"path_prefix,omitempty"`
 	ListenHost     string               `json:"listen_host" yaml:"listen_host" bson:"listen_host" mapstructure:"listen_host"`
@@ -21,7 +21,7 @@ type Options struct {
 }
 
 // Validate validates the server options
-func (o *Options) Validate() error {
+func (o *SrvOptions) Validate() error {
 	if o.Id == "" {
 		return ErrInvalidID
 	}
@@ -43,72 +43,64 @@ func (o *Options) Validate() error {
 }
 
 // GetListenHost returns the listen host
-func (o *Options) GetListenHost() string {
+func (o *SrvOptions) GetListenHost() string {
 	return o.ListenHost
 }
 
 // GetListenPort returns the listen port
-func (o *Options) GetListenPort() int16 {
+func (o *SrvOptions) GetListenPort() int16 {
 	return o.ListenPort
 }
 
 // GetEnableTLS returns the enable TLS value
-func (o *Options) GetEnableTLS() bool {
+func (o *SrvOptions) GetEnableTLS() bool {
 	return o.EnableTLS
 }
 
 // GetPrivateKeyPath returns the private key path
-func (o *Options) GetPrivateKeyPath() string {
+func (o *SrvOptions) GetPrivateKeyPath() string {
 	return o.PrivateKeyPath
 }
 
 // GetCertPath returns the cert path
-func (o *Options) GetCertPath() string {
+func (o *SrvOptions) GetCertPath() string {
 	return o.CertPath
 }
 
 // SetListenHost sets the listen host
-func (o *Options) SetListenHost(host string) *Options {
+func (o *SrvOptions) SetListenHost(host string) *SrvOptions {
 	o.ListenHost = host
 	return o
 }
 
 // SetListenPort sets the listen port
-func (o *Options) SetListenPort(port int16) *Options {
+func (o *SrvOptions) SetListenPort(port int16) *SrvOptions {
 
 	o.ListenPort = port
 	return o
 }
 
 // SetEnableTLS sets the enable TLS value
-func (o *Options) SetEnableTLS(enableTLS bool) *Options {
+func (o *SrvOptions) SetEnableTLS(enableTLS bool) *SrvOptions {
 	o.EnableTLS = enableTLS
 	return o
 }
 
 // SetPrivateKeyPath sets the private key path
-func (o *Options) SetPrivateKeyPath(privateKeyPath string) *Options {
+func (o *SrvOptions) SetPrivateKeyPath(privateKeyPath string) *SrvOptions {
 	o.PrivateKeyPath = privateKeyPath
 	return o
 }
 
 // SetCertPath sets the cert path
-func (o *Options) SetCertPath(certPath string) *Options {
+func (o *SrvOptions) SetCertPath(certPath string) *SrvOptions {
 	o.CertPath = certPath
 	return o
 }
 
-// NewOptions returns a new server options
-func NewOptions() *Options {
-	return &Options{}
-}
-
-// NewOptionsWithDefaults returns a new server options with default values
-func NewOptionsWithDefaults() *Options {
-	return &Options{
-		ListenHost: "localhost",
-		ListenPort: 8080,
-	}
+// EmptySrvOptions returns a new server options
+func EmptySrvOptions() *SrvOptions {
+	return &SrvOptions{}
 }
 
 // DefaultSrvOptions returns the default options for the server
@@ -125,8 +117,8 @@ func NewOptionsWithDefaults() *Options {
 //     AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 //     ResponseStatus: http.StatusNoContent,
 //     }
-func DefaultSrvOptions() *Options {
-	return &Options{
+func DefaultSrvOptions() *SrvOptions {
+	return &SrvOptions{
 		PathPrefix:   "/",
 		Id:           "default-http-server",
 		ListenHost:   "localhost",

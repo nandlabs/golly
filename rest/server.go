@@ -31,7 +31,7 @@ type Server interface {
 	// Server is a lifecytcle component
 	lifecycle.Component
 	// Opts returns the options of the server
-	Opts() *Options
+	Opts() *SrvOptions
 	// AddRoute adds a route to the server
 	AddRoute(path string, handler HandlerFunc, method ...string) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
@@ -51,11 +51,10 @@ type Server interface {
 	//Turbo returns the turbo router
 	Router() *turbo.Router
 }
-type DataTypProvider func() any
 
 type restServer struct {
 	*lifecycle.SimpleComponent
-	opts       *Options
+	opts       *SrvOptions
 	router     *turbo.Router
 	httpServer *http.Server
 }
@@ -138,7 +137,7 @@ func (rs *restServer) Router() *turbo.Router {
 }
 
 // Opts returns the options of the server
-func (rs *restServer) Opts() *Options {
+func (rs *restServer) Opts() *SrvOptions {
 	return rs.opts
 }
 
@@ -146,7 +145,7 @@ func (rs *restServer) Opts() *Options {
 func NewServerFrom(configPath string) (Server, error) {
 	// Read from file.
 	vFile, err := vfs.GetManager().OpenRaw(configPath)
-	var opts *Options
+	var opts *SrvOptions
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +178,7 @@ func DefaultServer() (Server, error) {
 }
 
 // NewServer creates a new Server with the given options.
-func NewServer(opts *Options) (rServer Server, err error) {
+func NewServer(opts *SrvOptions) (rServer Server, err error) {
 	if opts == nil {
 		return nil, ErrNilOptions
 	}
