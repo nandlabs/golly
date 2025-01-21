@@ -249,13 +249,13 @@ func main() {
 	// this is the path prefix for each endpoint. Default is empty and no path prefix is added
 	srv.Opts().PathPrefix = "/api/v1"
 	// Add a GET endpoint
-	srv.Get("healthCheck", func(ctx rest.Context) {
+	srv.Get("healthCheck", func(ctx rest.ServerContext) {
 		// Set the status code. Remember to set the status code before writing the response
 		ctx.SetStatusCode(http.StatusOK)
 		ctx.WriteString("Health Check Get")
 	})
 	// Add a POST endpoint
-	srv.Post("healthCheck", func(ctx rest.Context) {
+	srv.Post("healthCheck", func(ctx rest.ServerContext) {
 		input, _ := ctx.GetBody()
 		// Set the status code. Remember to set the status code before writing the response
 		ctx.SetStatusCode(http.StatusOK)
@@ -294,7 +294,7 @@ func main() {
 	// this is the path prefix for each endpoint. Default is empty and no path prefix is added
 	srv.Opts().PathPrefix = "/api/v1"
 	// Add a POST endpoint
-	srv.Post("healthCheck", func(ctx rest.Context) {
+	srv.Post("healthCheck", func(ctx rest.ServerContext) {
 		input, _ := ctx.GetBody()
 		// Set the status code. Remember to set the status code before writing the response
 		ctx.SetStatusCode(http.StatusOK)
@@ -333,7 +333,7 @@ func main() {
 	// this is the path prefix for each endpoint. Default is empty and no path prefix is added
 	srv.Opts().PathPrefix = "/api/v1"
 	// Add a PUT endpoint
-	srv.Put("healthCheck", func(ctx rest.Context) {
+	srv.Put("healthCheck", func(ctx rest.ServerContext) {
 		input, _ := ctx.GetBody()
 		// Set the status code. Remember to set the status code before writing the response
 		ctx.SetStatusCode(http.StatusOK)
@@ -372,7 +372,7 @@ func main() {
 	// this is the path prefix for each endpoint. Default is empty and no path prefix is added
 	srv.Opts().PathPrefix = "/api/v1"
 	// Add a DELETE endpoint
-	srv.Delete("healthCheck", func(ctx rest.Context) {
+	srv.Delete("healthCheck", func(ctx rest.ServerContext) {
 		input, _ := ctx.GetBody()
 		// Set the status code. Remember to set the status code before writing the response
 		ctx.SetStatusCode(http.StatusOK)
@@ -411,7 +411,7 @@ func main() {
 	// this is the path prefix for each endpoint. Default is empty and no path prefix is added
 	srv.Opts().PathPrefix = "/api/v1"
 	// Add a GET endpoint
-	srv.Get("endpoint/:pathparam", func(ctx rest.Context) {
+	srv.Get("endpoint/:pathparam", func(ctx rest.ServerContext) {
 		// Get the query parameters
 		queryParams := ctx.GetParam("paramName",rest.QueryParam)
 		// Get the path parameters

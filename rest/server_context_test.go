@@ -11,7 +11,7 @@ import (
 // TestContext_GetParam tests the GetParam function
 func TestContext_GetParam(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test?param=value", nil)
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	value, err := ctx.GetParam("param", QueryParam)
 	if err != nil {
@@ -26,7 +26,7 @@ func TestContext_GetParam(t *testing.T) {
 func TestContext_GetBody(t *testing.T) {
 	body := "test body"
 	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(body))
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	r, err := ctx.GetBody()
 	if err != nil {
@@ -43,7 +43,7 @@ func TestContext_GetBody(t *testing.T) {
 func TestContext_GetHeader(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("X-Test-Header", "test-value")
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	value := ctx.GetHeader("X-Test-Header")
 	if value != "test-value" {
@@ -55,7 +55,7 @@ func TestContext_GetHeader(t *testing.T) {
 func TestContext_InHeaders(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("X-Test-Header", "test-value")
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	headers := ctx.InHeaders()
 	if headers.Get("X-Test-Header") != "test-value" {
@@ -66,7 +66,7 @@ func TestContext_InHeaders(t *testing.T) {
 // TestContext_GetMethod tests the GetMethod function
 func TestContext_GetMethod(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/test", nil)
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	method := ctx.GetMethod()
 	if method != http.MethodPost {
@@ -77,7 +77,7 @@ func TestContext_GetMethod(t *testing.T) {
 // TestContext_GetURL tests the GetURL function
 func TestContext_GetURL(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	url := ctx.GetURL()
 	if url != "/test" {
@@ -88,7 +88,7 @@ func TestContext_GetURL(t *testing.T) {
 // TestContext_GetRequest tests the GetRequest function
 func TestContext_GetRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	request := ctx.GetRequest()
 	if request != req {
@@ -101,7 +101,7 @@ func TestContext_Read(t *testing.T) {
 	body := `{"key":"value"}`
 	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(body))
 	req.Header.Set(ContentTypeHeader, "application/json")
-	ctx := &Context{request: req}
+	ctx := &ServerContext{request: req}
 
 	var obj map[string]string
 	err := ctx.Read(&obj)
@@ -116,7 +116,7 @@ func TestContext_Read(t *testing.T) {
 // TestContext_Write tests the Write function
 func TestContext_Write(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	data := map[string]string{"key": "value"}
 	err := ctx.Write(data, "application/json")
@@ -131,7 +131,7 @@ func TestContext_Write(t *testing.T) {
 // TestContext_WriteData tests the WriteData function
 func TestContext_WriteData(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	data := []byte("test data")
 	n, err := ctx.WriteData(data)
@@ -149,7 +149,7 @@ func TestContext_WriteData(t *testing.T) {
 // TestContext_WriteString tests the WriteString function
 func TestContext_WriteString(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	data := "test string"
 	ctx.WriteString(data)
@@ -161,7 +161,7 @@ func TestContext_WriteString(t *testing.T) {
 // TestContext_SetHeader tests the SetHeader function
 func TestContext_SetHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	ctx.SetHeader("X-Test-Header", "test-value")
 	if rec.Header().Get("X-Test-Header") != "test-value" {
@@ -172,7 +172,7 @@ func TestContext_SetHeader(t *testing.T) {
 // TestContext_SetContentType tests the SetContentType function
 func TestContext_SetContentType(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	ctx.SetContentType("application/json")
 	if rec.Header().Get(ContentTypeHeader) != "application/json" {
@@ -183,7 +183,7 @@ func TestContext_SetContentType(t *testing.T) {
 // TestContext_SetStatusCode tests the SetStatusCode function
 func TestContext_SetStatusCode(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	ctx.SetStatusCode(http.StatusCreated)
 	if rec.Code != http.StatusCreated {
@@ -194,7 +194,7 @@ func TestContext_SetStatusCode(t *testing.T) {
 // TestContext_SetCookie tests the SetCookie function
 func TestContext_SetCookie(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	cookie := &http.Cookie{Name: "test-cookie", Value: "test-value"}
 	ctx.SetCookie(cookie)
@@ -206,7 +206,7 @@ func TestContext_SetCookie(t *testing.T) {
 // TestContext_WriteFrom tests the WriteFrom function
 func TestContext_WriteFrom(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	data := "test data"
 	ctx.WriteFrom(strings.NewReader(data))
@@ -218,7 +218,7 @@ func TestContext_WriteFrom(t *testing.T) {
 // TestContext_HttpResWriter tests the HttpResWriter function
 func TestContext_HttpResWriter(t *testing.T) {
 	rec := httptest.NewRecorder()
-	ctx := &Context{response: rec}
+	ctx := &ServerContext{response: rec}
 
 	writer := ctx.HttpResWriter()
 	if writer != rec {
