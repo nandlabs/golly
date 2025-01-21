@@ -22,7 +22,7 @@ const (
 	PathParam
 )
 
-type HandlerFunc func(context Context)
+type HandlerFunc func(context ServerContext)
 
 type Paramtype int
 
@@ -72,7 +72,7 @@ func (rs *restServer) AddRoute(path string, handler HandlerFunc, methods ...stri
 	}
 	p = rs.opts.PathPrefix + p
 	route, err = rs.router.Add(p, func(w http.ResponseWriter, r *http.Request) {
-		ctx := Context{
+		ctx := ServerContext{
 			request:  r,
 			response: w,
 		}
@@ -104,7 +104,7 @@ func (rs *restServer) Delete(path string, handler HandlerFunc) (route *turbo.Rou
 // Unhandled adds a handler for unhandled routes
 func (rs *restServer) Unhandled(handler HandlerFunc) (err error) {
 	rs.router.SetUnmanaged(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := Context{
+		ctx := ServerContext{
 			request:  r,
 			response: w,
 		}
@@ -116,7 +116,7 @@ func (rs *restServer) Unhandled(handler HandlerFunc) (err error) {
 // Unsupported adds a handler for unsupported methods
 func (rs *restServer) Unsupported(handler HandlerFunc) (err error) {
 	rs.router.SetUnsupportedMethod(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := Context{
+		ctx := ServerContext{
 			request:  r,
 			response: w,
 		}

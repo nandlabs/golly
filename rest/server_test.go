@@ -55,7 +55,7 @@ func TestRestServer_AddRoute(t *testing.T) {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
 	rs := server.(*restServer)
-	handler := func(ctx Context) {}
+	handler := func(ctx ServerContext) {}
 	_, err = rs.AddRoute("/test", handler, http.MethodGet)
 	if err != nil {
 		t.Errorf("AddRoute() error = %v", err)
@@ -69,7 +69,7 @@ func TestRestServer_Post(t *testing.T) {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
 	rs := server.(*restServer)
-	handler := func(ctx Context) {}
+	handler := func(ctx ServerContext) {}
 	_, err = rs.Post("/test", handler)
 	if err != nil {
 		t.Errorf("Post() error = %v", err)
@@ -83,7 +83,7 @@ func TestRestServer_Get(t *testing.T) {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
 	rs := server.(*restServer)
-	handler := func(ctx Context) {}
+	handler := func(ctx ServerContext) {}
 	_, err = rs.Get("/test", handler)
 	if err != nil {
 		t.Errorf("Get() error = %v", err)
@@ -97,7 +97,7 @@ func TestRestServer_Put(t *testing.T) {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
 	rs := server.(*restServer)
-	handler := func(ctx Context) {}
+	handler := func(ctx ServerContext) {}
 	_, err = rs.Put("/test", handler)
 	if err != nil {
 		t.Errorf("Put() error = %v", err)
@@ -111,7 +111,7 @@ func TestRestServer_Delete(t *testing.T) {
 		t.Fatalf("DefaultServer() error = %v", err)
 	}
 	rs := server.(*restServer)
-	handler := func(ctx Context) {}
+	handler := func(ctx ServerContext) {}
 	_, err = rs.Delete("/test", handler)
 	if err != nil {
 		t.Errorf("Delete() error = %v", err)
