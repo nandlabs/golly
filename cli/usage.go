@@ -5,25 +5,6 @@ import (
 	"strings"
 )
 
-// func (cli *CLI) printUsage() {
-// 	fmt.Println("CLI Tool Usage:")
-// 	fmt.Println("Available Commands:")
-// 	for _, cmd := range cli.rootCommands {
-// 		cli.printCommandHelp(cmd, 1)
-// 	}
-// }
-
-// func (cli *CLI) printCommandHelp(cmd *Command, indent int) {
-// 	indentation := strings.Repeat("  ", indent)
-// 	fmt.Printf("%s%s: %s\n", indentation, cmd.Name, cmd.Description)
-// 	for _, flag := range cmd.Flags {
-// 		fmt.Printf("%s  --%s (aliases: %v): %s [default: %s]\n", indentation, flag.Name, flag.Aliases, flag.Usage, flag.Default)
-// 	}
-// 	for _, subCmd := range cmd.SubCommands {
-// 		cli.printCommandHelp(subCmd, indent+1)
-// 	}
-// }
-
 func (cli *CLI) printUsage() {
 	fmt.Println("\nCLI Tool Usage:")
 	fmt.Println("Usage: [command] [subcommand] [flags]")

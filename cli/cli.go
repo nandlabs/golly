@@ -87,7 +87,7 @@ func (cli *CLI) Execute() error {
 								ctx.SetFlag(primary, remainingArgs[i+1])
 								i++ // Skip the value
 							} else {
-								return fmt.Errorf("value for flag '%s' not provided", arg)
+								ctx.SetFlag(primary, "")
 							}
 						} else {
 							parsedArgs = append(parsedArgs, arg)
