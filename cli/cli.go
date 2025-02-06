@@ -101,7 +101,11 @@ func (cli *CLI) Execute() error {
 									ctx.SetFlag(primary, "")
 								}
 							} else {
-								parsedArgs = append(parsedArgs, arg+"=")
+								if arg == "--help" {
+									parsedArgs = append(parsedArgs, arg)
+								} else {
+									parsedArgs = append(parsedArgs, arg+"=")
+								}
 							}
 						} else {
 							// Assume short-form flag (e.g., -n value)

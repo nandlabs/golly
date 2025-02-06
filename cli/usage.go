@@ -25,7 +25,16 @@ func (cli *CLI) printCommandHelp(cmd *Command, indent int) {
 	if len(cmd.Flags) > 0 {
 		fmt.Printf("%sFlags:\n", indentation)
 		for _, flag := range cmd.Flags {
-			fmt.Printf("%s  --%s (aliases: %v): %s [default: %s]\n", indentation, flag.Name, flag.Aliases, flag.Usage, flag.Default)
+			aliases := ""
+			if len(flag.Aliases) > 0 {
+				aliases = fmt.Sprintf("-%s, ", strings.Join(flag.Aliases, ", -"))
+			}
+			fmt.Printf("%s  %s--%s value\t%s (default: %s)\n",
+				indentation,
+				aliases,
+				flag.Name,
+				flag.Usage,
+				flag.Default)
 		}
 	}
 
@@ -46,7 +55,15 @@ func (cli *CLI) printDetailedHelp(commandStack []string, cmd *Command) {
 	if len(cmd.Flags) > 0 {
 		fmt.Println("\nFlags:")
 		for _, flag := range cmd.Flags {
-			fmt.Printf("  --%s (aliases: %v): %s [default: %s]\n", flag.Name, flag.Aliases, flag.Usage, flag.Default)
+			aliases := ""
+			if len(flag.Aliases) > 0 {
+				aliases = fmt.Sprintf("-%s, ", strings.Join(flag.Aliases, ", -"))
+			}
+			fmt.Printf("%s--%s value\t%s (default: %s)\n",
+				aliases,
+				flag.Name,
+				flag.Usage,
+				flag.Default)
 		}
 	}
 
