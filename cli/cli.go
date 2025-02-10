@@ -1,159 +1,162 @@
 package cli
 
 import (
-	"context"
-	"io"
+	"errors"
+	"flag"
+	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 )
 
-// App represents a CLI application.
-type App struct {
-	// Name is the application name.
-	Name string
-	// Usage is the application usage information.
-	Usage string
-	// HelpName is the name used in the help command.
-	HelpName string
-	// ArgsUsage is the usage information for command arguments.
-	ArgsUsage string
-	// UsageText is the custom usage text for the application.
-	UsageText string
-	// Version is the application version.
-	Version string
-	// HideVersion determines whether to hide the version information.
-	HideVersion bool
-	// Action is the function to be invoked on default execution.
-	Action ActionFunc
-	// Flags are the global flags for the application.
-	Flags []*Flag
-	// Commands are the application commands.
-	Commands []*Command
-	// Writer is the output writer for the application.
-	Writer io.Writer
-	// HideHelp determines whether to hide the help command.
-	HideHelp bool
-	// HideHelpCommand determines whether to hide the help command in the list of commands.
-	HideHelpCommand bool
-	// CommandVisible determines whether the commands are visible.
-	CommandVisible bool
-	// setupComplete determines whether the application setup is complete.
-	setupComplete bool
-	// rootCommand is the root command of the application.
-	rootCommand *Command
+type CLI struct {
+	rootCommands map[string]*Command
 }
 
-// initialize initializes the application.
-func (app *App) initialize() {
-	if app.setupComplete {
-		return
+func NewCLI() *CLI {
+	return &CLI{
+		rootCommands: make(map[string]*Command),
+	}
+}
+
+func (cli *CLI) AddCommand(cmd *Command) {
+	cli.rootCommands[cmd.Name] = cmd
+}
+
+func (cli *CLI) Execute() error {
+	if len(os.Args) < 2 {
+		cli.printUsage()
+		return errors.New("no command provided")
 	}
 
-	app.setupComplete = true
+	args := os.Args[1:]
 
-	if app.Name == "" {
-		app.Name = filepath.Base(os.Args[0])
+	// Global help flag
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		cli.printUsage()
+		return nil
 	}
 
-	if app.HelpName == "" {
-		app.HelpName = app.Name
-	}
+	ctx := NewCLIContext()
+	currentCommands := cli.rootCommands
+	var currentCommand *Command
 
-	if app.Usage == "" {
-		app.Usage = "CLI App 101"
-	}
+	for len(args) > 0 {
+		name := args[0]
+		if cmd, exists := currentCommands[name]; exists {
+			currentCommand = cmd
+			ctx.CommandStack = append(ctx.CommandStack, name)
+			args = args[1:]
 
-	if app.Version == "" {
-		app.HideVersion = true
-	}
+			// Prepare flag parsing
+			flagSet := flag.NewFlagSet(name, flag.ExitOnError)
+			flagAliasMap := make(map[string]string)
 
-	var newCommands []*Command
-	for _, c := range app.Commands {
-		if c.HelpName == "" {
-			c.HelpName = c.Name
+			for _, fl := range currentCommand.Flags {
+				// Set default value in context first
+				ctx.SetFlag(fl.Name, fl.Default)
+				// Then register with flagSet
+				flagSet.String(fl.Name, fl.Default, fl.Usage)
+				for _, alias := range fl.Aliases {
+					flagAliasMap["--"+alias] = fl.Name
+					flagAliasMap["-"+alias] = fl.Name
+				}
+			}
+
+			// Help flag for the current command
+			showHelp := flagSet.Bool("help", false, "Show help for this command")
+			flagSet.BoolVar(showHelp, "h", false, "Show help for this command")
+
+			parsedArgs := []string{}
+			for i := 0; i < len(args); i++ {
+				arg := args[i]
+				if strings.HasPrefix(arg, "-") {
+					// Check for aliases or flags
+					equalIndex := strings.Index(arg, "=")
+					if equalIndex != -1 {
+						// Format: --alias=value or -a=value
+						flagKey := arg[:equalIndex]
+						flagValue := arg[equalIndex+1:]
+						if primary, exists := flagAliasMap[flagKey]; exists {
+							ctx.SetFlag(primary, flagValue)
+						} else {
+							parsedArgs = append(parsedArgs, arg)
+						}
+					} else {
+						// Format: --alias or -a followed by value
+						if primary, exists := flagAliasMap[arg]; exists {
+							if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+								ctx.SetFlag(primary, args[i+1])
+								i++ // Skip the value
+							} else {
+								ctx.SetFlag(primary, "")
+							}
+						} else if strings.HasPrefix(arg, "--") {
+							// Handle long-form flags (e.g., --name value)
+							flagKey := arg[2:]
+							if primary, exists := flagAliasMap["--"+flagKey]; exists {
+								if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+									ctx.SetFlag(primary, args[i+1])
+									i++
+								} else {
+									ctx.SetFlag(primary, "")
+								}
+							} else {
+								if arg == "--help" {
+									parsedArgs = append(parsedArgs, arg)
+								} else {
+									parsedArgs = append(parsedArgs, arg+"=")
+								}
+							}
+						} else {
+							// Assume short-form flag (e.g., -n value)
+							flagKey := arg[1:]
+							if primary, exists := flagAliasMap["-"+flagKey]; exists {
+								if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+									ctx.SetFlag(primary, args[i+1])
+									i++
+								} else {
+									ctx.SetFlag(primary, "")
+								}
+							} else {
+								parsedArgs = append(parsedArgs, arg)
+							}
+						}
+					}
+				} else {
+					parsedArgs = append(parsedArgs, arg)
+				}
+			}
+
+			flagSet.Parse(parsedArgs)
+			flagSet.Visit(func(f *flag.Flag) {
+				ctx.SetFlag(f.Name, f.Value.String())
+			})
+
+			// Ensure all flags have default values if not set or explicitly blank
+			for _, fl := range currentCommand.Flags {
+				value, exists := ctx.Flags[fl.Name]
+				if !exists || value == "" {
+					ctx.SetFlag(fl.Name, fl.Default)
+				}
+			}
+
+			// Update remaining arguments and subcommands
+			args = flagSet.Args()
+			currentCommands = currentCommand.SubCommands
+
+			if *showHelp {
+				cli.printDetailedHelp(ctx.CommandStack, currentCommand)
+				return nil
+			}
+		} else {
+			break
 		}
-		newCommands = append(newCommands, c)
-	}
-	app.Commands = newCommands
-
-	if app.Command(helpCommand.Name) == nil && !app.HideHelp {
-		if HelpFlag != nil {
-			app.appendFlag(HelpFlag)
-		}
 	}
 
-	if len(app.Commands) > 0 {
-		app.CommandVisible = true
+	if currentCommand == nil {
+		cli.printUsage()
+		return fmt.Errorf("unknown command")
 	}
 
-	if app.Action == nil {
-		app.Action = helpCommand.Action
-	}
-
-	if app.Writer == nil {
-		app.Writer = os.Stdout
-	}
-}
-
-// Execute executes the application with the given arguments.
-func (app *App) Execute(arguments []string) error {
-	return app.ExecuteContext(context.Background(), arguments)
-}
-
-// ExecuteContext executes the application with the given context and arguments.
-func (app *App) ExecuteContext(ctx context.Context, arguments []string) error {
-	app.initialize()
-
-	conTxt := NewContext(app, &Context{Context: ctx})
-
-	app.rootCommand = app.newRootCommand()
-	conTxt.Command = app.rootCommand
-
-	return app.rootCommand.Run(conTxt, arguments...)
-}
-
-// newRootCommand creates a new root command for the application.
-func (app *App) newRootCommand() *Command {
-	return &Command{
-		Name:      app.Name,
-		Usage:     app.Usage,
-		Action:    app.Action,
-		Flags:     app.Flags,
-		Commands:  app.Commands,
-		ArgsUsage: app.ArgsUsage,
-	}
-}
-
-// writer returns the output writer for the application.
-func (app *App) writer() io.Writer {
-	return app.Writer
-}
-
-// Command returns the command with the given name.
-func (app *App) Command(name string) *Command {
-	for _, c := range app.Commands {
-		if c.HasName(name) {
-			return c
-		}
-	}
-	return nil
-}
-
-// appendCommand appends a command to the application.
-func (app *App) appendCommand(c *Command) {
-	if !hasCommand(app.Commands, c) {
-		app.Commands = append(app.Commands, c)
-	}
-}
-
-// appendFlag appends a flag to the application.
-func (app *App) appendFlag(flag *Flag) {
-	if !hasFlag(app.Flags, flag) {
-		app.Flags = append(app.Flags, flag)
-	}
-}
-
-// VisibleCommands returns the visible commands of the application.
-func (app *App) VisibleCommands() []*Command {
-	return app.Commands
+	return currentCommand.Handler(ctx)
 }

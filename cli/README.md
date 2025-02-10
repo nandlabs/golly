@@ -1,62 +1,71 @@
-## cli
+# cli
 
 This project is a Go library for building powerful and user-friendly command-line interfaces (CLIs). The library makes it easy to create and manage complex command structures, parse command-line arguments, and provide helpful error messages and usage information to the user.
 
 ---
+
 - [Installation](#installation)
 - [Features](#features)
 - [Usage](#usage)
   - [Default Usage](#default)
   - [Subcommand Usage](#subcommands)
   - [Flags Usage](#flags)
+
 ---
 
-### Installation
+## Installation
 
 ```bash
 go get oss.nandlabs.io/golly/cli
 ```
 
-### Features
+## Features
 
-* Easy to use API for building complex command structures 
-* Argument parsing and validation 
-* Automatically generates usage and help information 
-* Written in Go and follows best practices for Go programming
+- Easy to use API for building complex command structures
+- Argument parsing and validation
+- Automatically generates usage and help information
+- Written in Go and follows best practices for Go programming
 
 ### Usage
 
 #### Default
+
 ```go
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"oss.nandlabs.io/golly/cli"
+    "oss.nandlabs.io/golly/cli"
 )
 
 func main() {
-	app := &cli.App{
-		Version: "v0.0.1",
-		Action: func(ctx *cli.Context) error {
-			fmt.Printf("Hello, Golang!")
-			return nil
-		},
-	}
+    app := cli.NewCLI()
 
-	if err := app.Execute(os.Args); err != nil {
-		log.Fatal(err)
-	}
+    gollyCmd := &cli.Command{
+        Name:        "welcome",
+        Description: "Welcome command",
+        Handler: func(ctx *cli.Context) error {
+            fmt.Println("welcome to golly!")
+            return nil
+        },
+    }
+
+    app.AddCommand(gollyCmd)
+
+    if err := app.Execute(); err != nil {
+        log.Fatal(err)
+    }
 }
 ```
 
 CLI Command and Output
+
 ```shell
-~ % go run main.go greet
-Hello, Golang!
+~ % go run main.go welcome
+welcome to golly!
 ```
 
 #### Subcommands
@@ -65,78 +74,67 @@ Hello, Golang!
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"oss.nandlabs.io/golly/cli"
+    "oss.nandlabs.io/golly/cli"
 )
 
 func main() {
-	app := &cli.App{
-		Version: "v0.0.1",
-		Action: func(ctx *cli.Context) error {
-			fmt.Printf("Hello, Golang!")
-			return nil
-		},
-		Commands: []*cli.Command{
-			{
-				Name:    "test",
-				Usage:   "this is a test command",
-				Aliases: []string{"t"},
-				Action: func(ctx *cli.Context) error {
-					fmt.Println("hello from test command")
-					return nil
-				},
-			},
-			{
-				Name:    "run",
-				Usage:   "time to run",
-				Aliases: []string{"r"},
-				Action: func(ctx *cli.Context) error {
-					fmt.Println("time to run away")
-					return nil
-				},
-				Commands: []*cli.Command{
-					{
-						Name:  "slow",
-						Usage: "run slow",
-						Action: func(ctx *cli.Context) error {
-							fmt.Println("time to run slow")
-							return nil
-						},
-					},
-					{
-						Name:  "fast",
-						Usage: "run fast",
-						Action: func(ctx *cli.Context) error {
-							fmt.Println("time to run fast")
-							return nil
-						},
-					},
-				},
-			},
-		},
-	}
 
-	if err := app.Execute(os.Args); err != nil {
-		log.Fatal(err)
-	}
+    app := cli.NewCLI()
+
+    welcomeCmd := &cli.Command{
+        Name: "welcome",
+        Description: "Welcome to golly",
+        Handler: func(ctx *cli.Context) error {
+            fmt.Println("welcome to golly")
+            return nil
+        },
+        SubCommands: map[string]*cli.Command{
+            "home": {
+                Name:        "home",
+                Description: "welcome home",
+                Handler: func(ctx *cli.Context) error {
+                    fmt.Println("welcome home")
+                    return nil
+                },
+            },
+            "office": {
+                Name:        "level",
+                Description: "level of the skill",
+                Handler: func(ctx *cli.Context) error {
+                    fmt.Println("welcome office")
+                    return nil
+                },
+            },
+        },
+    }
+
+    app.AddCommand(welcomeCmd)
+
+    if err := app.Execute(); err != nil {
+        fmt.Println("Error:", err)
+    }
 }
 ```
 
 CLI Commands and Output
+
 ```shell
-~ % go run main.go test
-hello from test command
+~ % go run main.go welcome
+welcome to golly
 ```
+
 ```shell
-~ % go run main.go run
-time to run away
+~ % go run main.go welcome home
+welcome home
 ```
+
 ```shell
-~ % go run main.go run fast
-time to run fast
+~ % go run main.go welcome office
+welcome office
 ```
 
 #### Flags
@@ -145,112 +143,69 @@ time to run fast
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"oss.nandlabs.io/golly/cli"
-)
-
-const (
-	ProjectDir  = "pd"
-	ProfileFile = "pf"
+    "oss.nandlabs.io/golly/cli"
 )
 
 func main() {
-	app := &cli.App{
-		Version: "v0.0.1",
-		Action: func(ctx *cli.Context) error {
-			fmt.Printf("Hello, Golang!\n")
-			fmt.Println(ctx.GetFlag(ProjectDir))
-			fmt.Println(ctx.GetFlag(ProfileFile))
-			return nil
-		},
-		Commands: []*cli.Command{
-			{
-				Name:    "test",
-				Usage:   "this is a test command",
-				Aliases: []string{"t"},
-				Action: func(ctx *cli.Context) error {
-					fmt.Println("hello from test command")
-					fmt.Println(ctx.GetFlag(ProjectDir))
-					fmt.Println(ctx.GetFlag(ProfileFile))
-					return nil
-				},
-			},
-			{
-				Name:    "run",
-				Usage:   "time to run",
-				Aliases: []string{"r"},
-				Action: func(ctx *cli.Context) error {
-					fmt.Println("time to run away")
-					fmt.Println(ctx.GetFlag(ProjectDir))
-					fmt.Println(ctx.GetFlag(ProfileFile))
-					return nil
-				},
-				Commands: []*cli.Command{
-					{
-						Name:  "slow",
-						Usage: "run slow",
-						Action: func(ctx *cli.Context) error {
-							fmt.Println("time to run slow")
-							fmt.Println(ctx.GetFlag(ProjectDir))
-							fmt.Println(ctx.GetFlag(ProfileFile))
-							return nil
-						},
-					},
-					{
-						Name:  "fast",
-						Usage: "run fast",
-						Action: func(ctx *cli.Context) error {
-							fmt.Println("time to run fast")
-							fmt.Println(ctx.GetFlag(ProjectDir))
-							fmt.Println(ctx.GetFlag(ProfileFile))
-							return nil
-						},
-					},
-				},
-			},
-		},
-		// global app flags
-		Flags: []*cli.Flag{
-			{
-				Name:    ProjectDir,
-				Aliases: []string{"pd"},
-				Default: "",
-				Usage:   "Directory of the project to be built",
-			},
-			{
-				Name:    ProfileFile,
-				Aliases: []string{"pf"},
-				Default: "",
-				Usage:   "Profile file name to be used",
-			},
-		},
-	}
+    app := cli.NewCLI()
 
-	if err := app.Execute(os.Args); err != nil {
-		log.Fatal(err)
-	}
+    server := &cli.Command{
+        Name:        "server",
+        Description: "Server command",
+        Handler: func(ctx *cli.Context) error {
+        region, _ := ctx.GetFlag("region")
+            fmt.Printf("IN REGION, %s\n", region)
+            return nil
+        },
+        Flags: []cli.Flag{
+            {
+                Name:    "region",
+                Aliases: []string{"r"},
+                Usage:   "Provide region",
+                Default: "",
+            },
+        },
+        SubCommands: map[string]*cli.Command{
+            "create": {
+                Name:        "create",
+                Description: "create",
+                Handler: func(ctx *cli.Context) error {
+                    typ, _ := ctx.GetFlag("type")
+                    fmt.Printf("SERVER TYPE %s\n", typ)
+                    return nil
+                },
+                Flags: []cli.Flag{
+                    {
+                        Name:    "type",
+                        Aliases: []string{"t"},
+                        Usage:   "server type",
+                        Default: "",
+                    },
+                },
+            },
+        },
+    }
+
+    app.AddCommand(server)
+
+    if err := app.Execute(); err != nil {
+        fmt.Println("Error:", err)
+    }
 }
 ```
 
 CLI Commands and Output
+
 ```shell
-~ % go run main.go test -pd="test" -pf="dev"
-Hello, Golang!
-test
-dev
+~ % go run main.go server --region="us-east-1"
+IN REGION, us-east-1
 ```
+
 ```shell
-~ % go run main.go run -pd="test" -pf="dev"
-time to run away
-test
-dev
-```
-```shell
-~ % go run main.go run fast -pd="test" -pf="dev"
-time to run fast
-test
-dev
+~ % go run main.go server create --type="t3.medium"
+SERVER TYPE t3.medium
 ```

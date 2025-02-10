@@ -1,38 +1,22 @@
 package cli
 
-import (
-	"context"
-	"flag"
-)
-
 type Context struct {
-	context.Context
-	App     *App
-	Command *Command
-	//flagsSet      *flag.FlagSet
-	parentContext *Context
+	CommandStack []string
+	Flags        map[string]string
 }
 
-func NewContext(app *App, parentCtx *Context) *Context {
-	c := &Context{
-		App:           app,
-		parentContext: parentCtx,
+func NewCLIContext() *Context {
+	return &Context{
+		CommandStack: []string{},
+		Flags:        make(map[string]string),
 	}
-	if parentCtx != nil {
-		c.Context = parentCtx.Context
-	}
-	c.Command = &Command{}
-	if c.Context == nil {
-		c.Context = context.Background()
-	}
-	return c
 }
 
-func (conTxt *Context) Args() Args {
-	res := args(flag.Args())
-	return &res
+func (ctx *Context) SetFlag(name, value string) {
+	ctx.Flags[name] = value
 }
 
-func (conTxt *Context) GetFlag(name string) interface{} {
-	return mappedFlags[name]
+func (ctx *Context) GetFlag(name string) (string, bool) {
+	value, exists := ctx.Flags[name]
+	return value, exists
 }
