@@ -7,6 +7,7 @@ import (
 
 	"oss.nandlabs.io/golly/codec"
 	"oss.nandlabs.io/golly/ioutils"
+	"oss.nandlabs.io/golly/uuid"
 )
 
 type BaseMessage struct {
@@ -14,6 +15,20 @@ type BaseMessage struct {
 	headers     map[string]interface{}
 	headerTypes map[string]reflect.Kind
 	body        *bytes.Buffer
+}
+
+func NewBaseMessage() (baseMsg *BaseMessage, err error) {
+	var uid *uuid.UUID
+	uid, err = uuid.V4()
+	if err == nil {
+		baseMsg = &BaseMessage{
+			id:          uid.String(),
+			headers:     make(map[string]interface{}),
+			headerTypes: make(map[string]reflect.Kind),
+			body:        &bytes.Buffer{},
+		}
+	}
+	return
 }
 
 func (bm *BaseMessage) Id() string {
