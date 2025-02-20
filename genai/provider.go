@@ -2,10 +2,20 @@ package genai
 
 import (
 	"io"
+
+	"oss.nandlabs.io/golly/errutils"
+	"oss.nandlabs.io/golly/managers"
 )
 
-// Model is the interface that represents a generative AI model
-type Model interface {
+var GetUnsupportedModelErr = errutils.NewCustomError("unsupported model %s")
+var GetUnsupportedMimeErr = errutils.NewCustomError("unsupported mime type %s for model %s")
+var GetUnsupportedConsumerErr = errutils.NewCustomError("unsupported consumer for model %s")
+var GetUnsupportedProviderErr = errutils.NewCustomError("unsupported provider for model %s")
+
+var Providers managers.ItemManager[Provider] = managers.NewItemManager[Provider]()
+
+// Provider is the interface that represents a generative AI model
+type Provider interface {
 	// Name returns the name of the model
 	Name() string
 	// Description returns a description of the model
@@ -17,15 +27,15 @@ type Model interface {
 	// License returns the license of the model
 	License() string
 	// Supports returns true if the model supports the given MIME type as a consumer or provider
-	Supports(mime string) (consumer bool, provider bool)
+	Supports(model, mime string) (consumer bool, provider bool)
 	// Accepts returns the supported input MIME types accepted by this model
-	Accepts() []string
+	Accepts(model string) []string
 	// Produces returns the supported output MIME types thats produced by this model
-	Produces() []string
+	Produces(model string) []string
 	// Generate will invoke the model generation and fetch the result
-	Generate(exchange Exchange) error
+	Generate(model string, exchange Exchange) error
 	// GenerateStream will invoke the model generation and stream the result
-	GenerateStream(exchnage Exchange) error
+	GenerateStream(model string, exchnage Exchange) error
 }
 
 // Options is a set of options for the model

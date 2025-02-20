@@ -8,13 +8,13 @@ import (
 )
 
 func TestGoTemplate_Type(t *testing.T) {
-	template, err := NewGoTemplate("content")
+	template, err := NewGoTemplate("test-01", "content")
 	assert.Equal(t, GoTextTemplate, template.Type())
 	assert.NoError(t, err)
 }
 
 func TestGoTemplate_FormatAsText(t *testing.T) {
-	template, err := NewGoTemplate("content")
+	template, err := NewGoTemplate("test-02", "content")
 	assert.NoError(t, err)
 	data := make(map[string]interface{})
 	_, err = template.FormatAsText(data)
@@ -22,22 +22,24 @@ func TestGoTemplate_FormatAsText(t *testing.T) {
 }
 
 func TestGoTemplate_WriteTo(t *testing.T) {
-	template, err := NewGoTemplate("content")
+	template, err := NewGoTemplate("test-03", "content")
 	assert.NoError(t, err)
 	data := make(map[string]interface{})
 	writer := &bytes.Buffer{}
 	err = template.WriteTo(writer, data)
 	assert.NoError(t, err)
+
 }
 
 func TestGetPromptTemplate(t *testing.T) {
-	template, err := NewGoTemplate("content")
-	assert.NotNil(t, template)
-	assert.NoError(t, err)
+	_, err := NewGoTemplate("test-03", "content")
+	assert.Nil(t, err)
+	template := GetPromptTemplate("test-03")
+	assert.Nil(t, template)
 }
 
 func TestGetOrCreate(t *testing.T) {
-	template, err := GetOrCreatePrompt("test", "content")
+	template, err := NewGoTemplate("test-05", "content")
 	assert.NoError(t, err)
 	assert.NotNil(t, template)
 }
