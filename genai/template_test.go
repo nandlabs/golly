@@ -35,7 +35,7 @@ func TestGetPromptTemplate(t *testing.T) {
 	_, err := NewGoTemplate("test-03", "content")
 	assert.Nil(t, err)
 	template := GetPromptTemplate("test-03")
-	assert.Nil(t, template)
+	assert.NotNil(t, template)
 }
 
 func TestGetOrCreate(t *testing.T) {
