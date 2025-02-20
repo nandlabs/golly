@@ -178,13 +178,17 @@ func (e *exchangeImpl) AddMsgFrmTemplate(templateId string, parameters map[strin
 func (e *exchangeImpl) AddJsonMsg(data interface{}, actor Actor) (message *Message, err error) {
 	var c codec.Codec
 	c, err = codec.GetDefault(ioutils.MimeApplicationJSON)
-	if err == nil {
-		err = c.Write(data, message.rwer)
+	if err != nil {
+		return
 	}
 	message = &Message{
 		rwer:     new(bytes.Buffer),
 		mimeType: ioutils.MimeApplicationJSON,
 		msgActor: actor,
+	}
+	err = c.Write(data, message.rwer)
+	if err != nil {
+		return
 	}
 	e.messages = append(e.messages, message)
 	return
