@@ -5,8 +5,6 @@ import (
 	"strings"
 	"sync"
 	"text/template"
-
-	"oss.nandlabs.io/golly/uuid"
 )
 
 // TemplateType is the type of the template
@@ -89,21 +87,6 @@ func prepareData(data map[string]any) map[string]any {
 	return d
 }
 
-// NewGoTemplate creates a new Go template
-func NewGoTemplate(content string) (pt PromptTemplate, err error) {
-	var id *uuid.UUID
-	id, err = uuid.V4()
-	if err != nil {
-		return
-	}
-
-	tmpl, err := template.New(id.String()).Parse(content)
-	if err == nil {
-		pt = &goTemplate{template: tmpl, id: id.String()}
-	}
-	return
-}
-
 // GetPromptTemplate returns a prompt template from the cache
 func GetPromptTemplate(id string) PromptTemplate {
 	cacheMutex.RLock()
@@ -111,23 +94,23 @@ func GetPromptTemplate(id string) PromptTemplate {
 	return templateCache[id]
 }
 
-// GetOrCreatePrompt returns a prompt template from the cache if it matches the id or creates a new one if it does not exist
-func GetOrCreatePrompt(id, content string) (PromptTemplate, error) {
+// NewGoTemplate returns a prompt template from the cache if it matches the id or creates a new one if it does not exist
+func NewGoTemplate(id, content string) (PromptTemplate, error) {
 	//Check if the template is already in the cache
 	cacheMutex.Lock()
 	defer cacheMutex.Unlock()
-	if tmpl, ok := templateCache[id]; ok {
-		return tmpl, nil
-	} else {
-		//Create a new template
-		tmpl, err := template.New(id).Parse(content)
-		if err != nil {
-			return nil, err
-		}
-		//Add the template to the cache
-		templateCache[id] = &goTemplate{template: tmpl, id: id}
-		return templateCache[id], nil
+	if _, ok := templateCache[id]; ok {
+		LOGGER.WarnF("Replacing template with id %s", id)
 	}
+
+	//Create a new template
+	tmpl, err := template.New(id).Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	//Add the template to the cache
+	templateCache[id] = &goTemplate{template: tmpl, id: id}
+	return templateCache[id], nil
 
 }
 
