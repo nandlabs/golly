@@ -18,6 +18,26 @@ type Message struct {
 	done     bool
 }
 
+func NewTextMessage(text string, mimeType string) *Message {
+	return &Message{
+		rwer:     bytes.NewBufferString(text),
+		mimeType: mimeType,
+	}
+}
+
+func NewBinMessage(data []byte, mimeType string) *Message {
+	return &Message{
+		rwer:     bytes.NewBuffer(data),
+		mimeType: mimeType,
+	}
+}
+func NewFileMessage(u string, mimeType string) *Message {
+	return &Message{
+		u:        &url.URL{Path: u},
+		mimeType: mimeType,
+	}
+}
+
 // Mime returns the MIME type of the message
 
 func (m *Message) Mime() string {
@@ -34,6 +54,11 @@ func (m *Message) Read(p []byte) (n int, err error) {
 	return m.rwer.Read(p)
 }
 
+// ReadFrom implements the io.ReaderFrom interface
+func (m *Message) ReadFrom(r io.Reader) (n int64, err error) {
+	return io.Copy(m.rwer, r)
+}
+
 // SetActor sets the actor that sent the message
 func (m *Message) SetActor(actor Actor) {
 	m.msgActor = actor
@@ -47,6 +72,10 @@ func (m *Message) SetMime(mime string) {
 // Write implements the io.Writer interface
 func (m *Message) Write(p []byte) (n int, err error) {
 	return m.rwer.Write(p)
+}
+
+func (m *Message) WriteTo(w io.Writer) (n int64, err error) {
+	return io.Copy(w, m.rwer)
 }
 
 // URL returns the URL of the message message
@@ -68,7 +97,15 @@ func (m *Message) Done() {
 func (m *Message) String() string {
 
 	switch m.mimeType {
-	case ioutils.MimeTextPlain, ioutils.MimeTextHTML, ioutils.MimeMarkDown, ioutils.MimeTextYAML:
+	case ioutils.MimeTextPlain,
+		ioutils.MimeTextHTML,
+		ioutils.MimeMarkDown,
+		ioutils.MimeTextYAML,
+		ioutils.MimeApplicationJSON,
+		ioutils.MimeApplicationXML,
+		ioutils.MimeTextXML,
+		ioutils.MimeTextCSS,
+		ioutils.MimeTextCSV:
 		return m.rwer.(*bytes.Buffer).String()
 	default:
 		return fmt.Sprintf("{mimeType: %s, actor: %s}", m.mimeType, m.msgActor)
