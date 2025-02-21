@@ -1,169 +1,232 @@
-# GenAI Package
+# Golly
 
-The `genai` package provides functionality for interacting with generative AI models. This package includes support for managing sessions, exchanges, and models, as well as handling memory and templates.
-
-## Installation
-
-To install the package, use the following command:
-
-```sh
-go get github.com/nandlabs/golly/genai
-```
+Golly is a generative AI framework that allows you to create and manage AI models.
 
 ## Index
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Creating a Model](#creating-a-model)
-  - [Creating a Session](#creating-a-session)
-  - [Adding Exchanges](#adding-exchanges)
-  - [Contextualizing Queries](#contextualizing-queries)
+  - [Creating a Provider](#creating-a-provider)
+  - [Using Templates](#using-templates)
+  - [Managing Options](#managing-options)
+  - [Memory Management](#memory-management)
+  - [Messages](#messages)
 - [Components](#components)
-  - [Model](#model)
-  - [Session](#session)
-  - [Exchange](#exchange)
-  - [Memory](#memory)
+  - [Provider](#provider)
   - [Template](#template)
-- [License](#license)
+  - [Options](#options)
+  - [Memory](#memory)
+  - [Message](#message)
+
+## Installation
+
+To install Golly, use the following command:
+
+```sh
+go get -u oss.nandlabs.io/golly
+```
 
 ## Usage
 
-### Creating a Model
+### Creating a Provider
 
-To create a model, you need to implement the `Model` interface. Here is an example of a simple model implementation:
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/nandlabs/golly/genai"
-)
-
-type SimpleModel struct {
-    genai.AbstractModel
-}
-
-func (m *SimpleModel) Generate(exchange genai.Exchange) error {
-    // Implement the generation logic here
-    return nil
-}
-
-func main() {
-    model := &SimpleModel{
-        AbstractModel: genai.AbstractModel{
-            name:        "SimpleModel",
-            description: "A simple generative AI model",
-            version:     "1.0",
-            author:      "Author Name",
-            license:     "MIT",
-        },
-    }
-    fmt.Println("Model created:", model.Name())
-}
-```
-
-### Creating a Session
-
-To create a session, you need to use the `LocalSession` struct. Here is an example:
+To create a new provider, implement the `Provider` interface:
 
 ```go
 package main
 
 import (
+    "oss.nandlabs.io/golly/genai"
     "fmt"
-    "github.com/nandlabs/golly/genai"
 )
 
-func main() {
-    model := &SimpleModel{
-        AbstractModel: genai.AbstractModel{
-            name:        "SimpleModel",
-            description: "A simple generative AI model",
-            version:     "1.0",
-            author:      "Author Name",
-            license:     "MIT",
-        },
-    }
-
-    session := &genai.LocalSession{
-        id:                    "session1",
-        model:                 model,
-        attributes:            make(map[string]interface{}),
-        memory:                genai.NewRamMemory(),
-        contextualiseTemplate: genai.NewGoTemplate(""),
-    }
-
-    fmt.Println("Session created:", session.Id())
-}
-```
-
-### Adding Exchanges
-
-To add exchanges to a session, you can use the `Add` method. Here is an example:
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/nandlabs/golly/genai"
-)
-
-func main() {
+type MyProvider struct {
     // ...existing code...
+}
 
-    exchange := genai.NewExchange("exchange1")
-    message, _ := exchange.AddTxtMsg("Hello, AI!", genai.UserActor)
-    session.SaveExchange(exchange)
+func (p *MyProvider) Name() string {
+    return "MyProvider"
+}
 
-    fmt.Println("Exchange added:", message.String())
+func (p *MyProvider) Description() string {
+    return "A custom provider"
+}
+
+func (p *MyProvider) Version() string {
+    return "1.0.0"
+}
+
+func (p *MyProvider) Author() string {
+    return "Author Name"
+}
+
+func (p *MyProvider) License() string {
+    return "MIT"
+}
+
+func (p *MyProvider) Supports(model, mime string) (consumer bool, provider bool) {
+    // ...existing code...
+}
+
+func (p *MyProvider) Accepts(model string) []string {
+    // ...existing code...
+}
+
+func (p *MyProvider) Produces(model string) []string {
+    // ...existing code...
+}
+
+func (p *MyProvider) Generate(model string, exchange genai.Exchange, options *genai.Options) error {
+    // ...existing code...
+}
+
+func (p *MyProvider) GenerateStream(model string, exchange genai.Exchange, handler func(reader io.Reader), options genai.Options) error {
+    // ...existing code...
+}
+
+func main() {
+    provider := &MyProvider{}
+    genai.Providers.Register(provider)
+    fmt.Println("Provider registered:", provider.Name())
 }
 ```
 
-### Contextualizing Queries
+### Using Templates
 
-To contextualize queries based on previous exchanges, you can use the `Contextualise` method. Here is an example:
+To create and use templates, use the `PromptTemplate` interface and related functions:
 
 ```go
 package main
 
 import (
+    "oss.nandlabs.io/golly/genai"
     "fmt"
-    "github.com/nandlabs/golly/genai"
 )
 
 func main() {
-    // ...existing code...
+    templateContent := "Hello, {{.Name}}!"
+    templateID := "greeting"
 
-    newQuestion, err := session.Contextualise("What is the weather like?", 5)
+    tmpl, err := genai.NewGoTemplate(templateID, templateContent)
     if err != nil {
-        fmt.Println("Error contextualizing query:", err)
+        fmt.Println("Error creating template:", err)
         return
     }
 
-    fmt.Println("Contextualized query:", newQuestion)
+    data := map[string]any{
+        "Name": "World",
+    }
+
+    result, err := tmpl.FormatAsText(data)
+    if err != nil {
+        fmt.Println("Error formatting template:", err)
+        return
+    }
+
+    fmt.Println(result)
+}
+```
+
+### Managing Options
+
+To manage options for the provider, use the `Options` and `OptionsBuilder` structs:
+
+```go
+package main
+
+import (
+    "oss.nandlabs.io/golly/genai"
+    "fmt"
+)
+
+func main() {
+    options := genai.NewOptionsBuilder().
+        SetMaxTokens(100).
+        SetTemperature(0.7).
+        Build()
+
+    fmt.Println("Max Tokens:", options.GetMaxTokens(0))
+    fmt.Println("Temperature:", options.GetTemperature(0))
+}
+```
+
+### Memory Management
+
+To manage memory, use the `Memory` interface and related functions:
+
+```go
+package main
+
+import (
+    "oss.nandlabs.io/golly/genai"
+    "fmt"
+)
+
+func main() {
+    memory := genai.NewRamMemory()
+    sessionID := "session1"
+    exchange := genai.Exchange{
+        // ...existing code...
+    }
+
+    err := memory.Add(sessionID, exchange)
+    if err != nil {
+        fmt.Println("Error adding to memory:", err)
+        return
+    }
+
+    exchanges, err := memory.Fetch(sessionID, "")
+    if err != nil {
+        fmt.Println("Error fetching from memory:", err)
+        return
+    }
+
+    fmt.Println("Exchanges:", exchanges)
+}
+```
+
+### Messages
+
+To work with messages, use the `Message` struct:
+
+```go
+package main
+
+import (
+    "oss.nandlabs.io/golly/genai"
+    "bytes"
+    "fmt"
+)
+
+func main() {
+    message := &genai.Message{
+        rwer:     bytes.NewBufferString("Hello, World!"),
+        mimeType: "text/plain",
+    }
+
+    fmt.Println("Message MIME type:", message.Mime())
+    fmt.Println("Message content:", message.String())
 }
 ```
 
 ## Components
 
-### Model
+### Provider
 
-The `Model` interface represents a generative AI model. It includes methods for generating responses and handling input and output MIME types.
+The `Provider` interface represents a generative AI model. It includes methods for generating responses and handling input and output MIME types.
 
-### Session
+### Template
 
-The `Session` interface represents a session with a generative AI model. It includes methods for managing exchanges and contextualizing queries.
+The `PromptTemplate` interface represents a template for formatting prompts. The `goTemplate` struct provides an implementation using Go templates.
 
-### Exchange
+### Options
 
-The `Exchange` interface represents an exchange between users and the AI. It includes methods for adding and retrieving messages.
+The `Options` struct represents the options for the provider. The `OptionsBuilder` struct provides a builder for creating options.
 
 ### Memory
 
 The `Memory` interface represents a memory for storing exchanges. The `RamMemory` struct provides an in-memory implementation.
 
-### Template
+### Message
 
-The `PromptTemplate` interface represents a template for formatting prompts. The `goTemplate` struct provides an implementation using Go templates.
+The `Message` struct represents a message with MIME type and content.
