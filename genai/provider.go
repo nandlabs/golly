@@ -35,11 +35,12 @@ var Providers managers.ItemManager[Provider] = managers.NewItemManager[Provider]
 type StreamingHandller func(message Message, last bool)
 
 type Model struct {
-	Id          string        `json:"id" yaml:"id" bson:"id"`
-	Name        string        `json:"name" yaml:"name" bson:"name"`
-	InputMimes  []string      `json:"supported_mimes" yaml:"supported_mimes" bson:"supported_mimes"`
-	OutputMimes []string      `json:"output_mimes" yaml:"output_mimes" bson:"output_mimes"`
-	Options     []ModelOption `json:"options" yaml:"options" bson:"options"`
+	Id       string         `json:"id" yaml:"id" bson:"id"`
+	Name     string         `json:"name" yaml:"name" bson:"name"`
+	Version  string         `json:"version" yaml:"version" bson:"version"`
+	InMimes  []string       `json:"in_mimes" yaml:"in_mimes" bson:"in_mimes"`
+	OutMimes []string       `json:"out_mimes" yaml:"out_mimes" bson:"out_mimes"`
+	Options  []*ModelOption `json:"options" yaml:"options" bson:"options"`
 }
 
 type ModelOption struct {
@@ -58,9 +59,9 @@ type Provider interface {
 	// Version returns the version of the model
 	Version() string
 	//Models returns the list of models supported by the provider
-	Models() []Model
-	// Provides returns true if the provider supports the specified model
-	Provides(model string) bool
+	// Some providers may not have to get this information programatically, in which case this method should return nil
+	// and unsupported operation error.
+	Models() ([]*Model, error)
 	// Generate will invoke the model generation and adds the result to the exhange. This is a blocking call.
 	Generate(model string, exchange Exchange, options *Options) error
 	// GenerateStream will invoke the model generation and stream the result to handler function.
