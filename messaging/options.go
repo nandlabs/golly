@@ -106,6 +106,6 @@ func ResolveOptValue[T any](key string, optionsResolver *OptionsResolver) (value
 }
 
 func (or *OptionsResolver) Get(key string) (value interface{}, has bool) {
-	value, has = or.opts[RetryOpts]
+	value, has = or.opts[key]
 	return
 }
