@@ -2,6 +2,7 @@ package genai
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 
 	"oss.nandlabs.io/golly/codec"
@@ -152,17 +153,42 @@ func (e *exchangeImpl) AddTxtMsg(text string, actor Actor) (message *Message, er
 	return
 }
 
+// AddMsgFrmTemplate adds a new text message to the exchnage
+func (e *exchangeImpl) AddMsgFrmTemplate(templateId string, parameters map[string]any, actor Actor) (message *Message, err error) {
+	template := GetPromptTemplate(templateId)
+	if template == nil {
+		err = fmt.Errorf("template %s not found", templateId)
+		return
+	}
+	buf := new(bytes.Buffer)
+	err = template.WriteTo(buf, parameters)
+	if err != nil {
+		return
+	}
+	message = &Message{
+		rwer:     buf,
+		mimeType: ioutils.MimeTextPlain,
+		msgActor: actor,
+	}
+	e.messages = append(e.messages, message)
+	return
+}
+
 // AddJsonMsg adds a new JSON message to the exchnage
 func (e *exchangeImpl) AddJsonMsg(data interface{}, actor Actor) (message *Message, err error) {
 	var c codec.Codec
+	c, err = codec.GetDefault(ioutils.MimeApplicationJSON)
+	if err != nil {
+		return
+	}
 	message = &Message{
 		rwer:     new(bytes.Buffer),
 		mimeType: ioutils.MimeApplicationJSON,
 		msgActor: actor,
 	}
-	c, err = codec.GetDefault(ioutils.MimeApplicationJSON)
-	if err == nil {
-		err = c.Write(data, message.rwer)
+	err = c.Write(data, message.rwer)
+	if err != nil {
+		return
 	}
 	e.messages = append(e.messages, message)
 	return

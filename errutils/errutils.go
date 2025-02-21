@@ -2,6 +2,7 @@ package errutils
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -71,4 +72,20 @@ func NewMultiErr(err error) (multiErr *MultiError) {
 		multiErr.Add(err)
 	}
 	return
+}
+
+// CustomError is a struct that holds a template for creating custom errors.
+// The template is a string that can contain format verbs.
+type CustomError struct {
+	template string
+}
+
+// Err creates a new error using the template and the parameters.
+func (e *CustomError) Err(params ...any) error {
+	return fmt.Errorf(e.template, params...)
+}
+
+// NewCustomError creates a new CustomError with the given template.
+func NewCustomError(template string) *CustomError {
+	return &CustomError{template: template}
 }

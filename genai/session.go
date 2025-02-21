@@ -18,7 +18,10 @@ const (
 	previousQuestionsVar  = "PreviousQuestions"
 	currentQuestionVar    = "CurrentQuestion"
 	contextualiseTemplate = `
-		You are an advanced assistant designed to analyze user queries in a chat session. Your task is to determine the intent of the user's current question based on the context of their previous questions. Use the provided history of user questions to identify the intent clearly. If the intent is unclear, suggest what additional context might be needed.
+		You are an advanced assistant designed to analyze user queries in a chat session. 
+		Your task is to determine the intent of the user's current question based on the context of their previous questions. 
+		Use the provided history of user questions to identify the intent clearly.
+		If the intent is unclear, suggest what additional context might be needed.
 
 		Previous Questions:
 		{{- range .PreviousQuestions }}
@@ -36,11 +39,12 @@ const (
 type Session interface {
 	// Id returns the id of the session. This is expected to be unique.
 	Id() string
-	//Model returns the model of the session
-	Model() Model
+	//CtxModel returns the model of the session
+	CtxModel() string
+	// Provider is the interface that represents a provider
+	Provider() Provider
 	// Attributes returns the attributes of the session
 	Attributes() map[string]any
-
 	// Last returns the current exchange of the session
 	CurrentExchange() (Exchange, error)
 	// Exchanges returns the exchanges of the session
@@ -48,6 +52,7 @@ type Session interface {
 	// Memory returns the memory of the session
 	SaveExchange(exchange Exchange) error
 	// Contextualise returns the contextualised message based on the last n exchanges
+	// -1 means all exchanges
 	Contextualise(text string, n int) (string, error)
 }
 
@@ -55,11 +60,13 @@ type Session interface {
 // It is a session that is stored in local physical memory
 
 type LocalSession struct {
-	id                    string
-	model                 Model
-	attributes            map[string]any
-	memory                Memory
-	contextualiseTemplate PromptTemplate
+	id          string
+	ctxModelId  string
+	provider    Provider
+	attributes  map[string]any
+	memory      Memory
+	ctxTemplate PromptTemplate
+	ctxOptions  *Options
 }
 
 // Id returns the id of the session. This is expected to be unique.
@@ -67,9 +74,13 @@ func (s *LocalSession) Id() string {
 	return s.id
 }
 
-// Model returns the model of the session
-func (s *LocalSession) Model() Model {
-	return s.model
+// CtxModelId returns the model used for context
+func (s *LocalSession) CtxModelId() string {
+	return s.ctxModelId
+}
+
+func (s *LocalSession) Provider() Provider {
+	return s.provider
 }
 
 // Attributes returns the attributes of the session
@@ -128,11 +139,11 @@ func (s *LocalSession) Contextualise(text string, n int) (newQuestion string, er
 				templateAttrs[currentQuestionVar] = text
 				exg := NewExchange("message-reformatter")
 				textMsg, _ := exg.AddTxtMsg(text, UserActor)
-				err = s.contextualiseTemplate.WriteTo(textMsg, templateAttrs)
+				err = s.ctxTemplate.WriteTo(textMsg, templateAttrs)
 				if err != nil {
 					return
 				}
-				err = s.model.Generate(exg)
+				err = s.provider.Generate(s.ctxModelId, exg, s.ctxOptions)
 				if err != nil {
 					return
 				}
