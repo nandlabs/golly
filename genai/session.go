@@ -60,12 +60,13 @@ type Session interface {
 // It is a session that is stored in local physical memory
 
 type LocalSession struct {
-	id                    string
-	ctxModelId            string
-	provider              Provider
-	attributes            map[string]any
-	memory                Memory
-	contextualiseTemplate PromptTemplate
+	id          string
+	ctxModelId  string
+	provider    Provider
+	attributes  map[string]any
+	memory      Memory
+	ctxTemplate PromptTemplate
+	ctxOptions  *Options
 }
 
 // Id returns the id of the session. This is expected to be unique.
@@ -138,11 +139,11 @@ func (s *LocalSession) Contextualise(text string, n int) (newQuestion string, er
 				templateAttrs[currentQuestionVar] = text
 				exg := NewExchange("message-reformatter")
 				textMsg, _ := exg.AddTxtMsg(text, UserActor)
-				err = s.contextualiseTemplate.WriteTo(textMsg, templateAttrs)
+				err = s.ctxTemplate.WriteTo(textMsg, templateAttrs)
 				if err != nil {
 					return
 				}
-				err = s.provider.Generate(s.ctxModelId, exg)
+				err = s.provider.Generate(s.ctxModelId, exg, s.ctxOptions)
 				if err != nil {
 					return
 				}
