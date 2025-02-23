@@ -127,12 +127,8 @@ func (cb *CircuitBreaker) updateState(oldState, newState uint32) {
 		if newState == circuitOpen {
 			// Start Timer for HalfOpen
 			go func() {
-				select {
-				case <-time.After(time.Second * time.Duration(cb.Timeout)):
-					{
-						cb.updateState(circuitOpen, circuitHalfOpen)
-					}
-				}
+				time.Sleep(time.Second * time.Duration(cb.Timeout))
+				cb.updateState(circuitOpen, circuitHalfOpen)
 			}()
 		}
 	}
