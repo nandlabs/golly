@@ -7,13 +7,6 @@ import (
 	"oss.nandlabs.io/golly/config"
 )
 
-var EmptyClientOptions = &ClientOptions{
-	Attributes:     config.NewMapAttributes(),
-	CircuitBreaker: nil,
-	Auth:           nil,
-	RetryPolicy:    nil,
-}
-
 type RetryPolicy struct {
 	MaxRetries      int
 	BackoffInterval time.Duration
@@ -24,7 +17,8 @@ type RetryPolicy struct {
 func (r *RetryPolicy) WaitTime(retryCount int) time.Duration {
 	backoff := r.BackoffInterval
 	if r.Exponential {
-		backoff = time.Duration(int64(math.Pow(2, float64(retryCount)))*backoff.Milliseconds()) * time.Millisecond
+		multiple := math.Pow(2, float64(retryCount))
+		backoff = time.Duration(multiple) * r.BackoffInterval
 		backoff = min(backoff, r.MaxBackoff)
 	}
 	return backoff
@@ -114,7 +108,7 @@ func (b *OptionsBuilder) RetryPolicy(maxRetries int, backoffIntervalMs int, expo
 		MaxRetries:      maxRetries,
 		BackoffInterval: time.Duration(backoffIntervalMs) * time.Millisecond,
 		Exponential:     exponential,
-		MaxBackoff:      time.Duration(backoffIntervalMs) * time.Millisecond,
+		MaxBackoff:      time.Duration(maxBackoffInMs) * time.Millisecond,
 	}
 	return b
 }
