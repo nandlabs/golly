@@ -1,176 +1,230 @@
 package rest
 
 import (
-	"crypto/tls"
+	"encoding/base64"
+	"fmt"
 	"net/http"
-	"reflect"
+	"net/http/httptest"
 	"testing"
+	"time"
 
-	"oss.nandlabs.io/golly/codec"
-	"oss.nandlabs.io/golly/testing/assert"
+	"oss.nandlabs.io/golly/clients"
 )
 
-var client = NewClient()
-
-// TestNewClient tests the NewClient function
-func TestNewClient(t *testing.T) {
-	if reflect.TypeOf(client) != reflect.TypeOf(NewClient()) {
-		t.Errorf("NewClient() = %v, want %v", client, NewClient())
-	}
-}
-
-// TestClientOptions tests the ClientOptions function
-func TestClientOptions(t *testing.T) {
-	gotReq := client.ReqTimeout(10)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotReq) {
-		t.Errorf("NewClient() = %v, want %v", gotReq, client)
-	}
-
-	gotCodec := client.AddCodecOption(codec.PrettyPrint, true)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotCodec) {
-		t.Errorf("NewClient() = %v, want %v", gotCodec, client)
-	}
-
-	gotIdle := client.IdleTimeout(2)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotIdle) {
-		t.Errorf("NewClient() = %v, want %v", gotIdle, client)
-	}
-
-	gotHttpEmpty := client.ErrorOnHttpStatus()
-	if reflect.TypeOf(client) != reflect.TypeOf(gotHttpEmpty) {
-		t.Errorf("NewClient() = %v, want %v", gotHttpEmpty, client)
-	}
-
-	gotHttp := client.ErrorOnHttpStatus(200, 300, 404)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotHttp) {
-		t.Errorf("NewClient() = %v, want %v", gotHttp, client)
-	}
-
-	gotMaxIdle := client.MaxIdle(3)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotMaxIdle) {
-		t.Errorf("NewClient() = %v, want %v", gotMaxIdle, client)
-	}
-
-	gotMaxIdlePerHost := client.MaxIdlePerHost(4)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotMaxIdlePerHost) {
-		t.Errorf("NewClient() = %v, want %v", gotMaxIdlePerHost, client)
-	}
-
-	gotEndProxy := client.UseEnvProxy("test.com", "test", "test")
-	if gotEndProxy != nil {
-		t.Errorf("NewClient() = %v, want %v", gotEndProxy, client)
-	}
-
-	gotRetry := client.Retry(3, 5)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotRetry) {
-		t.Errorf("NewClient() = %v, want %v", gotRetry, client)
-	}
-
-	gotCircuitBreaker := client.UseCircuitBreaker(1, 2, 1, 3)
-	if reflect.TypeOf(client) != reflect.TypeOf(gotCircuitBreaker) {
-		t.Errorf("NewClient() = %v, want %v", gotCircuitBreaker, client)
-	}
-
-	gotTlsCerts, err := client.SetTLSCerts(tls.Certificate{})
-	if err != nil {
-		t.Errorf("unable to add tls certs")
-	}
-	if reflect.TypeOf(client) != reflect.TypeOf(gotTlsCerts) {
-		t.Errorf("NewClient() = %v, want %v", gotTlsCerts, client)
-	}
-}
-
-// TestClient_NewRequest tests the NewRequest function
-func TestClient_NewRequest(t *testing.T) {
-	req := client.NewRequest("http://localhost:8080", http.MethodGet)
-	want := &Request{
-		url:    "http://localhost:8080",
-		method: http.MethodGet,
-	}
-	if reflect.TypeOf(req) != reflect.TypeOf(want) {
-		t.Errorf("NewRequest() = %v, want %v", req, want)
-	}
-}
-
-// TestClient_SetCACerts
-func TestClient_SetCACerts(t *testing.T) {
+func TestClient_Execute(t *testing.T) {
 	tests := []struct {
-		name     string
-		certPath string
-		want     string
+		name           string
+		clientOptions  *ClientOpts
+		requestURL     string
+		requestMethod  string
+		expectedStatus int
+		expectError    bool
 	}{
 		{
-			name:     "TestClient_SetCACerts_1",
-			certPath: "./testdata/test-key.pem",
-			want:     "",
+			name: "Successful GET request",
+			clientOptions: &ClientOpts{
+				ClientOptions:  clients.EmptyClientOptions,
+				requestTimeout: 5 * time.Second,
+			},
+			requestURL:     "/test",
+			requestMethod:  http.MethodGet,
+			expectedStatus: http.StatusOK,
+			expectError:    false,
 		},
 		{
-			name:     "TestClient_SetCACerts_2",
-			certPath: "./testdata/test-key-temp.pem",
-			want:     "open ./testdata/test-key-temp.pem: no such file or directory",
+			name: "Invalid URL",
+			clientOptions: &ClientOpts{
+				ClientOptions:  clients.EmptyClientOptions,
+				requestTimeout: 5 * time.Second,
+			},
+			requestURL:    "://invalid-url",
+			requestMethod: http.MethodGet,
+			expectError:   true,
+		},
+		{
+			name: "Error on status",
+			clientOptions: &ClientOpts{
+				ClientOptions:  clients.EmptyClientOptions,
+				requestTimeout: 5 * time.Second,
+				errorOnMap: map[int]int{
+					http.StatusInternalServerError: http.StatusInternalServerError,
+				},
+			},
+			requestURL:     "/error",
+			requestMethod:  http.MethodGet,
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := client.SetCACerts(tt.certPath)
-			if err != nil {
-				if tt.want != err.Error() {
-					t.Errorf("Got: %s, want: %s", err.Error(), tt.want)
+			// Create a test server
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/error" {
+					http.Error(w, "internal server error", http.StatusInternalServerError)
+					return
 				}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer ts.Close()
+
+			// Update request URL to use the test server URL
+			if tt.requestURL != "://invalid-url" {
+				tt.requestURL = ts.URL + tt.requestURL
+			}
+
+			client := NewClientWithOptions(tt.clientOptions)
+			req, err := client.NewRequest(tt.requestURL, tt.requestMethod)
+			if err != nil {
+				if !tt.expectError {
+					t.Errorf("unexpected error creating request: %v", err)
+				}
+				return
+			}
+
+			res, err := client.Execute(req)
+			logger.InfoF("for request uril %s res: %v,err is %v", tt.requestURL, res, err)
+			if tt.expectError && res.StatusCode() != 500 {
+				t.Errorf("unexpected error executing request: %v", err)
+				return
+			}
+
+			if res != nil && res.raw.StatusCode != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, res.raw.StatusCode)
 			}
 		})
 	}
 }
-
-func TestClient_SetCACerts2(t *testing.T) {
-	want := ""
-	_, err := client.SetCACerts("./testdata/test-key.pem", "./testdata/test-key-2.pem")
-	if err != nil {
-		t.Errorf("Got: %s, want: %s", err.Error(), want)
-	}
-}
-
-func TestClient_SSlVerify(t *testing.T) {
-	clientSSLVerify, err := client.SSlVerify(true)
-	assert.NoError(t, err)
-	if reflect.TypeOf(clientSSLVerify) != reflect.TypeOf(client) {
-		t.Errorf("Got: %s, want: %s", reflect.TypeOf(clientSSLVerify), reflect.TypeOf(client))
-	}
-
-	want := ""
-	_, err = client.SetCACerts("./testdata/test-key.pem", "./testdata/test-key-2.pem")
-	if err != nil {
-		t.Errorf("Got: %s, want: %s", err.Error(), want)
-	}
-	if client.tlsConfig.InsecureSkipVerify != true {
-		t.Error("client SSL setup incorrect")
-	}
-}
-
-func TestClient_Execute(t *testing.T) {
+func TestClientOptsBuilder(t *testing.T) {
 	tests := []struct {
-		name   string
-		url    string
-		method string
-		input  interface{}
-		want   interface{}
+		name    string
+		builder *ClientOptsBuilder
+		verify  func(opts *ClientOpts) bool
 	}{
 		{
-			name:   "TestClient_1",
-			url:    "localhost",
-			method: "",
-			input:  "",
-			want:   "Get \"localhost\": unsupported protocol scheme \"\"",
+			name:    "Default options",
+			builder: ClientOptBuilder(),
+			verify: func(opts *ClientOpts) bool {
+				return opts.ClientOptions == clients.EmptyClientOptions &&
+					opts.tlsConfig != nil &&
+					opts.maxIdlePerHost == 0 &&
+					opts.useCustomTLSConfig == false
+			},
+		},
+		{
+			name:    "Set MaxIdlePerHost",
+			builder: ClientOptBuilder().MaxIdlePerHost(10),
+			verify: func(opts *ClientOpts) bool {
+				return opts.maxIdlePerHost == 10
+			},
+		},
+		{
+			name:    "Set ProxyAuth",
+			builder: ClientOptBuilder().ProxyAuth("user", "pass", ""),
+			verify: func(opts *ClientOpts) bool {
+				expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("user:pass"))
+				return opts.proxyBasicAuth == expected
+			},
+		},
+		{
+			name: "Set BaseUrl",
+			builder: func() *ClientOptsBuilder {
+				builder := ClientOptBuilder()
+				err := builder.BaseUrl("http://example.com")
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return builder
+			}(),
+			verify: func(opts *ClientOpts) bool {
+				return opts.baseUrl.String() == "http://example.com/"
+			},
+		},
+		{
+			name:    "Set SSLVerify",
+			builder: ClientOptBuilder().SSLVerify(true),
+			verify: func(opts *ClientOpts) bool {
+				return opts.tlsConfig.InsecureSkipVerify == true
+			},
+		},
+		{
+			name:    "Set RequestTimeoutMs",
+			builder: ClientOptBuilder().RequestTimeoutMs(5000),
+			verify: func(opts *ClientOpts) bool {
+				return opts.requestTimeout == 5*time.Second
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := client.NewRequest(tt.url, tt.method)
-			_, err := client.Execute(req)
-			if tt.want != err.Error() {
-				t.Errorf("Got: %s, want: %s", err, tt.want)
+			opts := tt.builder.Build()
+			if !tt.verify(opts) {
+				t.Errorf("verification failed for test: %s", tt.name)
+			}
+		})
+	}
+}
+func TestClient_isError(t *testing.T) {
+	tests := []struct {
+		name       string
+		clientOpts *ClientOpts
+		err        error
+		httpRes    *http.Response
+		wantErr    bool
+	}{
+		{
+			name: "No error and no errorOnMap",
+			clientOpts: &ClientOpts{
+				ClientOptions: clients.EmptyClientOptions,
+			},
+			err:     nil,
+			httpRes: &http.Response{StatusCode: http.StatusOK},
+			wantErr: false,
+		},
+		{
+			name: "Error present",
+			clientOpts: &ClientOpts{
+				ClientOptions: clients.EmptyClientOptions,
+			},
+			err:     fmt.Errorf("some error"),
+			httpRes: &http.Response{StatusCode: http.StatusOK},
+			wantErr: true,
+		},
+		{
+			name: "Error on status code",
+			clientOpts: &ClientOpts{
+				ClientOptions: clients.EmptyClientOptions,
+				errorOnMap: map[int]int{
+					http.StatusInternalServerError: http.StatusInternalServerError,
+				},
+			},
+			err:     nil,
+			httpRes: &http.Response{StatusCode: http.StatusInternalServerError},
+			wantErr: true,
+		},
+		{
+			name: "No error on status code",
+			clientOpts: &ClientOpts{
+				ClientOptions: clients.EmptyClientOptions,
+				errorOnMap: map[int]int{
+					http.StatusInternalServerError: http.StatusInternalServerError,
+				},
+			},
+			err:     nil,
+			httpRes: &http.Response{StatusCode: http.StatusOK},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &Client{
+				options: tt.clientOpts,
+			}
+			if gotErr := client.isError(tt.err, tt.httpRes); gotErr != tt.wantErr {
+				t.Errorf("Client.isError() = %v, want %v", gotErr, tt.wantErr)
 			}
 		})
 	}

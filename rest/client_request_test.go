@@ -3,67 +3,85 @@ package rest
 import (
 	"net/http"
 	"testing"
+
+	"oss.nandlabs.io/golly/testing/assert"
 )
 
-func TestRequest_Method(t *testing.T) {
-	tests := []struct {
-		name   string
-		url    string
-		method string
-		want   string
-	}{{
-		name:   "Test1",
-		url:    "http://localhost:8080",
-		method: http.MethodGet,
-		want:   http.MethodGet,
-	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := client.NewRequest(tt.url, tt.method)
-			got := req.Method()
-			if got != tt.want {
-				t.Errorf("Error in validation :: got %s, want %s", got, tt.want)
-			}
-		})
+func TestRequest_AddFormData(t *testing.T) {
+	req := &Request{}
+	req.AddFormData("key1", "value1", "value2")
+
+	if req.formData.Get("key1") != "value1" {
+		t.Errorf("Expected key1 to be value1, got %s", req.formData.Get("key1"))
+	}
+
+	values := req.formData["key1"]
+	if len(values) != 2 || values[1] != "value2" {
+		t.Errorf("Expected key1 to have two values, got %v", values)
 	}
 }
 
-func TestRequest_Options(t *testing.T) {
-	req := client.NewRequest("http://localhost:8080", http.MethodGet)
+func TestRequest_AddQueryParam(t *testing.T) {
+	req := &Request{}
+	req.AddQueryParam("key1", "value1", "value2")
 
-	reqQueryParam := req.AddQueryParam("k", "v")
-	if !reqQueryParam.queryParam.Has("k") {
-		t.Errorf("Error in adding query-params")
-	}
-
-	reqAddHeader := req.AddHeader("header", "testing")
-	if reqAddHeader.header.Get("header") != "testing" {
-		t.Errorf("Error in adding headers")
+	if req.queryParam.Get("key1") != "value1" {
+		t.Errorf("Expected key1 to be value1, got %s", req.queryParam.Get("key1"))
 	}
 
-	body := struct {
-		key string
-	}{key: "hello-world"}
-	reqAddBody := req.SetBody(body)
-	if reqAddBody.body == nil {
-		t.Errorf("Error in adding body")
+	values := req.queryParam["key1"]
+	if len(values) != 2 || values[1] != "value2" {
+		t.Errorf("Expected key1 to have two values, got %v", values)
 	}
+}
 
-	reqAddContentType := req.SetContentType("application/json")
-	if reqAddContentType.contentType != "application/json" {
-		t.Errorf("Error in adding content type")
-	}
+func TestRequest_AddPathParam(t *testing.T) {
+	req := &Request{}
+	req.AddPathParam("key1", "value1")
 
-	file1 := &MultipartFile{
-		ParamName: "file1",
-		FilePath:  "./testdata/test.json",
+	if req.pathParams["key1"] != "value1" {
+		t.Errorf("Expected key1 to be value1, got %s", req.pathParams["key1"])
 	}
-	file2 := &MultipartFile{
-		ParamName: "file2",
-		FilePath:  "./testdata/test2.json",
+}
+
+func TestRequest_AddHeader(t *testing.T) {
+	req := &Request{header: http.Header{}}
+	req.AddHeader("Content-Type", "application/json")
+
+	if req.header.Get("Content-Type") != "application/json" {
+		t.Errorf("Expected Content-Type to be application/json, got %s", req.header.Get("Content-Type"))
 	}
-	reqAddMultipartFiles := req.SetMultipartFiles(file1, file2)
-	if len(reqAddMultipartFiles.multiPartFiles) == 0 {
-		t.Errorf("Error in adding multipart files")
+}
+
+func TestRequest_SetBody(t *testing.T) {
+	req := &Request{}
+	body := map[string]string{"key": "value"}
+	req.SetBody(body)
+
+	assert.Equal(t, body, req.body)
+}
+
+func TestRequest_SetContentType(t *testing.T) {
+	req := &Request{}
+	req.SetContentType("application/json")
+
+	if req.contentType != "application/json" {
+		t.Errorf("Expected contentType to be application/json, got %s", req.contentType)
+	}
+}
+
+func TestRequest_SetMultipartFiles(t *testing.T) {
+	req := &Request{}
+	files := []*MultipartFile{
+		{ParamName: "file1", FilePath: "path/to/file1"},
+		{ParamName: "file2", FilePath: "path/to/file2"},
+	}
+	req.SetMultipartFiles(files...)
+
+	if len(req.multiPartFiles) != 2 {
+		t.Errorf("Expected 2 multipart files, got %d", len(req.multiPartFiles))
+	}
+	if req.multiPartFiles[0].ParamName != "file1" || req.multiPartFiles[1].ParamName != "file2" {
+		t.Errorf("Multipart files not set correctly")
 	}
 }

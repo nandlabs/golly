@@ -34,7 +34,7 @@ func (r *Response) Decode(v interface{}) (err error) {
 	if r.IsSuccess() {
 		defer ioutils.CloserFunc(r.raw.Body)
 		contentType := r.raw.Header.Get(ContentTypeHeader)
-		c, err = codec.Get(contentType, r.client.codecOptions)
+		c, err = codec.Get(contentType, r.client.options.codecOptions)
 		if err == nil {
 			err = c.Read(r.raw.Body, v)
 		}
