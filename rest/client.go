@@ -69,7 +69,7 @@ type ClientOptsBuilder struct {
 	restOptions *ClientOpts
 }
 
-func RestCliOptBuilder() *ClientOptsBuilder {
+func CliOptsBuilder() *ClientOptsBuilder {
 	return &ClientOptsBuilder{
 		OptionsBuilder: clients.NewOptionsBuilder(),
 		restOptions: &ClientOpts{

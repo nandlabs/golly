@@ -103,7 +103,7 @@ func TestClientOptsBuilder(t *testing.T) {
 	}{
 		{
 			name:    "Default options",
-			builder: RestCliOptBuilder(),
+			builder: CliOptsBuilder(),
 			verify: func(opts *ClientOpts) bool {
 				return opts.ClientOptions != nil &&
 					opts.tlsConfig != nil &&
@@ -113,14 +113,14 @@ func TestClientOptsBuilder(t *testing.T) {
 		},
 		{
 			name:    "Set MaxIdlePerHost",
-			builder: RestCliOptBuilder().MaxIdlePerHost(10),
+			builder: CliOptsBuilder().MaxIdlePerHost(10),
 			verify: func(opts *ClientOpts) bool {
 				return opts.maxIdlePerHost == 10
 			},
 		},
 		{
 			name:    "Set ProxyAuth",
-			builder: RestCliOptBuilder().ProxyAuth("user", "pass", ""),
+			builder: CliOptsBuilder().ProxyAuth("user", "pass", ""),
 			verify: func(opts *ClientOpts) bool {
 				expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("user:pass"))
 				return opts.proxyBasicAuth == expected
@@ -129,7 +129,7 @@ func TestClientOptsBuilder(t *testing.T) {
 		{
 			name: "Set BaseUrl",
 			builder: func() *ClientOptsBuilder {
-				builder := RestCliOptBuilder()
+				builder := CliOptsBuilder()
 				err := builder.BaseUrl("http://example.com")
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
@@ -142,14 +142,14 @@ func TestClientOptsBuilder(t *testing.T) {
 		},
 		{
 			name:    "Set SSLVerify",
-			builder: RestCliOptBuilder().SSLVerify(true),
+			builder: CliOptsBuilder().SSLVerify(true),
 			verify: func(opts *ClientOpts) bool {
 				return opts.tlsConfig.InsecureSkipVerify == true
 			},
 		},
 		{
 			name:    "Set RequestTimeoutMs",
-			builder: RestCliOptBuilder().RequestTimeoutMs(5000),
+			builder: CliOptsBuilder().RequestTimeoutMs(5000),
 			verify: func(opts *ClientOpts) bool {
 				return opts.requestTimeout == 5*time.Second
 			},
@@ -229,7 +229,7 @@ func TestClient_isError(t *testing.T) {
 	}
 }
 func TestClient_ExecuteWithCircuitBreaker(t *testing.T) {
-	coptsBuilder1 := RestCliOptBuilder().ErrOnStatus(http.StatusInternalServerError)
+	coptsBuilder1 := CliOptsBuilder().ErrOnStatus(http.StatusInternalServerError)
 	coptsBuilder1.CircuitBreaker(3, 3, 3, 5000)
 
 	tests := []struct {
@@ -298,7 +298,7 @@ func TestClient_ExecuteWithCircuitBreaker(t *testing.T) {
 }
 
 func TestClient_ExecuteWithRetries(t *testing.T) {
-	coptsBuilder2 := RestCliOptBuilder().ErrOnStatus(http.StatusInternalServerError)
+	coptsBuilder2 := CliOptsBuilder().ErrOnStatus(http.StatusInternalServerError)
 	coptsBuilder2.RetryPolicy(3, 1000, true, 5000)
 	tests := []struct {
 		name           string
@@ -366,10 +366,10 @@ func TestClient_ExecuteWithRetries(t *testing.T) {
 }
 
 func TestClient_ExecuteWithBasicAuth(t *testing.T) {
-	coptsBuilder1 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
+	coptsBuilder1 := CliOptsBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder1.BasicAuth("user", "pass")
 
-	coptsBuilder2 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
+	coptsBuilder2 := CliOptsBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder2.BasicAuth("user1", "pass1")
 	tests := []struct {
 		name           string
@@ -435,9 +435,9 @@ func TestClient_ExecuteWithBasicAuth(t *testing.T) {
 }
 
 func TestClient_ExecuteWithBearerAuth(t *testing.T) {
-	coptsBuilder1 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
+	coptsBuilder1 := CliOptsBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder1.TokenBearerAuth("valid-token")
-	coptsBuilder2 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
+	coptsBuilder2 := CliOptsBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder2.TokenBearerAuth("invalid-token")
 	tests := []struct {
 		name           string
