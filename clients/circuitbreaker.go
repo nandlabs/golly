@@ -17,8 +17,8 @@ const (
 	defaultFailureThreshold = 3
 )
 
-// CBOpenErr is the error returned when the circuit breaker is open and unable to process requests.
-var CBOpenErr = errors.New("the Circuit breaker is open and unable to process request")
+// ErrCBOpen is the error returned when the circuit breaker is open and unable to process requests.
+var ErrCBOpen = errors.New("the Circuit breaker is open and unable to process request")
 
 // BreakerInfo holds the configuration parameters for the CircuitBreaker.
 type BreakerInfo struct {
@@ -37,9 +37,9 @@ type CircuitBreaker struct {
 	halfOpenCounter uint32 // Counter for requests in the half-open state
 }
 
-// NewCB creates a new CircuitBreaker instance with the provided BreakerInfo.
+// NewCircuitBreaker creates a new CircuitBreaker instance with the provided BreakerInfo.
 // If no BreakerInfo is provided, default values will be used.
-func NewCB(info *BreakerInfo) (cb *CircuitBreaker) {
+func NewCircuitBreaker(info *BreakerInfo) (cb *CircuitBreaker) {
 	// Set default values if not provided
 	if info == nil {
 		info = &BreakerInfo{}
@@ -73,12 +73,12 @@ func NewCB(info *BreakerInfo) (cb *CircuitBreaker) {
 func (cb *CircuitBreaker) CanExecute() (err error) {
 	state := cb.getState()
 	if state == circuitOpen {
-		err = CBOpenErr
+		err = ErrCBOpen
 	} else if state == circuitHalfOpen {
 		val := atomic.AddUint32(&cb.halfOpenCounter, 1)
 		if val > cb.MaxHalfOpen {
 			cb.updateState(circuitHalfOpen, circuitOpen)
-			err = CBOpenErr
+			err = ErrCBOpen
 		}
 	}
 	return

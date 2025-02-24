@@ -11,12 +11,12 @@ const (
 // of the Apply method. The Apply method takes an Authenticator as a parameter
 // and applies it to the implementing type.
 type Authenticatable interface {
-	Apply(Authenticator)
+	Apply(AuthProvider)
 }
 
 type AuthType string
 
-// Authenticator defines an interface for authentication mechanisms.
+// AuthProvider defines an interface for authentication mechanisms.
 // It provides methods to retrieve the type of authentication, user credentials,
 // token, and to refresh the authentication token.
 //
@@ -26,7 +26,7 @@ type AuthType string
 //   - Pass() string: Returns the password.
 //   - Token() string: Returns the authentication token.
 //   - Refresh() error: Refreshes the authentication token and returns an error if the operation fails.
-type Authenticator interface {
+type AuthProvider interface {
 	Type() AuthType
 	User() string
 	Pass() string
@@ -92,15 +92,15 @@ func (b *BasicAuth) Refresh() error {
 // Returns:
 //
 //	*BasicAuth: The BasicAuth instance.
-func NewBasicAuth(user, pass string) Authenticator {
+func NewBasicAuth(user, pass string) AuthProvider {
 	return &BasicAuth{
 		user: user,
 		pass: pass,
 	}
 }
 
-// SimpleTokenAuth represents bearer token authentication credentials.
-type SimpleTokenAuth struct {
+// TokenBearerAuth represents bearer token authentication credentials.
+type TokenBearerAuth struct {
 	token string
 }
 
@@ -109,7 +109,7 @@ type SimpleTokenAuth struct {
 // Returns:
 //
 //	AuthType: The authentication type. (AuthTypeBearer)
-func (b *SimpleTokenAuth) Type() AuthType {
+func (b *TokenBearerAuth) Type() AuthType {
 	return AuthTypeBearer
 }
 
@@ -118,7 +118,7 @@ func (b *SimpleTokenAuth) Type() AuthType {
 // Returns:
 //
 //	string: An empty string.
-func (b *SimpleTokenAuth) User() string {
+func (b *TokenBearerAuth) User() string {
 	return textutils.EmptyStr
 }
 
@@ -127,7 +127,7 @@ func (b *SimpleTokenAuth) User() string {
 // Returns:
 //
 //	string: An empty string.
-func (b *SimpleTokenAuth) Pass() string {
+func (b *TokenBearerAuth) Pass() string {
 	return textutils.EmptyStr
 }
 
@@ -135,7 +135,7 @@ func (b *SimpleTokenAuth) Pass() string {
 // Returns:
 //
 //	string: The token.
-func (b *SimpleTokenAuth) Token() string {
+func (b *TokenBearerAuth) Token() string {
 	return b.token
 }
 
@@ -145,7 +145,7 @@ func (b *SimpleTokenAuth) Token() string {
 // Returns:
 //
 //	error: Always returns nil.
-func (b *SimpleTokenAuth) Refresh() error {
+func (b *TokenBearerAuth) Refresh() error {
 	return nil
 }
 
@@ -157,8 +157,8 @@ func (b *SimpleTokenAuth) Refresh() error {
 // Returns:
 //
 //	*BearerAuth: The BearerAuth instance.
-func NewBearerAuth(token string) Authenticator {
-	return &SimpleTokenAuth{
+func NewBearerAuth(token string) AuthProvider {
+	return &TokenBearerAuth{
 		token: token,
 	}
 }
