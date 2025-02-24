@@ -66,36 +66,35 @@ type ClientOpts struct {
 
 type ClientOptsBuilder struct {
 	*clients.OptionsBuilder
-	opts *ClientOpts
+	restOptions *ClientOpts
 }
 
-func ClientOptBuilder() *ClientOptsBuilder {
+func RestCliOptBuilder() *ClientOptsBuilder {
 	return &ClientOptsBuilder{
 		OptionsBuilder: clients.NewOptionsBuilder(),
-		opts: &ClientOpts{
-			ClientOptions: clients.EmptyClientOptions,
-			tlsConfig:     &tls.Config{},
+		restOptions: &ClientOpts{
+			tlsConfig: &tls.Config{},
 		},
 	}
 }
 
 func (co *ClientOptsBuilder) EnvProxy(proxyBasicAuth string) *ClientOptsBuilder {
-	co.opts.proxyBasicAuth = proxyBasicAuth
+	co.restOptions.proxyBasicAuth = proxyBasicAuth
 	return co
 }
 
 func (co *ClientOptsBuilder) CodecOpts(options map[string]any) *ClientOptsBuilder {
-	co.opts.codecOptions = options
+	co.restOptions.codecOptions = options
 	return co
 }
 
 func (co *ClientOptsBuilder) MaxIdlePerHost(maxIdleConnPerHost int) *ClientOptsBuilder {
-	co.opts.maxIdlePerHost = maxIdleConnPerHost
+	co.restOptions.maxIdlePerHost = maxIdleConnPerHost
 	return co
 }
 
 func (co *ClientOptsBuilder) ProxyAuth(user, password, bypass string) *ClientOptsBuilder {
-	co.opts.proxyBasicAuth = "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
+	co.restOptions.proxyBasicAuth = "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
 	return co
 }
 
@@ -103,12 +102,12 @@ func (co *ClientOptsBuilder) BaseUrl(baseurl string) (err error) {
 	if baseurl == textutils.EmptyStr {
 		return errors.New("invalid base url")
 	}
-	co.opts.baseUrl, err = url.Parse(baseurl)
-	if err == nil && co.opts.baseUrl.Scheme == textutils.EmptyStr && co.opts.baseUrl.Host == textutils.EmptyStr {
+	co.restOptions.baseUrl, err = url.Parse(baseurl)
+	if err == nil && co.restOptions.baseUrl.Scheme == textutils.EmptyStr && co.restOptions.baseUrl.Host == textutils.EmptyStr {
 		err = errors.New("invalid base url")
 	} else {
-		if !strings.HasSuffix(co.opts.baseUrl.Path, textutils.ForwardSlashStr) {
-			co.opts.baseUrl.Path = co.opts.baseUrl.Path + textutils.ForwardSlashStr
+		if !strings.HasSuffix(co.restOptions.baseUrl.Path, textutils.ForwardSlashStr) {
+			co.restOptions.baseUrl.Path = co.restOptions.baseUrl.Path + textutils.ForwardSlashStr
 		}
 	}
 
@@ -116,31 +115,31 @@ func (co *ClientOptsBuilder) BaseUrl(baseurl string) (err error) {
 }
 
 func (co *ClientOptsBuilder) ErrOnStatus(httpStatusCodes ...int) *ClientOptsBuilder {
-	if co.opts.errorOnMap == nil {
-		co.opts.errorOnMap = make(map[int]int)
+	if co.restOptions.errorOnMap == nil {
+		co.restOptions.errorOnMap = make(map[int]int)
 	}
 	for _, code := range httpStatusCodes {
-		co.opts.errorOnMap[code] = code
+		co.restOptions.errorOnMap[code] = code
 	}
 	return co
 }
 
 func (co *ClientOptsBuilder) SSLVerify(verify bool) *ClientOptsBuilder {
-	if co.opts.tlsConfig == nil {
-		co.opts.tlsConfig = &tls.Config{}
+	if co.restOptions.tlsConfig == nil {
+		co.restOptions.tlsConfig = &tls.Config{}
 	}
-	co.opts.tlsConfig.InsecureSkipVerify = verify
-	co.opts.useCustomTLSConfig = true
+	co.restOptions.tlsConfig.InsecureSkipVerify = verify
+	co.restOptions.useCustomTLSConfig = true
 	return co
 }
 
 func (co *ClientOptsBuilder) CaCerts(caFilePath ...string) *ClientOptsBuilder {
-	co.opts.useCustomTLSConfig = true
-	if co.opts.tlsConfig == nil {
-		co.opts.tlsConfig = &tls.Config{}
+	co.restOptions.useCustomTLSConfig = true
+	if co.restOptions.tlsConfig == nil {
+		co.restOptions.tlsConfig = &tls.Config{}
 	}
-	if co.opts.tlsConfig.RootCAs == nil {
-		co.opts.tlsConfig.RootCAs = x509.NewCertPool()
+	if co.restOptions.tlsConfig.RootCAs == nil {
+		co.restOptions.tlsConfig.RootCAs = x509.NewCertPool()
 	}
 	for _, v := range caFilePath {
 		caCert, err := os.ReadFile(v)
@@ -148,45 +147,46 @@ func (co *ClientOptsBuilder) CaCerts(caFilePath ...string) *ClientOptsBuilder {
 			logger.Error("error reading ca cert file", err)
 			continue
 		}
-		co.opts.tlsConfig.RootCAs.AppendCertsFromPEM(caCert)
+		co.restOptions.tlsConfig.RootCAs.AppendCertsFromPEM(caCert)
 	}
 	return co
 }
 
 func (co *ClientOptsBuilder) TlsCerts(certs ...tls.Certificate) *ClientOptsBuilder {
-	if co.opts.tlsConfig == nil {
-		co.opts.tlsConfig = &tls.Config{}
+	if co.restOptions.tlsConfig == nil {
+		co.restOptions.tlsConfig = &tls.Config{}
 	}
-	co.opts.useCustomTLSConfig = true
-	co.opts.tlsConfig.Certificates = append(co.opts.tlsConfig.Certificates, certs...)
+	co.restOptions.useCustomTLSConfig = true
+	co.restOptions.tlsConfig.Certificates = append(co.restOptions.tlsConfig.Certificates, certs...)
 	return co
 }
 
 func (co *ClientOptsBuilder) IdleTimeoutMs(t int) *ClientOptsBuilder {
-	co.opts.idleTimeout = time.Duration(t) * time.Millisecond
+	co.restOptions.idleTimeout = time.Duration(t) * time.Millisecond
 	return co
 }
 
 func (co *ClientOptsBuilder) RequestTimeoutMs(t int) *ClientOptsBuilder {
-	co.opts.requestTimeout = time.Duration(t) * time.Millisecond
+	co.restOptions.requestTimeout = time.Duration(t) * time.Millisecond
 	return co
 }
 func (co *ClientOptsBuilder) TlsHandShakeTimeoutMs(t int) *ClientOptsBuilder {
-	co.opts.tlsHandShakeTimeout = time.Duration(t) * time.Millisecond
+	co.restOptions.tlsHandShakeTimeout = time.Duration(t) * time.Millisecond
 	return co
 }
 
 func (co *ClientOptsBuilder) ExpectContinueTimeoutMs(t int) *ClientOptsBuilder {
-	co.opts.expectContinueTimeout = time.Duration(t) * time.Millisecond
+	co.restOptions.expectContinueTimeout = time.Duration(t) * time.Millisecond
 	return co
 }
 func (co *ClientOptsBuilder) CookieJar(jar http.CookieJar) *ClientOptsBuilder {
-	co.opts.jar = jar
+	co.restOptions.jar = jar
 	return co
 }
 
 func (co *ClientOptsBuilder) Build() *ClientOpts {
-	return co.opts
+	co.restOptions.ClientOptions = co.OptionsBuilder.Build()
+	return co.restOptions
 }
 
 // Client represents a REST client.
@@ -228,7 +228,7 @@ func NewClientWithOptions(options *ClientOpts) *Client {
 // NewClient creates a new REST client with default values.
 func NewClient() *Client {
 	return NewClientWithOptions(&ClientOpts{
-		ClientOptions: clients.EmptyClientOptions,
+		ClientOptions: clients.NewOptionsBuilder().Build(),
 		tlsConfig: &tls.Config{
 			InsecureSkipVerify: false,
 		},
@@ -269,50 +269,59 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 	if c.options.proxyBasicAuth != textutils.EmptyStr {
 		httpReq.Header.Set(proxyAuthHdr, c.options.proxyBasicAuth)
 	}
-	if err == nil {
-		if c.options.Auth != nil {
-			if handlerFunc, ok := c.options.AuthHandlers[c.options.Auth.Type()]; ok {
-				err = handlerFunc(c, httpReq)
-			} else {
-				err = fmt.Errorf("invalid auth type or no handlerfunc found for auth type %v", c.options.Auth.Type())
-				return
-			}
-		}
-		// Check if the circuit breaker is open
-		if c.options.CircuitBreaker != nil {
-			err = c.options.CircuitBreaker.CanExecute()
-			// If the circuit breaker is open, return an error
+	if err != nil {
+		return
+	}
+	// Check if the request has an auth type and if so, execute the auth handler
+	if c.options.Auth != nil {
+		if handlerFunc, ok := c.options.AuthHandlers[c.options.Auth.Type()]; ok {
+			err = handlerFunc(c, httpReq)
 			if err != nil {
 				return
 			}
-		}
-		// Execute the request
-		httpRes, err = c.httpClient.Do(httpReq)
-		// Check if the response is an error
-		isErr := c.isError(err, httpRes)
-		if c.options.CircuitBreaker != nil {
-			c.options.CircuitBreaker.OnExecution(!isErr)
-		}
-		if isErr && c.options.RetryPolicy != nil {
-			retryCount := 0
-			// For each retry, sleep for the backoff interval and retry the request
-			for isErr && retryCount < c.options.RetryPolicy.MaxRetries {
-				time.Sleep(c.options.RetryPolicy.WaitTime(retryCount))
-				retryCount++
-				httpRes, err = c.httpClient.Do(httpReq)
-				isErr = c.isError(err, httpRes)
-				if c.options.CircuitBreaker != nil {
-					c.options.CircuitBreaker.OnExecution(!isErr)
-				}
-			}
-		}
-
-		httpRes, err = c.httpClient.Do(httpReq)
-
-		if err == nil {
-			res = &Response{raw: httpRes, client: c}
+		} else {
+			err = fmt.Errorf("invalid auth type or no handlerfunc found for auth type %v", c.options.Auth.Type())
+			return
 		}
 	}
+	// Check if the circuit breaker is open
+	if c.options.CircuitBreaker != nil {
+		err = c.options.CircuitBreaker.CanExecute()
+		// If the circuit breaker is open, return an error
+		if err != nil {
+			return
+		}
+	}
+	// Execute the request
+	httpRes, err = c.httpClient.Do(httpReq)
+	// Check if the response is an error
+	isErr := c.isError(err, httpRes)
+	if c.options.CircuitBreaker != nil {
+		c.options.CircuitBreaker.OnExecution(!isErr)
+	}
+	if isErr && c.options.RetryPolicy != nil {
+		retryCount := 0
+		// For each retry, sleep for the backoff interval and retry the request
+		for isErr && retryCount < c.options.RetryPolicy.MaxRetries {
+			sleepFor := c.options.RetryPolicy.WaitTime(retryCount)
+			msg := fmt.Sprintf("Retrying request %d and sleeping for %v", retryCount, sleepFor)
+			fmt.Println(msg)
+			time.Sleep(sleepFor)
+			retryCount++
+			httpRes, err = c.httpClient.Do(httpReq)
+			isErr = c.isError(err, httpRes)
+			if c.options.CircuitBreaker != nil {
+				c.options.CircuitBreaker.OnExecution(!isErr)
+			}
+		}
+	}
+
+	httpRes, err = c.httpClient.Do(httpReq)
+
+	if err == nil {
+		res = &Response{raw: httpRes, client: c}
+	}
+
 	return
 }
 
