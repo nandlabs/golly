@@ -203,7 +203,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 				go func() {
 					defer ioutils.CloserFunc(pw)
 					var c codec.Codec
-					c, err = codec.Get(r.contentType, r.client.codecOptions)
+					c, err = codec.Get(r.contentType, r.client.options.codecOptions)
 					if err == nil {
 						err = c.Write(r.body, pw)
 					}
