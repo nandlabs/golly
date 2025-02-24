@@ -84,7 +84,6 @@ func TestClient_Execute(t *testing.T) {
 			}
 
 			res, err := client.Execute(req)
-			logger.InfoF("for request uril %s res: %v,err is %v", tt.requestURL, res, err)
 			if tt.expectError && res.StatusCode() != 500 {
 				t.Errorf("unexpected error executing request: %v", err)
 				return

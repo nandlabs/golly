@@ -304,8 +304,6 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 		// For each retry, sleep for the backoff interval and retry the request
 		for isErr && retryCount < c.options.RetryPolicy.MaxRetries {
 			sleepFor := c.options.RetryPolicy.WaitTime(retryCount)
-			msg := fmt.Sprintf("Retrying request %d and sleeping for %v", retryCount, sleepFor)
-			fmt.Println(msg)
 			time.Sleep(sleepFor)
 			retryCount++
 			httpRes, err = c.httpClient.Do(httpReq)
