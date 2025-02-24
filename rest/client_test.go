@@ -435,9 +435,9 @@ func TestClient_ExecuteWithBasicAuth(t *testing.T) {
 }
 
 func TestClient_ExecuteWithBearerAuth(t *testing.T) {
-	coptsBuilder1 := RestCliOptBuilder().ErrOnStatus(http.StatusInternalServerError)
+	coptsBuilder1 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder1.TokenBearerAuth("valid-token")
-	coptsBuilder2 := RestCliOptBuilder().ErrOnStatus(http.StatusInternalServerError)
+	coptsBuilder2 := RestCliOptBuilder().ErrOnStatus(http.StatusUnauthorized)
 	coptsBuilder2.TokenBearerAuth("invalid-token")
 	tests := []struct {
 		name           string
@@ -486,8 +486,12 @@ func TestClient_ExecuteWithBearerAuth(t *testing.T) {
 				}
 				return
 			}
+			var res *Response
+			res, err = client.Execute(req)
+			fmt.Println("Response: ", res)
+			fmt.Println("error: ", err)
+			fmt.Println("client: ", client)
 
-			res, err := client.Execute(req)
 			if tt.expectError {
 				if !client.isError(err, res.raw) {
 					t.Errorf("expected error, got none")

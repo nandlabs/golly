@@ -37,7 +37,7 @@ var basicAuthHandlerFunc = func(client *Client, req *http.Request) error {
 }
 
 var bearerAuthHandlerFunc = func(client *Client, req *http.Request) error {
-	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBasic {
+	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBearer {
 		return fmt.Errorf("invalid auth type")
 	}
 	req.Header.Set("Authorization", "Bearer "+client.options.Auth.Token())
