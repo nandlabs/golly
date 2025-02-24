@@ -273,6 +273,9 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 		if c.options.Auth != nil {
 			if handlerFunc, ok := c.options.AuthHandlers[c.options.Auth.Type()]; ok {
 				err = handlerFunc(c, httpReq)
+				if err != nil {
+					return
+				}
 			} else {
 				err = fmt.Errorf("invalid auth type or no handlerfunc found for auth type %v", c.options.Auth.Type())
 				return
