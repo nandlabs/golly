@@ -1,6 +1,7 @@
 package genai
 
 import (
+	"oss.nandlabs.io/golly/data"
 	"oss.nandlabs.io/golly/errutils"
 	"oss.nandlabs.io/golly/managers"
 )
@@ -22,7 +23,8 @@ const (
 	OptionBestOf            = "best_of"
 	OptionLogProbs          = "log_probs"
 	OptionEcho              = "echo"
-	OptionOutputMimes       = "output_mimes"
+	OptionOutputMime        = "output_mime"
+	OptionSchema            = "schema"
 )
 
 var GetUnsupportedModelErr = errutils.NewCustomError("unsupported model %s")
@@ -395,10 +397,22 @@ func (o *Options) GetEcho(defaultValue bool) bool {
 // GetOutputMimes retrieves the "output_mimes" option from the Options.
 // Returns the value as a slice of strings, or the provided default value if the option does not exist.
 func (o *Options) GetOutputMimes(defaultValue []string) []string {
-	if o.Has(OptionOutputMimes) {
-		return o.GetStrings(OptionOutputMimes)
+	if o.Has(OptionOutputMime) {
+		return o.GetStrings(OptionOutputMime)
 	}
 	return defaultValue
+}
+
+// GetSchema retrieves the "schema" option from the Options.
+// Returns the value as a *data.Schema, or nil if the option does not exist.
+func (o *Options) GetSchema() (schema *data.Schema) {
+	if o.Has(OptionSchema) {
+		val, ok := o.Get(OptionSchema).(*data.Schema)
+		if ok {
+			schema = val
+		}
+	}
+	return
 }
 
 // OptionsBuilder is a builder for the Options struct
@@ -691,12 +705,31 @@ func (o *OptionsBuilder) SetEcho(echo bool) *OptionsBuilder {
 //
 // Parameters:
 //
-//	outputMimes: A variable number of strings representing the desired output MIME types.
+//	outputMimes: A string representing the desired output MIME types.
 //
 // Returns:
 //
 //	*OptionsBuilder: A pointer to the updated OptionsBuilder instance.
-func (o *OptionsBuilder) SetOutputMimes(outputMimes ...string) *OptionsBuilder {
-	o.options.values[OptionOutputMimes] = outputMimes
+func (o *OptionsBuilder) SetOutputMimes(outputMimes string) *OptionsBuilder {
+	o.options.values[OptionOutputMime] = outputMimes
+	return o
+}
+
+// SetSchema sets the schema option in the OptionsBuilder.
+// Example usage:
+//
+//	builder := &OptionsBuilder{}
+//	schema := data.NewSchema()
+//	builder.SetSchema(schema)
+//
+// Parameters:
+//
+//	schema (data.Schema): The schema to set in the OptionsBuilder.
+//
+// Returns:
+//
+//	*OptionsBuilder: The updated OptionsBuilder instance.
+func (o *OptionsBuilder) SetSchema(schema *data.Schema) *OptionsBuilder {
+	o.options.values[OptionSchema] = schema
 	return o
 }
