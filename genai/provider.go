@@ -394,11 +394,11 @@ func (o *Options) GetEcho(defaultValue bool) bool {
 	return defaultValue
 }
 
-// GetOutputMimes retrieves the "output_mimes" option from the Options.
+// GetOutputMime retrieves the "output_mimes" option from the Options.
 // Returns the value as a slice of strings, or the provided default value if the option does not exist.
-func (o *Options) GetOutputMimes(defaultValue []string) []string {
+func (o *Options) GetOutputMime(defaultValue string) string {
 	if o.Has(OptionOutputMime) {
-		return o.GetStrings(OptionOutputMime)
+		return o.GetString(OptionOutputMime)
 	}
 	return defaultValue
 }
@@ -694,14 +694,14 @@ func (o *OptionsBuilder) SetEcho(echo bool) *OptionsBuilder {
 	return o
 }
 
-// SetOutputMimes sets the output MIME types for the OptionsBuilder.
+// SetOutputMime sets the output MIME types for the OptionsBuilder.
 // It accepts a variable number of string arguments representing the MIME types
 // and returns a pointer to the updated OptionsBuilder.
 //
 // Example usage:
 //
 //	builder := &OptionsBuilder{}
-//	builder.SetOutputMimes("application/json", "text/plain")
+//	builder.SetOutputMime("application/json", "text/plain")
 //
 // Parameters:
 //
@@ -710,8 +710,8 @@ func (o *OptionsBuilder) SetEcho(echo bool) *OptionsBuilder {
 // Returns:
 //
 //	*OptionsBuilder: A pointer to the updated OptionsBuilder instance.
-func (o *OptionsBuilder) SetOutputMimes(outputMimes string) *OptionsBuilder {
-	o.options.values[OptionOutputMime] = outputMimes
+func (o *OptionsBuilder) SetOutputMime(outputMime string) *OptionsBuilder {
+	o.options.values[OptionOutputMime] = outputMime
 	return o
 }
 
