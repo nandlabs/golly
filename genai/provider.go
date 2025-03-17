@@ -34,7 +34,7 @@ var GetUnsupportedProviderErr = errutils.NewCustomError("unsupported provider fo
 
 var Providers managers.ItemManager[Provider] = managers.NewItemManager[Provider]()
 
-type StreamingHandller func(last bool, messages ...*Message)
+type StreamingHandller func(messages ...*Message)
 
 type Model struct {
 	Id       string         `json:"id" yaml:"id" bson:"id"`
