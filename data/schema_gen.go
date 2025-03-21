@@ -9,10 +9,35 @@ import (
 // ErrUnsupportedType is returned when the type is not supported
 var ErrUnsupportedType = errors.New("unsupported type")
 
-// GenerateSchema generates schema of the given type
+// GenerateSchema converts a Go type to a JSON Schema.
+//
+// This function uses reflection to analyze Go types and produce corresponding JSON Schema representations.
+// It supports various Go types including structs, slices, maps, primitive types, and pointers.
+//
+// For structs, it creates an object schema with properties corresponding to the struct fields.
+// JSON field names are extracted from json tags if present.
+// Unexported fields are skipped.
+//
+// For slices, it creates an array schema with the element type defined in the Items field.
+//
+// For maps, it creates an object schema with the value type defined in AdditionalItems.
+//
+// The function handles pointers by resolving to their base types.
+//
+// Parameters:
+//   - t: The reflect.Type to convert to a JSON Schema
+//
+// Returns:
+//   - schema: A pointer to the generated Schema
+//   - err: An error if the type is unsupported or if a nested type cannot be processed
 func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
+
 	switch t.Kind() {
+	case reflect.Ptr:
+		schema, err = GenerateSchema(t.Elem())
+
 	case reflect.Struct:
+
 		schema = &Schema{
 			Type:       "object",
 			Properties: make(map[string]*Schema),
@@ -79,6 +104,10 @@ func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 	case reflect.Bool:
 		schema = &Schema{
 			Type: "boolean",
+		}
+	case reflect.Interface:
+		schema = &Schema{
+			Type: "object",
 		}
 
 	default:
