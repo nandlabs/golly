@@ -1,5 +1,29 @@
 package data
 
+const (
+	// SchemaTypeBool is a bool schema type.
+	SchemaTypeBool = "boolean"
+	// SchemaTypeString is a string schema type.
+	SchemaTypeString = "string"
+	//SchemaTypeNumber is a number schema type.
+	SchemaTypeNumber = "number"
+	// SchemaTypeObject is an object schema type.
+	SchemaTypeObject = "object"
+	// SchemaTypeArray is an array schema type.
+	SchemaTypeArray = "array"
+	// SchemaTypeInteger is an integer schema type.
+	SchemaTypeInteger = "integer"
+
+	// SchemaFormatFloat is a float schema type.
+	SchemaFormatFloat = "float"
+	// SchemaFormatDouble is a double schema type.
+	SchemaFormatDouble = "double"
+	// SchemaFormatInt32 is a int32 schema type.
+	SchemaFormatInt32 = "int32"
+	// SchemaFormatInt64 is a int64 schema type.
+	SchemaFormatInt64 = "int64"
+)
+
 // Schema used to define structure of the data
 // This is a subset of OpenAPI 3.0 schema
 type Schema struct {
