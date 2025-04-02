@@ -11,6 +11,7 @@ func (cli *CLI) printUsage() {
 	fmt.Println("Usage: [command] [subcommand] [flags]")
 	fmt.Println("\nGlobal Flags:")
 	fmt.Println("  -h, --help          Show help for the CLI tool")
+	fmt.Println("  -v, --version       Show the version of the CLI tool")
 
 	fmt.Println("\nAvailable Commands:")
 	for _, cmd := range cli.rootCommands {

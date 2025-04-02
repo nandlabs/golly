@@ -199,3 +199,40 @@ func TestExecute_DefaultFlagParsing(t *testing.T) {
 		t.Error("Expected command handler to be called")
 	}
 }
+
+func TestExecute_CLIVersionFlag(t *testing.T) {
+	cli := NewCLI()
+	cli.AddVersion("v1.0.0")
+	os.Args = []string{"cli", "--version"} // Simulate running with version flag
+
+	err := cli.Execute()
+	if err != nil {
+		t.Errorf("Expected no error for version flag, got %v", err)
+	}
+}
+
+func TestExecute_CommandVersionFlag(t *testing.T) {
+	cli := NewCLI()
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
+	cli.AddCommand(cmd)
+	os.Args = []string{"cli", "test", "--version"} // Simulate running with version flag
+
+	err := cli.Execute()
+	if err != nil {
+		t.Errorf("Expected no error for version flag, got %v", err)
+	}
+}
+
+func TestExecute_SubCommandVersionFlag(t *testing.T) {
+	cli := NewCLI()
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
+	subCmd := NewCommand("sub", "Sub command", "v1.0.0", nil)
+	cmd.AddSubCommand(subCmd)
+	cli.AddCommand(cmd)
+	os.Args = []string{"cli", "test", "sub", "--version"} // Simulate running with version flag
+
+	err := cli.Execute()
+	if err != nil {
+		t.Errorf("Expected no error for version flag, got %v", err)
+	}
+}

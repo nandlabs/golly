@@ -13,6 +13,7 @@ import (
 // CLI represents the command-line interface.
 type CLI struct {
 	rootCommands map[string]*Command
+	version      string
 }
 
 // NewCLI creates a new CLI instance.
@@ -20,6 +21,10 @@ func NewCLI() *CLI {
 	return &CLI{
 		rootCommands: make(map[string]*Command),
 	}
+}
+
+func (cli *CLI) AddVersion(version string) {
+	cli.version = version
 }
 
 // AddCommand adds a root command to the CLI.
@@ -36,10 +41,16 @@ func (cli *CLI) Execute() error {
 
 	args := os.Args[1:]
 
-	// Global help flag
-	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
-		cli.printUsage()
-		return nil
+	// Global Flag
+	if len(args) == 1 {
+		if args[0] == "-h" || args[0] == "--help" {
+			cli.printUsage()
+			return nil
+		}
+		if args[0] == "-v" || args[0] == "--version" {
+			fmt.Printf("CLI Tool Version: %s\n", cli.version)
+			return nil
+		}
 	}
 
 	ctx := NewCLIContext()
@@ -68,9 +79,11 @@ func (cli *CLI) Execute() error {
 				}
 			}
 
-			// Help flag for the current command
+			// Help and version flags for the current command
 			showHelp := flagSet.Bool("help", false, "Show help for this command")
+			showVersion := flagSet.Bool("version", false, "Show version for this command")
 			flagSet.BoolVar(showHelp, "h", false, "Show help for this command")
+			flagSet.BoolVar(showVersion, "v", false, "Show version for this command")
 
 			parsedArgs := []string{}
 			for i := 0; i < len(args); i++ {
@@ -107,7 +120,7 @@ func (cli *CLI) Execute() error {
 									ctx.SetFlag(primary, "")
 								}
 							} else {
-								if arg == "--help" {
+								if arg == "--help" || arg == "--version" {
 									parsedArgs = append(parsedArgs, arg)
 								} else {
 									parsedArgs = append(parsedArgs, arg+"=")
@@ -149,9 +162,12 @@ func (cli *CLI) Execute() error {
 			// Update remaining arguments and subcommands
 			args = flagSet.Args()
 			currentCommands = currentCommand.SubCommands
-
 			if *showHelp {
 				cli.printDetailedHelp(ctx.CommandStack, currentCommand)
+				return nil
+			}
+			if *showVersion {
+				fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, currentCommand.Version)
 				return nil
 			}
 		} else {
