@@ -1,3 +1,5 @@
+// Package cli provides a command-line interface (CLI) framework for building
+// command-line applications.
 package cli
 
 import (
@@ -8,20 +10,24 @@ import (
 	"strings"
 )
 
+// CLI represents the command-line interface.
 type CLI struct {
 	rootCommands map[string]*Command
 }
 
+// NewCLI creates a new CLI instance.
 func NewCLI() *CLI {
 	return &CLI{
 		rootCommands: make(map[string]*Command),
 	}
 }
 
+// AddCommand adds a root command to the CLI.
 func (cli *CLI) AddCommand(cmd *Command) {
 	cli.rootCommands[cmd.Name] = cmd
 }
 
+// Execute executes the command specified by the command-line arguments.
 func (cli *CLI) Execute() error {
 	if len(os.Args) < 2 {
 		cli.printUsage()
@@ -158,5 +164,5 @@ func (cli *CLI) Execute() error {
 		return fmt.Errorf("unknown command")
 	}
 
-	return currentCommand.Handler(ctx)
+	return currentCommand.Action(ctx)
 }

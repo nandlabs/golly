@@ -1,23 +1,28 @@
 package cli
 
+// Command represents a command in the CLI.
 type Command struct {
 	Name        string
-	Description string
-	Handler     func(ctx *Context) error
+	Usage       string
+	Version     string
+	Action      func(ctx *Context) error
 	SubCommands map[string]*Command
-	Flags       []Flag
+	Flags       []*Flag
 }
 
-func NewCommand(name, description string, handler func(ctx *Context) error) *Command {
+// NewCommand creates a new command with the given name, description, and handler function.
+func NewCommand(name, description, version string, action func(ctx *Context) error) *Command {
 	return &Command{
 		Name:        name,
-		Description: description,
-		Handler:     handler,
+		Usage:       description,
+		Version:     version,
+		Action:      action,
 		SubCommands: make(map[string]*Command),
-		Flags:       []Flag{},
+		Flags:       make([]*Flag, 0),
 	}
 }
 
+// AddSubCommand adds a subcommand to the command.
 func (cmd *Command) AddSubCommand(subCmd *Command) {
 	cmd.SubCommands[subCmd.Name] = subCmd
 }

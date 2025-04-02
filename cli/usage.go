@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// printUsage prints the usage information for the CLI tool.
 func (cli *CLI) printUsage() {
 	fmt.Println("\nCLI Tool Usage:")
 	fmt.Println("Usage: [command] [subcommand] [flags]")
@@ -18,9 +19,10 @@ func (cli *CLI) printUsage() {
 	fmt.Println()
 }
 
+// printCommandHelp prints the help information for a specific command.
 func (cli *CLI) printCommandHelp(cmd *Command, indent int) {
 	indentation := strings.Repeat("  ", indent)
-	fmt.Printf("%s%s: %s\n", indentation, cmd.Name, cmd.Description)
+	fmt.Printf("%s%s: %s\n", indentation, cmd.Name, cmd.Usage)
 
 	if len(cmd.Flags) > 0 {
 		fmt.Printf("%sFlags:\n", indentation)
@@ -46,9 +48,10 @@ func (cli *CLI) printCommandHelp(cmd *Command, indent int) {
 	}
 }
 
+// printDetailedHelp prints the detailed help information for a specific command.
 func (cli *CLI) printDetailedHelp(commandStack []string, cmd *Command) {
 	fmt.Printf("\nHelp for Command: %s\n", strings.Join(commandStack, " "))
-	fmt.Printf("\n%s: %s\n", cmd.Name, cmd.Description)
+	fmt.Printf("\n%s: %s\n", cmd.Name, cmd.Usage)
 	fmt.Println("\nUsage:")
 	fmt.Printf("  %s [flags]\n", strings.Join(commandStack, " "))
 
@@ -70,7 +73,7 @@ func (cli *CLI) printDetailedHelp(commandStack []string, cmd *Command) {
 	if len(cmd.SubCommands) > 0 {
 		fmt.Println("\nSubcommands:")
 		for _, subCmd := range cmd.SubCommands {
-			fmt.Printf("  %s: %s\n", subCmd.Name, subCmd.Description)
+			fmt.Printf("  %s: %s\n", subCmd.Name, subCmd.Usage)
 		}
 	}
 	fmt.Println()

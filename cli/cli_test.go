@@ -18,7 +18,7 @@ func TestNewCLI(t *testing.T) {
 
 func TestAddCommand(t *testing.T) {
 	cli := NewCLI()
-	cmd := NewCommand("test", "Test command", nil)
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
 	cli.AddCommand(cmd)
 
 	if len(cli.rootCommands) != 1 {
@@ -61,7 +61,7 @@ func TestExecute_GlobalHelp(t *testing.T) {
 
 func TestExecute_CommandHelp(t *testing.T) {
 	cli := NewCLI()
-	cmd := NewCommand("test", "Test command", nil)
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
 	cli.AddCommand(cmd)
 	os.Args = []string{"cli", "test", "--help"} // Simulate running help for a specific command
 
@@ -79,7 +79,7 @@ func TestExecute_CommandExecution(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewCommand("test", "Test command", handler)
+	cmd := NewCommand("test", "Test command", "v0.0.1", handler)
 	cli.AddCommand(cmd)
 	os.Args = []string{"cli", "test"} // Simulate running the "test" command
 
@@ -103,8 +103,8 @@ func TestExecute_FlagParsing(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewCommand("test", "Test command", handler)
-	cmd.Flags = []Flag{
+	cmd := NewCommand("test", "Test command", "v0.0.1", handler)
+	cmd.Flags = []*Flag{
 		{Name: "name", Aliases: []string{"n"}, Usage: "Specify a name", Default: ""},
 	}
 	cli.AddCommand(cmd)
@@ -130,8 +130,8 @@ func TestExecute_FlagParsingAlias(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewCommand("test", "Test command", handler)
-	cmd.Flags = []Flag{
+	cmd := NewCommand("test", "Test command", "v0.0.1", handler)
+	cmd.Flags = []*Flag{
 		{Name: "name", Aliases: []string{"n"}, Usage: "Specify a name", Default: ""},
 	}
 	cli.AddCommand(cmd)
@@ -157,8 +157,8 @@ func TestExecute_DefaultFlagParsingAlias(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewCommand("test", "Test Command", handler)
-	cmd.Flags = []Flag{
+	cmd := NewCommand("test", "Test Command", "v0.0.1", handler)
+	cmd.Flags = []*Flag{
 		{Name: "name", Aliases: []string{"n"}, Usage: "specify name", Default: "user"},
 	}
 	cli.AddCommand(cmd)
@@ -184,8 +184,8 @@ func TestExecute_DefaultFlagParsing(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewCommand("test", "Test Command", handler)
-	cmd.Flags = []Flag{
+	cmd := NewCommand("test", "Test Command", "v0.0.1", handler)
+	cmd.Flags = []*Flag{
 		{Name: "name", Aliases: []string{"n"}, Usage: "specify name", Default: "user"},
 	}
 	cli.AddCommand(cmd)
