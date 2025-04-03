@@ -59,7 +59,8 @@ func (cli *CLI) Execute() error {
 
 	for len(args) > 0 {
 		name := args[0]
-		if cmd, exists := currentCommands[name]; exists {
+		cmd, exists := checkCurrentCommand(currentCommands, name)
+		if exists {
 			currentCommand = cmd
 			ctx.CommandStack = append(ctx.CommandStack, name)
 			args = args[1:]
@@ -171,7 +172,9 @@ func (cli *CLI) Execute() error {
 				return nil
 			}
 		} else {
-			break
+			fmt.Printf("Error: Unknown command or subcommand '%s'\n", name)
+			cli.printUsage()
+			return fmt.Errorf("unknown command: %s", name)
 		}
 	}
 
@@ -181,4 +184,26 @@ func (cli *CLI) Execute() error {
 	}
 
 	return currentCommand.Action(ctx)
+}
+
+func checkCurrentCommand(currentCommands map[string]*Command, name string) (cmd *Command, exists bool) {
+	cmd, exists = currentCommands[name]
+	if exists {
+		return
+	}
+	for _, cmd := range currentCommands {
+		if cmd.Name == name || contains(cmd.Aliases, name) {
+			return cmd, true
+		}
+	}
+	return
+}
+
+func contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }

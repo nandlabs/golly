@@ -5,6 +5,7 @@ type Command struct {
 	Name        string
 	Usage       string
 	Version     string
+	Aliases     []string
 	Action      func(ctx *Context) error
 	SubCommands map[string]*Command
 	Flags       []*Flag
@@ -17,6 +18,7 @@ func NewCommand(name, description, version string, action func(ctx *Context) err
 		Usage:       description,
 		Version:     version,
 		Action:      action,
+		Aliases:     make([]string, 0),
 		SubCommands: make(map[string]*Command),
 		Flags:       make([]*Flag, 0),
 	}

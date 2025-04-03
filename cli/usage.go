@@ -25,6 +25,10 @@ func (cli *CLI) printCommandHelp(cmd *Command, indent int) {
 	indentation := strings.Repeat("  ", indent)
 	fmt.Printf("%s%s: %s\n", indentation, cmd.Name, cmd.Usage)
 
+	if len(cmd.Aliases) > 0 {
+		fmt.Printf("%sAliases: %s\n", indentation, strings.Join(cmd.Aliases, ", "))
+	}
+
 	if len(cmd.Flags) > 0 {
 		fmt.Printf("%sFlags:\n", indentation)
 		for _, flag := range cmd.Flags {
@@ -55,6 +59,10 @@ func (cli *CLI) printDetailedHelp(commandStack []string, cmd *Command) {
 	fmt.Printf("\n%s: %s\n", cmd.Name, cmd.Usage)
 	fmt.Println("\nUsage:")
 	fmt.Printf("  %s [flags]\n", strings.Join(commandStack, " "))
+
+	if len(cmd.Aliases) > 0 {
+		fmt.Printf("\nAliases: %s\n", strings.Join(cmd.Aliases, ", "))
+	}
 
 	if len(cmd.Flags) > 0 {
 		fmt.Println("\nFlags:")

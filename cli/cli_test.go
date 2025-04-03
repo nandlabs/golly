@@ -236,3 +236,61 @@ func TestExecute_SubCommandVersionFlag(t *testing.T) {
 		t.Errorf("Expected no error for version flag, got %v", err)
 	}
 }
+
+func TestExecute_CommandAlias(t *testing.T) {
+	cli := NewCLI()
+	called := false
+	handler := func(ctx *Context) error {
+		called = true
+		return nil
+	}
+
+	cmd := NewCommand("test", "Test command", "v0.0.1", handler)
+	cmd.Aliases = []string{"t"}
+	cli.AddCommand(cmd)
+	os.Args = []string{"cli", "t"} // Simulate running the command with alias
+
+	err := cli.Execute()
+	if err != nil {
+		t.Errorf("Expected no error for command execution with alias, got %v", err)
+	}
+	if !called {
+		t.Error("Expected command handler to be called")
+	}
+}
+
+func TestExecute_SubCommandAlias(t *testing.T) {
+	cli := NewCLI()
+	called := false
+	handler := func(ctx *Context) error {
+		called = true
+		return nil
+	}
+
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
+	subCmd := NewCommand("sub", "Sub command", "v1.0.0", handler)
+	subCmd.Aliases = []string{"s"}
+	cmd.AddSubCommand(subCmd)
+	cli.AddCommand(cmd)
+	os.Args = []string{"cli", "test", "s"} // Simulate running the subcommand with alias
+
+	err := cli.Execute()
+	if err != nil {
+		t.Errorf("Expected no error for subcommand execution with alias, got %v", err)
+	}
+	if !called {
+		t.Error("Expected subcommand handler to be called")
+	}
+}
+
+func TestExecute_InvalidSubCommand(t *testing.T) {
+	cli := NewCLI()
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
+	cli.AddCommand(cmd)
+	os.Args = []string{"cli", "test", "invalid"} // Simulate running an invalid subcommand
+
+	err := cli.Execute()
+	if err == nil || !strings.Contains(err.Error(), "unknown command") {
+		t.Errorf("Expected error for unknown subcommand, got %v", err)
+	}
+}
