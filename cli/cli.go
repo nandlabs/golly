@@ -20,6 +20,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	return &CLI{
 		rootCommands: make(map[string]*Command),
+		version:      "v0.0.1",
 	}
 }
 
@@ -168,7 +169,11 @@ func (cli *CLI) Execute() error {
 				return nil
 			}
 			if *showVersion {
-				fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, currentCommand.Version)
+				if currentCommand.Version == "" {
+					fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, cli.version)
+				} else {
+					fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, currentCommand.Version)
+				}
 				return nil
 			}
 		} else {
