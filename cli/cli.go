@@ -1,3 +1,5 @@
+// Package cli provides a command-line interface (CLI) framework for building
+// command-line applications.
 package cli
 
 import (
@@ -8,20 +10,30 @@ import (
 	"strings"
 )
 
+// CLI represents the command-line interface.
 type CLI struct {
 	rootCommands map[string]*Command
+	version      string
 }
 
+// NewCLI creates a new CLI instance.
 func NewCLI() *CLI {
 	return &CLI{
 		rootCommands: make(map[string]*Command),
+		version:      "v0.0.1",
 	}
 }
 
+func (cli *CLI) AddVersion(version string) {
+	cli.version = version
+}
+
+// AddCommand adds a root command to the CLI.
 func (cli *CLI) AddCommand(cmd *Command) {
 	cli.rootCommands[cmd.Name] = cmd
 }
 
+// Execute executes the command specified by the command-line arguments.
 func (cli *CLI) Execute() error {
 	if len(os.Args) < 2 {
 		cli.printUsage()
@@ -30,10 +42,16 @@ func (cli *CLI) Execute() error {
 
 	args := os.Args[1:]
 
-	// Global help flag
-	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
-		cli.printUsage()
-		return nil
+	// Global Flag
+	if len(args) == 1 {
+		if args[0] == "-h" || args[0] == "--help" {
+			cli.printUsage()
+			return nil
+		}
+		if args[0] == "-v" || args[0] == "--version" {
+			fmt.Printf("CLI Tool Version: %s\n", cli.version)
+			return nil
+		}
 	}
 
 	ctx := NewCLIContext()
@@ -42,7 +60,8 @@ func (cli *CLI) Execute() error {
 
 	for len(args) > 0 {
 		name := args[0]
-		if cmd, exists := currentCommands[name]; exists {
+		cmd, exists := checkCurrentCommand(currentCommands, name)
+		if exists {
 			currentCommand = cmd
 			ctx.CommandStack = append(ctx.CommandStack, name)
 			args = args[1:]
@@ -62,9 +81,11 @@ func (cli *CLI) Execute() error {
 				}
 			}
 
-			// Help flag for the current command
+			// Help and version flags for the current command
 			showHelp := flagSet.Bool("help", false, "Show help for this command")
+			showVersion := flagSet.Bool("version", false, "Show version for this command")
 			flagSet.BoolVar(showHelp, "h", false, "Show help for this command")
+			flagSet.BoolVar(showVersion, "v", false, "Show version for this command")
 
 			parsedArgs := []string{}
 			for i := 0; i < len(args); i++ {
@@ -101,7 +122,7 @@ func (cli *CLI) Execute() error {
 									ctx.SetFlag(primary, "")
 								}
 							} else {
-								if arg == "--help" {
+								if arg == "--help" || arg == "--version" {
 									parsedArgs = append(parsedArgs, arg)
 								} else {
 									parsedArgs = append(parsedArgs, arg+"=")
@@ -143,13 +164,22 @@ func (cli *CLI) Execute() error {
 			// Update remaining arguments and subcommands
 			args = flagSet.Args()
 			currentCommands = currentCommand.SubCommands
-
 			if *showHelp {
 				cli.printDetailedHelp(ctx.CommandStack, currentCommand)
 				return nil
 			}
+			if *showVersion {
+				if currentCommand.Version == "" {
+					fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, cli.version)
+				} else {
+					fmt.Printf("Command [%s] Version: %s\n", currentCommand.Name, currentCommand.Version)
+				}
+				return nil
+			}
 		} else {
-			break
+			fmt.Printf("Error: Unknown command or subcommand '%s'\n", name)
+			cli.printUsage()
+			return fmt.Errorf("unknown command: %s", name)
 		}
 	}
 
@@ -158,5 +188,27 @@ func (cli *CLI) Execute() error {
 		return fmt.Errorf("unknown command")
 	}
 
-	return currentCommand.Handler(ctx)
+	return currentCommand.Action(ctx)
+}
+
+func checkCurrentCommand(currentCommands map[string]*Command, name string) (cmd *Command, exists bool) {
+	cmd, exists = currentCommands[name]
+	if exists {
+		return
+	}
+	for _, cmd := range currentCommands {
+		if cmd.Name == name || contains(cmd.Aliases, name) {
+			return cmd, true
+		}
+	}
+	return
+}
+
+func contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
