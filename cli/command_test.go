@@ -7,15 +7,15 @@ import (
 
 func TestNewCommand(t *testing.T) {
 	handler := func(ctx *Context) error { return nil }
-	cmd := NewCommand("test", "A test command", handler)
+	cmd := NewCommand("test", "A test command", "v0.0.1", handler)
 
 	if cmd.Name != "test" {
 		t.Errorf("Expected Name to be 'test', got '%s'", cmd.Name)
 	}
-	if cmd.Description != "A test command" {
-		t.Errorf("Expected Description to be 'A test command', got '%s'", cmd.Description)
+	if cmd.Usage != "A test command" {
+		t.Errorf("Expected Description to be 'A test command', got '%s'", cmd.Usage)
 	}
-	if cmd.Handler == nil {
+	if cmd.Action == nil {
 		t.Error("Expected Handler to be non-nil")
 	}
 	if len(cmd.SubCommands) != 0 {
@@ -27,8 +27,8 @@ func TestNewCommand(t *testing.T) {
 }
 
 func TestAddSubCommand(t *testing.T) {
-	parentCmd := NewCommand("parent", "Parent command", nil)
-	subCmd := NewCommand("child", "Child command", nil)
+	parentCmd := NewCommand("parent", "Parent command", "v0.0.1", nil)
+	subCmd := NewCommand("child", "Child command", "v0.0.1", nil)
 	parentCmd.AddSubCommand(subCmd)
 
 	if len(parentCmd.SubCommands) != 1 {
@@ -41,8 +41,8 @@ func TestAddSubCommand(t *testing.T) {
 
 func TestPrintCommandHelp(t *testing.T) {
 	cli := NewCLI()
-	cmd := NewCommand("test", "Test command", nil)
-	cmd.Flags = []Flag{
+	cmd := NewCommand("test", "Test command", "v0.0.1", nil)
+	cmd.Flags = []*Flag{
 		{
 			Name:    "attach",
 			Aliases: []string{"a"},
@@ -51,7 +51,7 @@ func TestPrintCommandHelp(t *testing.T) {
 		},
 	}
 
-	cmd.AddSubCommand(NewCommand("subcmd", "A subcommand", nil))
+	cmd.AddSubCommand(NewCommand("subcmd", "A subcommand", "v0.0.1", nil))
 
 	cli.printCommandHelp(cmd, 0)
 }
@@ -59,14 +59,14 @@ func TestPrintCommandHelp(t *testing.T) {
 func TestPrintDetailedCommandHelp(t *testing.T) {
 	cli := NewCLI()
 	server := &Command{
-		Name:        "server",
-		Description: "Server command",
-		Handler: func(ctx *Context) error {
+		Name:  "server",
+		Usage: "Server command",
+		Action: func(ctx *Context) error {
 			region, _ := ctx.GetFlag("region")
 			fmt.Printf("IN REGION, %s\n", region)
 			return nil
 		},
-		Flags: []Flag{
+		Flags: []*Flag{
 			{
 				Name:    "region",
 				Aliases: []string{"r"},
@@ -76,14 +76,14 @@ func TestPrintDetailedCommandHelp(t *testing.T) {
 		},
 		SubCommands: map[string]*Command{
 			"create": {
-				Name:        "create",
-				Description: "create",
-				Handler: func(ctx *Context) error {
+				Name:  "create",
+				Usage: "create",
+				Action: func(ctx *Context) error {
 					typ, _ := ctx.GetFlag("type")
 					fmt.Printf("SERVER TYPE %s\n", typ)
 					return nil
 				},
-				Flags: []Flag{
+				Flags: []*Flag{
 					{
 						Name:    "type",
 						Aliases: []string{"t"},
