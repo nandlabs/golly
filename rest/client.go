@@ -313,9 +313,6 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 			}
 		}
 	}
-
-	httpRes, err = c.httpClient.Do(httpReq)
-
 	if err == nil {
 		res = &Response{raw: httpRes, client: c}
 	}
