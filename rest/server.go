@@ -192,8 +192,8 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 	httpServer := &http.Server{
 		Handler:      router,
 		Addr:         opts.ListenHost + ":" + strconv.Itoa(int(opts.ListenPort)),
-		ReadTimeout:  20 * time.Millisecond,
-		WriteTimeout: 20 * time.Second,
+		ReadTimeout:  time.Duration(opts.ReadTimeout) * time.Millisecond,
+		WriteTimeout: time.Duration(opts.WriteTimeout) * time.Millisecond,
 	}
 	var listener net.Listener
 	rServer = &restServer{
