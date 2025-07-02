@@ -132,6 +132,14 @@ func navigateToField(value any, fieldName string) (any, error) {
 		return v.Index(index).Interface(), nil
 
 	default:
+		// Add support for Pipeline interface
+		if p, ok := value.(Pipeline); ok {
+			val, err := p.Get(fieldName)
+			if err != nil {
+				return nil, ErrFieldNotFound
+			}
+			return val, nil
+		}
 		return nil, fmt.Errorf("cannot navigate into value of type %T", value)
 	}
 }
