@@ -290,3 +290,47 @@ func TestExtractValue_NestedPathWithFilter(t *testing.T) {
 		t.Errorf("expected 123, got %v, err=%v", v4, err)
 	}
 }
+
+func TestEvaluateCondition(t *testing.T) {
+	data := map[string]any{
+		"age":    30,
+		"name":   "nanda",
+		"city":   "blr",
+		"active": true,
+		"user": map[string]any{
+			"address": map[string]any{"city": "blr", "zip": 560001},
+		},
+		"scores": []any{10, 20, 30},
+		"users": []any{
+			map[string]any{"name": "nanda", "age": 30, "city": "blr"},
+			map[string]any{"name": "alex", "age": 25, "city": "nyc"},
+		},
+	}
+	p := mockPipeline{"": data}
+	tests := []struct {
+		cond     string
+		expected bool
+	}{
+		{"age==30", true},
+		{"age>25", true},
+		{"age<25", false},
+		{"name==\"nanda\"", true},
+		{"city==\"nyc\"", false},
+		{"user.address.city==\"blr\"", true},
+		{"scores[1]==20", true},
+		{"users[name==\"alex\"].city==\"nyc\"", true},
+		{"users[age>28].name==\"nanda\"", true},
+		{"users[city==\"blr\"].age==30", true},
+		{"users[city==\"blr\"].age==25", false},
+		{"age>=30 && city==\"blr\"", true},
+		{"age>=30 && city==\"nyc\"", false},
+		{"age>=30 || city==\"nyc\"", true},
+		{"(age>=30 && city==\"nyc\") || (age<25)", false},
+	}
+	for _, test := range tests {
+		result := EvaluateCondition(p, test.cond)
+		if result != test.expected {
+			t.Errorf("EvaluateCondition(%q) = %v, want %v", test.cond, result, test.expected)
+		}
+	}
+}

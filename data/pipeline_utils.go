@@ -248,18 +248,34 @@ func (c *ComparisonExpr) Eval(item any) (bool, error) {
 	if err != nil {
 		return false, nil
 	}
+	v := reflect.ValueOf(fieldVal)
+	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+		for i := 0; i < v.Len(); i++ {
+			val := v.Index(i).Interface()
+			ok, _ := compareValue(val, c.Op, c.Value)
+			if ok {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	return compareValue(fieldVal, c.Op, c.Value)
+}
+
+// compareValue performs the comparison logic for a single value
+func compareValue(fieldVal any, op string, cmpVal any) (bool, error) {
 	// Try numeric comparison
 	fv, fvOk := toFloat(fieldVal)
 	var cv float64
 	var cvOk bool
-	switch v := c.Value.(type) {
+	switch v := cmpVal.(type) {
 	case float64:
 		cv, cvOk = v, true
 	case string:
 		cv, cvOk = toFloat(v)
 	}
 	if fvOk && cvOk {
-		switch c.Op {
+		switch op {
 		case ">":
 			return fv > cv, nil
 		case ">=":
@@ -276,8 +292,8 @@ func (c *ComparisonExpr) Eval(item any) (bool, error) {
 	}
 	// Fallback to string comparison
 	fs := toString(fieldVal)
-	cs := toString(c.Value)
-	switch c.Op {
+	cs := toString(cmpVal)
+	switch op {
 	case "==":
 		return fs == cs, nil
 	case "!=":
@@ -600,4 +616,23 @@ func extractPath(path string) []string {
 		parts = append(parts, sb.String())
 	}
 	return parts
+}
+
+// EvaluateCondition evaluates a filter-like condition string against the pipeline root.
+// Returns true if the condition is satisfied, false otherwise.
+func EvaluateCondition(p Pipeline, condition string) bool {
+	tokens := tokenizeFilter(condition)
+	expr, _ := parseFilterExpr(tokens)
+	if expr == nil {
+		return false
+	}
+	root, err := p.Get("") // Get the root object; adjust if your Pipeline root access differs
+	if err != nil {
+		return false
+	}
+	ok, err := expr.Eval(root)
+	if err != nil {
+		return false
+	}
+	return ok
 }
