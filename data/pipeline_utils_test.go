@@ -427,3 +427,72 @@ func TestSetValue_IntermediatePresent(t *testing.T) {
 		t.Errorf("expected 42, got %v, err=%v", val, err)
 	}
 }
+
+func BenchmarkExtractValue_SimpleKey(b *testing.B) {
+	p := mockPipeline{"foo": 42}
+	for i := 0; i < b.N; i++ {
+		_, _ = ExtractValue[int](p, "foo")
+	}
+}
+
+func BenchmarkExtractValue_DotNotation(b *testing.B) {
+	p := mockPipeline{"user": map[string]any{"city": "delhi"}}
+	for i := 0; i < b.N; i++ {
+		_, _ = ExtractValue[string](p, "user.city")
+	}
+}
+
+func BenchmarkExtractValue_ArrayFilter(b *testing.B) {
+	users := []any{
+		map[string]any{"name": "nanda", "address": map[string]any{"city": "blr"}},
+		map[string]any{"name": "foo", "address": map[string]any{"city": "nyc"}},
+	}
+	p := mockPipeline{"users": users}
+	for i := 0; i < b.N; i++ {
+		_, _ = ExtractValue[string](p, "users[name==\"nanda\"].address.city")
+	}
+}
+
+func BenchmarkSetValue_SimpleKey(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		p := mockPipeline{}
+		_ = SetValue(p, "foo", 42)
+	}
+}
+
+func BenchmarkSetValue_NestedKey(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		address := mockPipeline{"city": "blr"}
+		user := mockPipeline{"address": address}
+		p := mockPipeline{"user": user}
+		_ = SetValue(p, "user.address.city", "nyc")
+	}
+}
+
+func BenchmarkEvaluateCondition(b *testing.B) {
+	data := map[string]any{
+		"age":    30,
+		"name":   "nanda",
+		"city":   "blr",
+		"active": true,
+		"user": map[string]any{
+			"address": map[string]any{"city": "blr", "zip": 560001},
+		},
+		"scores": []any{10, 20, 30},
+		"users": []any{
+			map[string]any{"name": "nanda", "age": 30, "city": "blr", "phones": []any{
+				map[string]any{"type": "home", "number": "123"},
+				map[string]any{"type": "work", "number": "456"},
+			}},
+			map[string]any{"name": "alex", "age": 25, "city": "nyc", "phones": []any{
+				map[string]any{"type": "home", "number": "678"},
+				map[string]any{"type": "work", "number": "901"},
+			}},
+		},
+	}
+	p := mockPipeline{"": data}
+	cond := "users[city==\"blr\"].age==30 && user.address.city==\"blr\""
+	for i := 0; i < b.N; i++ {
+		_ = EvaluateCondition(p, cond)
+	}
+}

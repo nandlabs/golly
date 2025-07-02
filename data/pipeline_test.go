@@ -127,3 +127,45 @@ func TestClone(t *testing.T) {
 		t.Error("original should not be affected by clone mutation")
 	}
 }
+
+func BenchmarkPipelineSet(b *testing.B) {
+	p := NewPipeline("")
+	for i := 0; i < b.N; i++ {
+		p.Set("key", i)
+	}
+}
+
+func BenchmarkPipelineGet(b *testing.B) {
+	p := NewPipeline("")
+	p.Set("key", 42)
+	for i := 0; i < b.N; i++ {
+		_, _ = p.Get("key")
+	}
+}
+
+func BenchmarkPipelineDelete(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		p := NewPipeline("")
+		p.Set("key", 42)
+		_ = p.Delete("key")
+	}
+}
+
+func BenchmarkPipelineMerge(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		p1 := NewPipeline("")
+		p1.Set("x", 1)
+		p2 := NewPipeline("")
+		p2.Set("x", 2)
+		p2.Set("y", 3)
+		p1.Merge(p2)
+	}
+}
+
+func BenchmarkPipelineClone(b *testing.B) {
+	p := NewPipeline("id1")
+	p.Set("foo", 42)
+	for i := 0; i < b.N; i++ {
+		_ = p.Clone()
+	}
+}
