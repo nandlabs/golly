@@ -280,8 +280,13 @@ func TestExtractValue_NestedPathWithFilter(t *testing.T) {
 	}
 
 	// Numeric filter at nested level
-	v4, err := ExtractValue[string](p, "users[address.zip>20000 && address.phones[type==\"home\"].number == \"123\"].name")
+	v4, err := ExtractValue[string](p, "users[address.zip>20000 && address.city==\"blr\"].name")
 	if err != nil || v4 != "nanda" {
 		t.Errorf("expected nanda, got %v, err=%v", v4, err)
+	}
+	// Numeric filter at nested level
+	v5, err := ExtractValue[string](p, "users[address.zip>20000].address.phones[type==\"home\"].number")
+	if err != nil || v5 != "123" {
+		t.Errorf("expected 123, got %v, err=%v", v4, err)
 	}
 }
