@@ -322,19 +322,6 @@ func compareValue(fieldVal any, op string, cmpVal any) (bool, error) {
 	return false, nil
 }
 
-// resolvePath navigates through nested maps/structs for a dot-separated path
-func resolvePath(item any, path []string) (any, error) {
-	current := item
-	for _, seg := range path {
-		var err error
-		current, err = navigateToField(current, seg)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return current, nil
-}
-
 // LogicalExpr supports AND, OR, grouping
 
 type LogicalExpr struct {
@@ -703,4 +690,75 @@ func EvaluateCondition(p Pipeline, condition string) bool {
 		return false
 	}
 	return ok
+}
+
+// SetValue sets a value at the specified path in the Pipeline, supporting filters and nested paths.
+// For a nested path, the final item must be a Pipeline object, and the value is set using its Set method.
+func SetValue(c Pipeline, path string, value any) error {
+	parts := extractPath(path)
+	if len(parts) == 0 {
+		return ErrInvalidPath
+	}
+	rootKey, filter, hasFilter := parseFieldAndFilter(parts[0])
+	var current any
+	var err error
+	current, err = c.Get(rootKey)
+	if err != nil && !hasFilter && len(parts) == 1 {
+		current = c
+	} else if err != nil {
+		return err
+	}
+	if hasFilter {
+		current, err = applyFilter(current, filter)
+		if err != nil {
+			return err
+		}
+	}
+	// Traverse up to the second last part
+	for i := 1; i < len(parts)-1; i++ {
+		field, filter, hasFilter := parseFieldAndFilter(parts[i])
+		if len(field) > 0 {
+			current, err = navigateToField(current, field)
+			if err != nil {
+				switch err {
+				case ErrFieldNotFound:
+					return fmt.Errorf("%w: field '%s' in path '%s'", ErrFieldNotFound, field, path)
+				case ErrInvalidPath:
+					return fmt.Errorf("%w: invalid segment '%s' in path '%s'", ErrInvalidPath, field, path)
+				}
+				return err
+			}
+			if hasFilter {
+				current, err = applyFilter(current, filter)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return ErrInvalidPath
+		}
+	}
+	// Now set the value on the final segment
+	lastField, lastFilter, lastHasFilter := parseFieldAndFilter(parts[len(parts)-1])
+	if lastHasFilter {
+		// If the last segment has a filter, resolve to the filtered item and set value if it's a Pipeline
+		final, err := navigateToField(current, lastField)
+		if err != nil {
+			return err
+		}
+		final, err = applyFilter(final, lastFilter)
+		if err != nil {
+			return err
+		}
+		if p, ok := final.(Pipeline); ok {
+			return p.Set("", value) // Set at root of filtered Pipeline
+		}
+		return fmt.Errorf("final item is not a Pipeline, cannot set value")
+	} else {
+		// If the last segment is a field, set it if current is a Pipeline
+		if p, ok := current.(Pipeline); ok {
+			return p.Set(lastField, value)
+		}
+		return fmt.Errorf("final item is not a Pipeline, cannot set value")
+	}
 }
