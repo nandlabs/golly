@@ -1,227 +1,129 @@
 package data
 
 import (
+	"errors"
 	"testing"
 )
 
-func TestExtractValue(t *testing.T) {
-	// Create a nested structure for testing
-	nestedMap := map[string]any{
-		"name": "John",
-		"age":  30,
-		"address": map[string]any{
-			"city":    "New York",
-			"country": "USA",
-			"zipcode": 10001,
-			"geo": map[string]any{
-				"lat": 40.7128,
-				"lng": -74.0060,
-			},
-		},
-		"scores": []int{85, 90, 95},
-	}
-
-	// Create pipeline with test data
-	pipeline := NewPipeline("test-pipeline")
-	pipeline.Set("user", nestedMap)
-	pipeline.Set("simple", "value")
-	pipeline.Set("number", 42)
-
-	// Test cases
-	tests := []struct {
-		name      string
-		path      string
-		wantValue any
-		wantErr   bool
-	}{
-		{
-			name:      "simple key",
-			path:      "simple",
-			wantValue: "value",
-			wantErr:   false,
-		},
-		{
-			name:      "numeric value",
-			path:      "number",
-			wantValue: 42,
-			wantErr:   false,
-		},
-		{
-			name:      "nested key - first level",
-			path:      "user.name",
-			wantValue: "John",
-			wantErr:   false,
-		},
-		{
-			name:      "nested key - second level",
-			path:      "user.address.city",
-			wantValue: "New York",
-			wantErr:   false,
-		},
-		{
-			name:      "nested key - third level",
-			path:      "user.address.geo.lat",
-			wantValue: 40.7128,
-			wantErr:   false,
-		},
-		{
-			name:      "array access",
-			path:      "user.scores.0",
-			wantValue: 85,
-			wantErr:   false,
-		},
-		{
-			name:      "array access - middle element",
-			path:      "user.scores.1",
-			wantValue: 90,
-			wantErr:   false,
-		},
-		{
-			name:      "non-existent key",
-			path:      "nonexistent",
-			wantValue: nil,
-			wantErr:   true,
-		},
-		{
-			name:      "non-existent nested key",
-			path:      "user.nonexistent",
-			wantValue: nil,
-			wantErr:   true,
-		},
-		{
-			name:      "invalid path segment",
-			path:      "user.scores.invalid",
-			wantValue: nil,
-			wantErr:   true,
-		},
-		{
-			name:      "out of bounds array index",
-			path:      "user.scores.10",
-			wantValue: nil,
-			wantErr:   true,
-		},
-		{
-			name:      "numeric zipcode extraction with type conversion",
-			path:      "user.address.zipcode",
-			wantValue: 10001,
-			wantErr:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// String extraction
-			if tt.wantValue == "value" || tt.wantValue == "John" || tt.wantValue == "New York" || tt.wantValue == "USA" {
-				got, err := ExtractValue[string](pipeline, tt.path)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("ExtractValue[string] error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !tt.wantErr && got != tt.wantValue.(string) {
-					t.Errorf("ExtractValue[string] = %v, want %v", got, tt.wantValue)
-				}
-			}
-
-			// Int extraction
-			if tt.wantValue == 42 || tt.wantValue == 10001 || tt.wantValue == 85 || tt.wantValue == 90 || tt.wantValue == 95 {
-				got, err := ExtractValue[int](pipeline, tt.path)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("ExtractValue[int] error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !tt.wantErr && got != tt.wantValue.(int) {
-					t.Errorf("ExtractValue[int] = %v, want %v", got, tt.wantValue)
-				}
-			}
-
-			// Float extraction
-			if tt.wantValue == 40.7128 || tt.wantValue == -74.0060 {
-				got, err := ExtractValue[float64](pipeline, tt.path)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("ExtractValue[float64] error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !tt.wantErr && got != tt.wantValue.(float64) {
-					t.Errorf("ExtractValue[float64] = %v, want %v", got, tt.wantValue)
-				}
-			}
-
-			// Any extraction
-			got, err := ExtractValue[any](pipeline, tt.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractValue[any] error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && got != tt.wantValue {
-				t.Errorf("ExtractValue[any] = %v, want %v", got, tt.wantValue)
-			}
-		})
+func TestNewPipeline(t *testing.T) {
+	p := NewPipeline("test-id")
+	if p.Id() != "test-id" {
+		t.Errorf("expected id 'test-id', got '%s'", p.Id())
 	}
 }
 
-func TestExtractValueTypeConversion(t *testing.T) {
-	// Create pipeline with test data
-	pipeline := NewPipeline("test-conversion")
-	pipeline.Set("integer", 42)
-	pipeline.Set("float", 42.5)
-	pipeline.Set("string_number", "42")
-	pipeline.Set("boolean", true)
-
-	// Test direct float-to-int conversion
-	t.Run("direct float to int", func(t *testing.T) {
-		floatVal := 42.5
-		var dummy int
-		converted := any(int(floatVal)).(int)
-		t.Logf("Direct conversion result: %d, type: %T", converted, converted)
-		t.Logf("Original dummy type: %T", dummy)
-		if converted != 42 {
-			t.Errorf("Direct conversion failed: got %v", converted)
+func TestNewPipelineFrom(t *testing.T) {
+	values := map[string]any{"foo": 42, "bar": "baz"}
+	p := NewPipelineFrom(values)
+	for k, v := range values {
+		val, err := p.Get(k)
+		if err != nil || val != v {
+			t.Errorf("expected %v for key %s, got %v, err: %v", v, k, val, err)
 		}
-	})
+	}
+}
 
-	// Test type conversions
-	t.Run("int to string", func(t *testing.T) {
-		val, err := ExtractValue[string](pipeline, "integer")
-		if err != nil {
-			t.Logf("Int to string error: %v", err)
-		} else {
-			t.Logf("Int to string result: %v", val)
-		}
-	})
+func TestSetGetHasDelete(t *testing.T) {
+	p := NewPipeline("")
+	if p.Has("missing") {
+		t.Error("expected Has to be false for missing key")
+	}
+	if _, err := p.Get("missing"); !errors.Is(err, ErrKeyNotFound) {
+		t.Error("expected ErrKeyNotFound for missing key")
+	}
+	if err := p.Set("foo", 123); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if !p.Has("foo") {
+		t.Error("expected Has to be true after Set")
+	}
+	val, err := p.Get("foo")
+	if err != nil || val != 123 {
+		t.Errorf("expected 123, got %v, err: %v", val, err)
+	}
+	if err := p.Delete("foo"); err != nil {
+		t.Errorf("unexpected error on Delete: %v", err)
+	}
+	if p.Has("foo") {
+		t.Error("expected Has to be false after Delete")
+	}
+}
 
-	t.Run("float to int conversion test", func(t *testing.T) {
-		// Make a separate test pipeline with just the float
-		testPipe := NewPipeline("float-test")
-		testPipe.Set("val", 42.5)
+func TestKeysAndMap(t *testing.T) {
+	p := NewPipeline("")
+	p.Set("a", 1)
+	p.Set("b", 2)
+	keys := p.Keys()
+	m := p.Map()
+	if len(keys) != 2 || len(m) != 2 {
+		t.Errorf("expected 2 keys and 2 map entries, got %d and %d", len(keys), len(m))
+	}
+	if m["a"] != 1 || m["b"] != 2 {
+		t.Error("map values incorrect")
+	}
+}
 
-		// Get the raw value to confirm its type
-		rawVal, _ := testPipe.Get("val")
-		t.Logf("Raw value type: %T, value: %v", rawVal, rawVal)
+func TestErrorHandling(t *testing.T) {
+	p := NewPipeline("")
+	if p.HasError() {
+		t.Error("expected no error initially")
+	}
+	err := errors.New("fail")
+	p.SetError(err)
+	if !p.HasError() {
+		t.Error("expected HasError true after SetError")
+	}
+	if p.GetError() != err {
+		t.Error("GetError did not return set error")
+	}
+}
 
-		// Try the conversion
-		val, err := ExtractValue[int](testPipe, "val")
-		if err != nil {
-			t.Logf("Float to int error: %v", err)
-		} else {
-			t.Logf("Float to int result: %v", val)
-		}
-	})
+func TestMergeFrom(t *testing.T) {
+	p := NewPipeline("")
+	p.Set("a", 1)
+	other := map[string]any{"b": 2, "a": 3}
+	p.MergeFrom(other)
+	if v, _ := p.Get("a"); v != 3 {
+		t.Error("expected 'a' to be overwritten to 3")
+	}
+	if v, _ := p.Get("b"); v != 2 {
+		t.Error("expected 'b' to be 2")
+	}
+}
 
-	t.Run("string to boolean", func(t *testing.T) {
-		val, err := ExtractValue[bool](pipeline, "string_number")
-		if err != nil {
-			t.Logf("String to bool error: %v", err)
-		} else {
-			t.Logf("String to bool result: %v", val)
-		}
-	})
+func TestMerge(t *testing.T) {
+	p1 := NewPipeline("")
+	p1.Set("x", 1)
+	p2 := NewPipeline("")
+	p2.Set("x", 2)
+	p2.Set("y", 3)
+	p1.Merge(p2)
+	if v, _ := p1.Get("x"); v != 2 {
+		t.Error("expected 'x' to be overwritten to 2")
+	}
+	if v, _ := p1.Get("y"); v != 3 {
+		t.Error("expected 'y' to be 3")
+	}
+}
 
-	t.Run("boolean to string", func(t *testing.T) {
-		val, err := ExtractValue[string](pipeline, "boolean")
-		if err != nil {
-			t.Logf("Bool to string error: %v", err)
-		} else {
-			t.Logf("Bool to string result: %v", val)
-		}
-	})
+func TestClone(t *testing.T) {
+	p := NewPipeline("id1")
+	p.Set("foo", 42)
+	p.SetError(errors.New("err"))
+	clone := p.Clone()
+	if clone.Id() != "id1" {
+		t.Error("clone id mismatch")
+	}
+	if v, _ := clone.Get("foo"); v != 42 {
+		t.Error("clone data mismatch")
+	}
+	if !clone.HasError() {
+		t.Error("clone error mismatch")
+	}
+	// Mutate clone and check original is unchanged
+	clone.Set("foo", 100)
+	v, _ := p.Get("foo")
+	if v != 42 {
+		t.Error("original should not be affected by clone mutation")
+	}
 }

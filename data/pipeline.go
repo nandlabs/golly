@@ -253,16 +253,12 @@ func (p *MapPipeline) MergeFrom(data map[string]any) error {
 //
 //	An error if the merge operation fails, otherwise nil.
 func (p *MapPipeline) Merge(pipeline Pipeline) error {
-	// for k, v := range pipeline.data {
-	// 	p.data[k] = v
-	// }
 	for _, key := range pipeline.Keys() {
 		value, err := pipeline.Get(key)
-		if err != nil {
+		if err == nil {
 			p.Set(key, value)
 		}
 	}
-
 	return nil
 }
 
