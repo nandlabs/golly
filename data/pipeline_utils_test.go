@@ -285,13 +285,13 @@ func TestExtractValue_NestedPathWithFilter(t *testing.T) {
 	}
 	v5, err := ExtractValue[string](p, "users[address.zip>20000].address.phones[type==\"home\"].number")
 	if err != nil || v5 != "123" {
-		t.Errorf("expected 123, got %v, err=%v", v4, err)
+		t.Errorf("expected 123, got %v, err=%v", v5, err)
 	}
-	// // Numeric filter at nested level
-	// v6, err := ExtractValue[string](p, "users[address.zip>20000 && address.phones[type==\"home\"].number=123].name")
-	// if err != nil || v6 != "nanda" {
-	// 	t.Errorf("expected 123, got %v, err=%v", v4, err)
-	// }
+	// Numeric filter at nested level
+	v6, err := ExtractValue[string](p, "users[address.zip>20000 && address.phones[type==\"home\"].number==123].name")
+	if err != nil || v6 != "nanda" {
+		t.Errorf("expected 123, got %v, err=%v", v6, err)
+	}
 }
 
 func TestEvaluateCondition(t *testing.T) {
@@ -320,7 +320,6 @@ func TestEvaluateCondition(t *testing.T) {
 		cond     string
 		expected bool
 	}{
-		// {"users[address.city=\"blr\"] && users[address.phones[type=\"home\"]].name==nanda", true},
 		{"age==30", true},
 		{"age>25", true},
 		{"age<25", false},
@@ -336,6 +335,7 @@ func TestEvaluateCondition(t *testing.T) {
 		{"age>=30 && city==\"nyc\"", false},
 		{"age>=30 || city==\"nyc\"", true},
 		{"(age>=30 && city==\"nyc\") || (age<25)", false},
+		{"users[city==\"blr\"].name==nanda && users[phones[type==\"home\"]].name==nanda", true},
 	}
 	for _, test := range tests {
 		result := EvaluateCondition(p, test.cond)

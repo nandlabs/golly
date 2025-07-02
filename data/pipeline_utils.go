@@ -259,6 +259,18 @@ func (c *ComparisonExpr) Eval(item any) (bool, error) {
 		}
 		return false, nil
 	}
+	// If the value is itself a slice/array (e.g., from a map value), check each element
+	if v.Kind() == reflect.Map {
+		iter := v.MapRange()
+		for iter.Next() {
+			val := iter.Value().Interface()
+			ok, _ := compareValue(val, c.Op, c.Value)
+			if ok {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
 	return compareValue(fieldVal, c.Op, c.Value)
 }
 
@@ -360,6 +372,27 @@ type ParenExpr struct {
 
 func (p *ParenExpr) Eval(item any) (bool, error) {
 	return p.Inner.Eval(item)
+}
+
+// ExistsExpr checks if a path resolves to a non-nil value
+// Used for expressions like users[address.city=="blr"]
+type ExistsExpr struct {
+	Path []PathSegment
+}
+
+func (e *ExistsExpr) Eval(item any) (bool, error) {
+	val, err := resolveComplexPath(item, e.Path)
+	if err != nil {
+		return false, nil
+	}
+	if val == nil {
+		return false, nil
+	}
+	v := reflect.ValueOf(val)
+	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+		return v.Len() > 0, nil
+	}
+	return true, nil
 }
 
 // Helper: convert to float64 if possible
@@ -510,7 +543,7 @@ func parseAndExpr(tokens []token, pos int) (FilterExpr, int) {
 	return left, pos
 }
 
-// Helper to collect path tokens up to the next top-level OP/AND/OR
+// Helper to collect path tokens up to the next top-level OP/AND/OR, handling nested brackets and parentheses
 func collectPathTokens(tokens []token, pos int) ([]token, int) {
 	var pathToks []token
 	bracketLevel := 0
@@ -531,7 +564,7 @@ func collectPathTokens(tokens []token, pos int) ([]token, int) {
 				parenLevel--
 			}
 		}
-		// Only break for OP/AND/OR at top level
+		// Only break for OP/AND/OR at top level (not inside any bracket or paren)
 		if (t.type_ == "OP" || t.type_ == "AND" || t.type_ == "OR") && bracketLevel == 0 && parenLevel == 0 {
 			break
 		}
@@ -554,10 +587,13 @@ func parsePrimaryExpr(tokens []token, pos int) (FilterExpr, int) {
 	// Collect path tokens robustly
 	pathToks, newPos := collectPathTokens(tokens, pos)
 	pos = newPos
-	if len(pathToks) > 0 && pos+1 < len(tokens) && tokens[pos].type_ == "OP" {
+	if len(pathToks) > 0 && pos < len(tokens) && tokens[pos].type_ == "OP" {
 		pathStr := tokensToString(pathToks)
 		path := parseComplexPath(pathStr)
 		op := tokens[pos].val
+		if pos+1 >= len(tokens) {
+			return nil, pos + 1
+		}
 		valTok := tokens[pos+1]
 		var val any
 		if valTok.type_ == "NUMBER" {
@@ -567,6 +603,12 @@ func parsePrimaryExpr(tokens []token, pos int) (FilterExpr, int) {
 			val = valTok.val
 		}
 		return &ComparisonExpr{path, op, val}, pos + 2
+	}
+	// If we collected path tokens but no OP, treat as ExistsExpr
+	if len(pathToks) > 0 {
+		pathStr := tokensToString(pathToks)
+		path := parseComplexPath(pathStr)
+		return &ExistsExpr{path}, pos
 	}
 	return nil, pos + 1
 }
