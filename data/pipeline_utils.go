@@ -718,7 +718,8 @@ func SetValue(c Pipeline, path string, value any) error {
 	for i := 1; i < len(parts)-1; i++ {
 		field, filter, hasFilter := parseFieldAndFilter(parts[i])
 		if len(field) > 0 {
-			current, err = navigateToField(current, field)
+			var next any
+			next, err = navigateToField(current, field)
 			if err != nil {
 				switch err {
 				case ErrFieldNotFound:
@@ -729,11 +730,12 @@ func SetValue(c Pipeline, path string, value any) error {
 				return err
 			}
 			if hasFilter {
-				current, err = applyFilter(current, filter)
+				next, err = applyFilter(next, filter)
 				if err != nil {
 					return err
 				}
 			}
+			current = next
 		} else {
 			return ErrInvalidPath
 		}
@@ -757,7 +759,17 @@ func SetValue(c Pipeline, path string, value any) error {
 	} else {
 		// If the last segment is a field, set it if current is a Pipeline
 		if p, ok := current.(Pipeline); ok {
-			return p.Set(lastField, value)
+			// Try to set the value, even if the field does not exist yet
+			err := p.Set(lastField, value)
+			if err != nil {
+				// If the error is ErrFieldNotFound, create the field
+				if err == ErrFieldNotFound {
+					// Try to create the field by setting it
+					return p.Set(lastField, value)
+				}
+				return err
+			}
+			return nil
 		}
 		return fmt.Errorf("final item is not a Pipeline, cannot set value")
 	}
