@@ -279,16 +279,19 @@ func TestExtractValue_NestedPathWithFilter(t *testing.T) {
 		t.Errorf("expected 123, got %v, err=%v", v3, err)
 	}
 
-	// Numeric filter at nested level
 	v4, err := ExtractValue[string](p, "users[address.zip>20000 && address.city==\"blr\"].name")
 	if err != nil || v4 != "nanda" {
 		t.Errorf("expected nanda, got %v, err=%v", v4, err)
 	}
-	// Numeric filter at nested level
 	v5, err := ExtractValue[string](p, "users[address.zip>20000].address.phones[type==\"home\"].number")
 	if err != nil || v5 != "123" {
 		t.Errorf("expected 123, got %v, err=%v", v4, err)
 	}
+	// // Numeric filter at nested level
+	// v6, err := ExtractValue[string](p, "users[address.zip>20000 && address.phones[type==\"home\"].number=123].name")
+	// if err != nil || v6 != "nanda" {
+	// 	t.Errorf("expected 123, got %v, err=%v", v4, err)
+	// }
 }
 
 func TestEvaluateCondition(t *testing.T) {
@@ -302,8 +305,14 @@ func TestEvaluateCondition(t *testing.T) {
 		},
 		"scores": []any{10, 20, 30},
 		"users": []any{
-			map[string]any{"name": "nanda", "age": 30, "city": "blr"},
-			map[string]any{"name": "alex", "age": 25, "city": "nyc"},
+			map[string]any{"name": "nanda", "age": 30, "city": "blr", "phones": []any{
+				map[string]any{"type": "home", "number": "123"},
+				map[string]any{"type": "work", "number": "456"},
+			}},
+			map[string]any{"name": "alex", "age": 25, "city": "nyc", "phones": []any{
+				map[string]any{"type": "home", "number": "678"},
+				map[string]any{"type": "work", "number": "901"},
+			}},
 		},
 	}
 	p := mockPipeline{"": data}
@@ -311,6 +320,7 @@ func TestEvaluateCondition(t *testing.T) {
 		cond     string
 		expected bool
 	}{
+		// {"users[address.city=\"blr\"] && users[address.phones[type=\"home\"]].name==nanda", true},
 		{"age==30", true},
 		{"age>25", true},
 		{"age<25", false},

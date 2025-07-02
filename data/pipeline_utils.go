@@ -510,17 +510,50 @@ func parseAndExpr(tokens []token, pos int) (FilterExpr, int) {
 	return left, pos
 }
 
-func parsePrimaryExpr(tokens []token, pos int) (FilterExpr, int) {
-	// Parse path (dot-separated, with filters) as left-hand side
-	start := pos
+// Helper to collect path tokens up to the next top-level OP/AND/OR
+func collectPathTokens(tokens []token, pos int) ([]token, int) {
 	var pathToks []token
-	for pos < len(tokens) && (tokens[pos].type_ == "IDENT" || tokens[pos].type_ == "DOT" || tokens[pos].type_ == "LPAREN" || tokens[pos].type_ == "RPAREN" || tokens[pos].type_ == "NUMBER" || tokens[pos].type_ == "STRING" || tokens[pos].type_ == "OP" || tokens[pos].type_ == "AND" || tokens[pos].type_ == "OR" || tokens[pos].type_ == "LBRACK" || tokens[pos].type_ == "RBRACK") {
-		if tokens[pos].type_ == "OP" || tokens[pos].type_ == "AND" || tokens[pos].type_ == "OR" {
+	bracketLevel := 0
+	parenLevel := 0
+	for pos < len(tokens) {
+		t := tokens[pos]
+		switch t.type_ {
+		case "LBRACK":
+			bracketLevel++
+		case "RBRACK":
+			if bracketLevel > 0 {
+				bracketLevel--
+			}
+		case "LPAREN":
+			parenLevel++
+		case "RPAREN":
+			if parenLevel > 0 {
+				parenLevel--
+			}
+		}
+		// Only break for OP/AND/OR at top level
+		if (t.type_ == "OP" || t.type_ == "AND" || t.type_ == "OR") && bracketLevel == 0 && parenLevel == 0 {
 			break
 		}
-		pathToks = append(pathToks, tokens[pos])
+		pathToks = append(pathToks, t)
 		pos++
 	}
+	return pathToks, pos
+}
+
+func parsePrimaryExpr(tokens []token, pos int) (FilterExpr, int) {
+	start := pos
+	// Handle parenthesis at the start
+	if tokens[start].type_ == "LPAREN" {
+		inner, newPos := parseOrExpr(tokens, start+1)
+		if newPos < len(tokens) && tokens[newPos].type_ == "RPAREN" {
+			return &ParenExpr{inner}, newPos + 1
+		}
+		return &ParenExpr{inner}, newPos
+	}
+	// Collect path tokens robustly
+	pathToks, newPos := collectPathTokens(tokens, pos)
+	pos = newPos
 	if len(pathToks) > 0 && pos+1 < len(tokens) && tokens[pos].type_ == "OP" {
 		pathStr := tokensToString(pathToks)
 		path := parseComplexPath(pathStr)
@@ -534,13 +567,6 @@ func parsePrimaryExpr(tokens []token, pos int) (FilterExpr, int) {
 			val = valTok.val
 		}
 		return &ComparisonExpr{path, op, val}, pos + 2
-	}
-	if tokens[start].type_ == "LPAREN" {
-		inner, newPos := parseOrExpr(tokens, start+1)
-		if newPos < len(tokens) && tokens[newPos].type_ == "RPAREN" {
-			return &ParenExpr{inner}, newPos + 1
-		}
-		return &ParenExpr{inner}, newPos
 	}
 	return nil, pos + 1
 }
