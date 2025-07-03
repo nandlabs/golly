@@ -7,7 +7,7 @@ import (
 )
 
 // ErrUnsupportedType is returned when the type is not supported
-var ErrUnsupportedType = errors.New("unsupported type")
+var ErrUnsupportedType = errors.New("unsupported type for schema generation")
 
 // GenerateSchema converts a Go type to a JSON Schema.
 //
@@ -105,11 +105,6 @@ func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 		schema = &Schema{
 			Type: "boolean",
 		}
-	case reflect.Interface:
-		schema = &Schema{
-			Type: "object",
-		}
-
 	default:
 		err = ErrUnsupportedType
 	}
