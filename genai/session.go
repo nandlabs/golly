@@ -3,6 +3,7 @@ package genai
 import (
 	"fmt"
 
+	"oss.nandlabs.io/golly/data"
 	"oss.nandlabs.io/golly/ioutils"
 )
 
@@ -43,8 +44,8 @@ type Session interface {
 	CtxModel() string
 	// Provider is the interface that represents a provider
 	Provider() Provider
-	// Attributes returns the attributes of the session
-	Attributes() map[string]any
+	// Pipeline returns the attributes of the session
+	Pipeline() data.MapPipeline
 	// Last returns the current exchange of the session
 	CurrentExchange() (Exchange, error)
 	// Exchanges returns the exchanges of the session
