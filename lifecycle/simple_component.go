@@ -68,20 +68,25 @@ func (sc *SimpleComponent) OnChange(f func(prevState, newState ComponentState)) 
 // Start will starting the LifeCycle.
 func (sc *SimpleComponent) Start() (err error) {
 	if sc.StartFunc != nil {
+		sc.mutex.Lock()
 		sc.handleStateChange(sc.CompState, Starting)
 		sc.CompState = Starting
+		sc.mutex.Unlock()
+
 		err = sc.StartFunc()
+
+		sc.mutex.Lock()
 		if err != nil {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Running
-
 		}
 		sc.handleStateChange(Starting, sc.CompState)
+		sc.mutex.Unlock()
+
 		if sc.AfterStart != nil {
 			sc.AfterStart(err)
 		}
-
 	}
 	return
 }
@@ -89,26 +94,33 @@ func (sc *SimpleComponent) Start() (err error) {
 // Stop will stop the LifeCycle.
 func (sc *SimpleComponent) Stop() (err error) {
 	if sc.StopFunc != nil {
+		sc.mutex.Lock()
 		sc.handleStateChange(sc.CompState, Stopping)
 		sc.CompState = Stopping
+		sc.mutex.Unlock()
+
 		err = sc.StopFunc()
+
+		sc.mutex.Lock()
 		if err != nil {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Stopped
 		}
 		sc.handleStateChange(Stopping, sc.CompState)
+		sc.mutex.Unlock()
+
 		if sc.AfterStop != nil {
 			sc.AfterStop(err)
-
 		}
-
 	}
 	return
 }
 
 // State will return the current state of the LifeCycle.
 func (sc *SimpleComponent) State() ComponentState {
+	sc.mutex.RLock()
+	defer sc.mutex.RUnlock()
 	return sc.CompState
 }
 
