@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"path"
@@ -210,6 +211,9 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 			AfterStart: func(err error) {
 
 				if err == nil {
+					// Print startup summary
+					printStartupSummary(router, opts)
+
 					go func() {
 
 						if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
@@ -249,4 +253,41 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 	}
 
 	return
+}
+
+// printStartupSummary logs the server startup information including
+// the listening interface, port, protocol, and all registered routes.
+func printStartupSummary(router *turbo.Router, opts *SrvOptions) {
+	protocol := "http"
+	if opts.EnableTLS {
+		protocol = "https"
+	}
+
+	var sb strings.Builder
+	sb.WriteString("\n")
+	sb.WriteString("┌──────────────────────────────────────────────────────────┐\n")
+	sb.WriteString("│                    Turbo Server Started                  │\n")
+	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
+	sb.WriteString(fmt.Sprintf("│  Protocol  : %-43s│\n", protocol))
+	sb.WriteString(fmt.Sprintf("│  Host      : %-43s│\n", opts.ListenHost))
+	sb.WriteString(fmt.Sprintf("│  Port      : %-43d│\n", opts.ListenPort))
+	sb.WriteString(fmt.Sprintf("│  URL       : %-43s│\n", fmt.Sprintf("%s://%s:%d", protocol, opts.ListenHost, opts.ListenPort)))
+	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
+	sb.WriteString("│  Registered Routes                                      │\n")
+	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
+
+	routes := router.RegisteredRoutes()
+	if len(routes) == 0 {
+		sb.WriteString("│  No routes registered                                    │\n")
+	} else {
+		for _, route := range routes {
+			methods := strings.Join(route.Methods, ", ")
+			line := fmt.Sprintf("  %-10s %s", methods, route.Path)
+			sb.WriteString(fmt.Sprintf("│%-58s│\n", line))
+		}
+	}
+
+	sb.WriteString("└──────────────────────────────────────────────────────────┘\n")
+
+	logger.Info(sb.String())
 }

@@ -470,3 +470,71 @@ func GetQueryParamAsBool(id string, r *http.Request) (bool, error) {
 	}
 	return val, nil
 }
+
+// RouteInfo holds the path and HTTP methods for a registered route.
+type RouteInfo struct {
+	Path    string
+	Methods []string
+}
+
+// RegisteredRoutes returns a list of all registered routes with their HTTP methods.
+func (router *Router) RegisteredRoutes() []RouteInfo {
+	router.lock.RLock()
+	defer router.lock.RUnlock()
+	var routes []RouteInfo
+	for _, route := range router.topLevelRoutes {
+		prefix := "/"
+		if route.path != "" {
+			prefix = "/" + route.path
+		}
+		collectRoutes(route, prefix, &routes)
+	}
+	// Sort routes by path for consistent output
+	sortRoutes(routes)
+	return routes
+}
+
+// collectRoutes recursively traverses the route tree and collects route information.
+func collectRoutes(route *Route, currentPath string, routes *[]RouteInfo) {
+	if len(route.handlers) > 0 {
+		methods := make([]string, 0, len(route.handlers))
+		for method := range route.handlers {
+			methods = append(methods, method)
+		}
+		sortMethods(methods)
+		*routes = append(*routes, RouteInfo{
+			Path:    currentPath,
+			Methods: methods,
+		})
+	}
+	for _, subRoute := range route.subRoutes {
+		childPath := currentPath
+		if !strings.HasSuffix(childPath, "/") {
+			childPath += "/"
+		}
+		if subRoute.isPathVar {
+			childPath += "{" + subRoute.path + "}"
+		} else {
+			childPath += subRoute.path
+		}
+		collectRoutes(subRoute, childPath, routes)
+	}
+}
+
+// sortRoutes sorts RouteInfo slice by path.
+func sortRoutes(routes []RouteInfo) {
+	for i := 1; i < len(routes); i++ {
+		for j := i; j > 0 && routes[j].Path < routes[j-1].Path; j-- {
+			routes[j], routes[j-1] = routes[j-1], routes[j]
+		}
+	}
+}
+
+// sortMethods sorts methods alphabetically for consistent display.
+func sortMethods(methods []string) {
+	for i := 1; i < len(methods); i++ {
+		for j := i; j > 0 && methods[j] < methods[j-1]; j-- {
+			methods[j], methods[j-1] = methods[j-1], methods[j]
+		}
+	}
+}
