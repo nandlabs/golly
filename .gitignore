@@ -1,9 +1,33 @@
-#  VS Code specific files
+# IDE and editor files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-.out
-
+# OS files
 .DS_Store
+Thumbs.db
 
-main.go
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+.out
+coverage.out
+coverage.html
+
+# Configuration files (local overrides)
 log-config.json
+
+# Binary output
+bin/
+dist/
+
+.tmp/

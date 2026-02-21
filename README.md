@@ -24,82 +24,79 @@ go get oss.nandlabs.io/golly
 - [assertion](assertion/README.md)
   - Unified interface for asserting conditions
   - Supports various assertion functions for different types of conditions
-- [clients](clients/README.md)
-  - A common package for all types of client
-  - Checkout clients that leverage this package.
-    - [rest](clients/rest/README.md)
-    - [messaging](messaging/README.md)
 - [cli](cli/README.md)
   - Easy to use API for building complex command structures
   - Argument parsing and validation
+- [clients](clients/README.md)
+  - A common package for all types of client
+  - Auth providers, retry with exponential backoff, and circuit breaker
 - [codec](codec/README.md)
-  - Easy to use interface
-  - Multiformat support
-  - Unifed interface for Endcoding and Decoding data from structured format
-  - Out of the box support for `XML` `JSON` & `YAML`
+  - Unified interface for encoding and decoding data
+  - Out of the box support for `XML`, `JSON` & `YAML`
+  - [codec/validator](codec/validator/README.md) — Input validation utilities
 - [collections](collections/README.md)
-  - A collection of generic data structures
-  - Stack, Queue, List,LinkedList, Set
-  - Synchronized versions of the above
+  - Generic data structures: Stack, Queue, List, LinkedList, Set
+  - Synchronized (thread-safe) versions of all collections
+- [config](config/README.md)
+  - Environment variable helpers (`GetEnvAsString`, `GetEnvAsInt`, `GetEnvAsBool`)
+  - Properties file loading and key-value management
+- [data](data/README.md)
+  - Pipeline key-value data container with typed extraction
+  - JSON Schema generation from Go structs via reflection
+- [errutils](errutils/README.md)
+  - Custom formatted errors and multi-error aggregation
+- [fnutils](fnutils/README.md)
+  - Deferred and timed function execution utilities
+- [fsutils](fsutils/README.md)
+  - Filesystem utilities: path/file/dir existence checks, content type detection
 - [genai](genai/README.md)
-  - Interact with generative AI models
-  - Manage sessions, exchanges, and models
-  - Handle memory and templates
+  - Provider-agnostic interface for Generative AI / LLM services
+  - Message types: text, binary, file, JSON, YAML, multi-part
+  - Prompt templates with variable substitution
+  - [genai/impl](genai/impl/README.md) — OpenAI and Ollama provider implementations
+- [ioutils](ioutils/README.md)
+  - MIME type lookup, channel utilities, and checksum calculation
 - [l3](l3/README.md)
   - Lightweight Levelled Logger
-  - Multiple logging levels `OFF,ERROR,INFO,DEBUG,TRACE`
+  - Multiple logging levels: `OFF`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`
   - Console and File based writers
-  - Ability to specify log levels for a specific package
+  - Per-package log level configuration
   - Async logging support
-  - Configuration can be done using either a file,env variables,Struct values at
-    runtime.
+- [lifecycle](lifecycle/README.md)
+  - Component lifecycle management with dependency ordering
+  - Start/stop hooks, state tracking, and change notifications
+- [managers](managers/README.md)
+  - Generic item manager for registering, retrieving, and listing named items
 - [messaging](messaging/README.md)
-  - General producer interface for sending messages to different messaging
-    platforms.
-  - General consumer interface for receiving and processing messages from
-    different messaging platforms.
-  - A local provider interface for messaging using channels
-- rest
-  [server](rest/server/README.md)
-
-  - HTTP methods: GET, POST, PUT, DELETE
-  - Query parameters
-  - Request headers
-  - Middleware support
-  - TLS Configuration
-  - Transport Layer Configuration
-
-  [client](clients/rest/README.md)
-
-  - HTTP methods: GET, POST, PUT, DELETE
-  - Query parameters
-  - Request headers
-  - Proxy Configuration
-  - TLS Configuration
-  - Transport Layer Configuration
-  - SSL Configuration
-  - Error handling
-
+  - General producer/consumer interfaces for messaging platforms
+  - Local (channel-based) provider for in-process messaging
+- [pool](pool/README.md)
+  - Generic, thread-safe object pool with configurable min/max capacity
+  - Automatic lifecycle management via creator/destroyer functions
+- [rest](rest/README.md)
+  - HTTP server with routing, middleware, TLS, and transport configuration
+  - HTTP client with headers, query params, proxy, and error handling
+- [secrets](secrets/README.md)
+  - AES encryption and decryption for strings and byte slices
 - [semver](semver/README.md)
-  - Adheres to the [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html)
-    specification
-  - Easy to use API for parsing, comparing and generating SemVer versions
-  - Supports pre-release and build metadata
+  - Semantic versioning parser and comparator ([SemVer 2.0.0](https://semver.org/spec/v2.0.0.html))
+  - Pre-release and build metadata support
+- [testing](testing/README.md)
+  - [testing/assert](testing/assert/README.md) — Lightweight assertion helpers for unit tests
+- [textutils](textutils/README.md)
+  - Named ASCII character constants for readable code
 - [turbo](turbo/README.md)
-  - Smart Http Routing Capabilities
-  - Aimed for API Development
-  - Easy to use
-  - Filters
+  - Enterprise-grade HTTP routing for API development
+  - Path/query parameters, filters, and CORS support
+  - [turbo/auth](turbo/auth/README.md) — Authentication middleware
+  - [turbo/filters](turbo/filters/README.md) — CORS and request/response filters
+- [uuid](uuid/README.md)
+  - UUID generation (V1, V2, V3, V4) and parsing
 - [vfs](vfs/README.md)
-  - Virtual File System
-  - Unified interface for multiple file systems
-  - Default implementation for local fs available
-  - Extensible framework
-- [testing/assert](testing/assert/README.md)
-  - Flexible and extensible assertion library
+  - Virtual File System with unified interface
+  - Default local filesystem implementation, extensible for cloud storage
 
-And many more...
-Refer to [Godocs](https://godoc.org/oss.nandlabs.io/golly?) for more information
+Refer to [pkg.go.dev](https://pkg.go.dev/oss.nandlabs.io/golly) for full API documentation.
 
 ## Contributing
 

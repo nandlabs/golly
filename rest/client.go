@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -253,6 +254,7 @@ func (c *Client) NewRequest(reqUrl, method string) (req *Request, err error) {
 	}
 
 	req = &Request{
+		ctx:    context.Background(),
 		url:    finalUrl,
 		method: method,
 		header: map[string][]string{},
@@ -301,10 +303,17 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 	}
 	if isErr && c.options.RetryPolicy != nil {
 		retryCount := 0
-		// For each retry, sleep for the backoff interval and retry the request
+		ctx := req.Context()
+		// For each retry, sleep for the backoff interval and retry the request.
+		// The retry loop respects context cancellation so callers can abort.
 		for isErr && retryCount < c.options.RetryPolicy.MaxRetries {
 			sleepFor := c.options.RetryPolicy.WaitTime(retryCount)
-			time.Sleep(sleepFor)
+			select {
+			case <-ctx.Done():
+				err = ctx.Err()
+				return
+			case <-time.After(sleepFor):
+			}
 			retryCount++
 			httpRes, err = c.httpClient.Do(httpReq)
 			isErr = c.isError(err, httpRes)

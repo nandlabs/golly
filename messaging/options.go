@@ -4,7 +4,7 @@ import "oss.nandlabs.io/golly/clients"
 
 const (
 	CircuitBreakerOpts = "CircuitBreakerOption"
-	RetryOpts          = "CircuitBreakerOption"
+	RetryOpts          = "RetryOption"
 	NamedListener      = "NamedListener"
 )
 
@@ -65,6 +65,25 @@ func (ob *OptionsBuilder) AddRetryHandler(maxRetries, wait int) *OptionsBuilder 
 	retryInfo := &clients.RetryInfo{
 		MaxRetries: maxRetries,
 		Wait:       wait,
+	}
+	return ob.Add(RetryOpts, retryInfo)
+}
+
+// AddRetryHandlerWithBackoff configures retries with exponential backoff.
+// Parameters:
+//   - maxRetries: maximum number of retry attempts.
+//   - waitMs: base wait time in milliseconds.
+//   - multiplier: backoff multiplier (e.g. 2.0 for doubling). Values <= 0 default to 2.
+//   - maxWaitMs: upper bound for backoff in milliseconds. 0 means no cap.
+//   - jitter: when true, adds random jitter to prevent thundering-herd.
+func (ob *OptionsBuilder) AddRetryHandlerWithBackoff(maxRetries, waitMs int, multiplier float64, maxWaitMs int, jitter bool) *OptionsBuilder {
+	retryInfo := &clients.RetryInfo{
+		MaxRetries:  maxRetries,
+		Wait:        waitMs,
+		Exponential: true,
+		Multiplier:  multiplier,
+		MaxWait:     maxWaitMs,
+		Jitter:      jitter,
 	}
 	return ob.Add(RetryOpts, retryInfo)
 }

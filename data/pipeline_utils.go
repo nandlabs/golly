@@ -160,9 +160,10 @@ func parseFieldAndFilter(segment string) (fieldName string, filter string, hasFi
 			inQuotes = !inQuotes
 		}
 		if !inQuotes {
-			if c == '[' {
+			switch c {
+			case '[':
 				bracketLevel++
-			} else if c == ']' {
+			case ']':
 				bracketLevel--
 				if bracketLevel == 0 {
 					fieldName = segment[:open]
@@ -343,13 +344,14 @@ func (l *LogicalExpr) Eval(item any) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if l.Op == "&&" {
+	switch l.Op {
+	case "&&":
 		if !lv {
 			return false, nil
 		}
 		rv, err := l.Right.Eval(item)
 		return rv, err
-	} else if l.Op == "||" {
+	case "||":
 		if lv {
 			return true, nil
 		}
