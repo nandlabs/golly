@@ -1,6 +1,7 @@
 package lifecycle
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -319,4 +320,217 @@ func TestSimpleComponentManager_List(t *testing.T) {
 	if len(components) != 1 {
 		t.Errorf("List() len = %v, want %v", len(components), 1)
 	}
+}
+
+// TestSimpleComponentManager_StartWithTimeout tests StartWithTimeout.
+func TestSimpleComponentManager_StartWithTimeout(t *testing.T) {
+	t.Run("completes before timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		component := &SimpleComponent{
+			CompId: "fast",
+			StartFunc: func() error {
+				return nil
+			},
+			StopFunc: func() error {
+				return nil
+			},
+		}
+		manager.Register(component)
+		err := manager.StartWithTimeout("fast", 2*time.Second)
+		if err != nil {
+			t.Errorf("StartWithTimeout() unexpected error: %v", err)
+		}
+		if component.State() != Running {
+			t.Errorf("StartWithTimeout() state = %v, want %v", component.State(), Running)
+		}
+	})
+
+	t.Run("exceeds timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		component := &SimpleComponent{
+			CompId: "slow",
+			StartFunc: func() error {
+				time.Sleep(5 * time.Second)
+				return nil
+			},
+			StopFunc: func() error {
+				return nil
+			},
+		}
+		manager.Register(component)
+		err := manager.StartWithTimeout("slow", 100*time.Millisecond)
+		if err == nil {
+			t.Errorf("StartWithTimeout() expected timeout error, got nil")
+		}
+		if !errors.Is(err, ErrTimeout) {
+			t.Errorf("StartWithTimeout() error = %v, want ErrTimeout", err)
+		}
+	})
+
+	t.Run("component not found", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		err := manager.StartWithTimeout("nonexistent", 1*time.Second)
+		if err == nil {
+			t.Errorf("StartWithTimeout() expected error, got nil")
+		}
+	})
+}
+
+// TestSimpleComponentManager_StopWithTimeout tests StopWithTimeout.
+func TestSimpleComponentManager_StopWithTimeout(t *testing.T) {
+	t.Run("completes before timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		component := &SimpleComponent{
+			CompId: "fast",
+			StartFunc: func() error {
+				return nil
+			},
+			StopFunc: func() error {
+				return nil
+			},
+		}
+		manager.Register(component)
+		manager.Start("fast")
+		time.Sleep(100 * time.Millisecond)
+
+		err := manager.StopWithTimeout("fast", 2*time.Second)
+		if err != nil {
+			t.Errorf("StopWithTimeout() unexpected error: %v", err)
+		}
+		if component.State() != Stopped {
+			t.Errorf("StopWithTimeout() state = %v, want %v", component.State(), Stopped)
+		}
+	})
+
+	t.Run("exceeds timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		component := &SimpleComponent{
+			CompId: "slow",
+			StartFunc: func() error {
+				return nil
+			},
+			StopFunc: func() error {
+				time.Sleep(5 * time.Second)
+				return nil
+			},
+		}
+		manager.Register(component)
+		manager.Start("slow")
+		time.Sleep(100 * time.Millisecond)
+
+		err := manager.StopWithTimeout("slow", 100*time.Millisecond)
+		if err == nil {
+			t.Errorf("StopWithTimeout() expected timeout error, got nil")
+		}
+		if !errors.Is(err, ErrTimeout) {
+			t.Errorf("StopWithTimeout() error = %v, want ErrTimeout", err)
+		}
+	})
+}
+
+// TestSimpleComponentManager_StartAllWithTimeout tests StartAllWithTimeout.
+func TestSimpleComponentManager_StartAllWithTimeout(t *testing.T) {
+	t.Run("completes before timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		compA := &SimpleComponent{
+			CompId:    "a",
+			StartFunc: func() error { return nil },
+			StopFunc:  func() error { return nil },
+		}
+		compB := &SimpleComponent{
+			CompId:    "b",
+			StartFunc: func() error { return nil },
+			StopFunc:  func() error { return nil },
+		}
+		manager.Register(compA)
+		manager.Register(compB)
+
+		err := manager.StartAllWithTimeout(2 * time.Second)
+		if err != nil {
+			t.Errorf("StartAllWithTimeout() unexpected error: %v", err)
+		}
+		time.Sleep(100 * time.Millisecond)
+		if compA.State() != Running {
+			t.Errorf("StartAllWithTimeout() compA state = %v, want %v", compA.State(), Running)
+		}
+		if compB.State() != Running {
+			t.Errorf("StartAllWithTimeout() compB state = %v, want %v", compB.State(), Running)
+		}
+	})
+
+	t.Run("exceeds timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		comp := &SimpleComponent{
+			CompId: "slow",
+			StartFunc: func() error {
+				time.Sleep(5 * time.Second)
+				return nil
+			},
+			StopFunc: func() error { return nil },
+		}
+		manager.Register(comp)
+
+		err := manager.StartAllWithTimeout(100 * time.Millisecond)
+		if err == nil {
+			t.Errorf("StartAllWithTimeout() expected timeout error, got nil")
+		}
+		if !errors.Is(err, ErrTimeout) {
+			t.Errorf("StartAllWithTimeout() error = %v, want ErrTimeout", err)
+		}
+	})
+}
+
+// TestSimpleComponentManager_StopAllWithTimeout tests StopAllWithTimeout.
+func TestSimpleComponentManager_StopAllWithTimeout(t *testing.T) {
+	t.Run("completes before timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		compA := &SimpleComponent{
+			CompId:    "a",
+			StartFunc: func() error { return nil },
+			StopFunc:  func() error { return nil },
+		}
+		compB := &SimpleComponent{
+			CompId:    "b",
+			StartFunc: func() error { return nil },
+			StopFunc:  func() error { return nil },
+		}
+		manager.Register(compA)
+		manager.Register(compB)
+		manager.StartAll()
+		time.Sleep(200 * time.Millisecond)
+
+		err := manager.StopAllWithTimeout(2 * time.Second)
+		if err != nil {
+			t.Errorf("StopAllWithTimeout() unexpected error: %v", err)
+		}
+		if compA.State() != Stopped {
+			t.Errorf("StopAllWithTimeout() compA state = %v, want %v", compA.State(), Stopped)
+		}
+		if compB.State() != Stopped {
+			t.Errorf("StopAllWithTimeout() compB state = %v, want %v", compB.State(), Stopped)
+		}
+	})
+
+	t.Run("exceeds timeout", func(t *testing.T) {
+		manager := NewSimpleComponentManager()
+		comp := &SimpleComponent{
+			CompId:    "slow",
+			StartFunc: func() error { return nil },
+			StopFunc: func() error {
+				time.Sleep(5 * time.Second)
+				return nil
+			},
+		}
+		manager.Register(comp)
+		manager.Start("slow")
+		time.Sleep(100 * time.Millisecond)
+
+		err := manager.StopAllWithTimeout(100 * time.Millisecond)
+		if err == nil {
+			t.Errorf("StopAllWithTimeout() expected timeout error, got nil")
+		}
+		if !errors.Is(err, ErrTimeout) {
+			t.Errorf("StopAllWithTimeout() error = %v, want ErrTimeout", err)
+		}
+	})
 }

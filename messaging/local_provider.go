@@ -228,7 +228,7 @@ func (lp *LocalProvider) Close() error {
 	lp.closed = true
 	for dest, ch := range lp.destinations {
 		logger.TraceF("closing channel for destination %s", dest)
-		ioutils.CloseChannel[Message](ch)
+		ioutils.CloseChannel(ch)
 	}
 	return nil
 }

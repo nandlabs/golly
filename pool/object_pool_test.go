@@ -202,7 +202,7 @@ func TestCheckout_ReturnsErrorWhenCreatorFails(t *testing.T) {
 }
 
 func TestCheckout_AfterClose(t *testing.T) {
-	p, _ := NewPool[int](intCreator, noopDestroyer, 0, 5, 1)
+	p, _ := NewPool(intCreator, noopDestroyer, 0, 5, 1)
 	p.Start()
 	p.Close()
 
@@ -215,7 +215,7 @@ func TestCheckout_AfterClose(t *testing.T) {
 // --- Checkin ---
 
 func TestCheckin_ReturnsObjectToPool(t *testing.T) {
-	p, _ := NewPool[int](uniqueIntCreator, noopDestroyer, 0, 2, 1)
+	p, _ := NewPool(uniqueIntCreator, noopDestroyer, 0, 2, 1)
 	p.Start()
 	defer p.Close()
 
@@ -240,7 +240,7 @@ func TestCheckin_ReturnsObjectToPool(t *testing.T) {
 }
 
 func TestCheckin_UnknownObject_NoOp(t *testing.T) {
-	p, _ := NewPool[int](intCreator, noopDestroyer, 0, 5, 1)
+	p, _ := NewPool(intCreator, noopDestroyer, 0, 5, 1)
 	p.Start()
 	defer p.Close()
 
@@ -260,7 +260,7 @@ func TestDelete_RemovesAndDestroysObject(t *testing.T) {
 		return nil
 	}
 
-	p, _ := NewPool[int](uniqueIntCreator, destroyer, 0, 5, 1)
+	p, _ := NewPool(uniqueIntCreator, destroyer, 0, 5, 1)
 	p.Start()
 	defer p.Close()
 
@@ -279,7 +279,7 @@ func TestDelete_RemovesAndDestroysObject(t *testing.T) {
 }
 
 func TestDelete_UnknownObject_NoOp(t *testing.T) {
-	p, _ := NewPool[int](intCreator, noopDestroyer, 0, 5, 1)
+	p, _ := NewPool(intCreator, noopDestroyer, 0, 5, 1)
 	p.Start()
 	defer p.Close()
 
@@ -295,7 +295,7 @@ func TestClear_RemovesIdleObjects(t *testing.T) {
 		return nil
 	}
 
-	p, _ := NewPool[int](uniqueIntCreator, destroyer, 3, 5, 1)
+	p, _ := NewPool(uniqueIntCreator, destroyer, 3, 5, 1)
 	p.Start()
 	defer p.Close()
 
@@ -331,7 +331,7 @@ func TestClose_DestroysAllObjects(t *testing.T) {
 		return nil
 	}
 
-	p, _ := NewPool[int](uniqueIntCreator, destroyer, 2, 5, 1)
+	p, _ := NewPool(uniqueIntCreator, destroyer, 2, 5, 1)
 	p.Start()
 
 	// Checkout one so we have 1 in-use + 1 idle

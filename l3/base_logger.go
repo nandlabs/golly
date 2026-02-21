@@ -190,7 +190,7 @@ func Get() Logger {
 	if _, ok := loggers[pkgName]; !ok {
 		Level := logConfig.DefaultLvl
 
-		if logConfig.PkgConfigs != nil && len(logConfig.PkgConfigs) > 0 {
+		if len(logConfig.PkgConfigs) > 0 {
 			for _, pkgConfig := range logConfig.PkgConfigs {
 				if pkgConfig.PackageName == pkgName {
 					Level = pkgConfig.Level
@@ -218,13 +218,14 @@ func writeLogMsg(writer io.Writer, logMsg *LogMessage) {
 	datePattern := logConfig.DatePattern
 	mutex.Unlock()
 
-	if format == "json" {
+	switch format {
+	case "json":
 		//TODO update marshalling to direct field access to avoid reflection.
 		//This will be based on codec branch.
 		data, _ := json.Marshal(logMsg)
 		_, _ = writer.Write(data)
 
-	} else if format == "text" {
+	case "text":
 		buf := bufio.NewWriter(writer)
 
 		if logMsg.FnName != textutils.EmptyStr {
