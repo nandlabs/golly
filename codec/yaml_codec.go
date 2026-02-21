@@ -3,7 +3,7 @@ package codec
 import (
 	"io"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 	"oss.nandlabs.io/golly/ioutils"
 )
 
