@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"oss.nandlabs.io/golly/clients"
 	"oss.nandlabs.io/golly/genai"
 	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/rest"
@@ -28,19 +29,22 @@ const (
 
 // OpenAIProvider implements the Provider interface for the OpenAI API
 type OpenAIProvider struct {
-	client      *rest.Client
-	baseURL     string
-	apiKey      string
-	orgID       string
-	models      []string
-	description string
-	version     string
+	client       *rest.Client
+	baseURL      string
+	orgID        string
+	models       []string
+	description  string
+	version      string
+	extraHeaders map[string]string
 }
 
 // OpenAIProviderConfig contains configuration for the OpenAI provider
 type OpenAIProviderConfig struct {
-	// APIKey is the OpenAI API key (required)
-	APIKey string
+	// Auth is the authentication provider for the OpenAI API.
+	// Use clients.NewBearerAuth(apiKey) for standard OpenAI API keys,
+	// clients.NewAPIKeyAuth("api-key", key) for Azure OpenAI,
+	// or provide a custom AuthProvider for dynamic key retrieval from secrets stores.
+	Auth clients.AuthProvider
 	// OrgID is the optional OpenAI organization ID
 	OrgID string
 	// BaseURL is the base URL for OpenAI API (default: https://api.openai.com/v1)
@@ -51,6 +55,9 @@ type OpenAIProviderConfig struct {
 	Description string
 	// Version is a custom version
 	Version string
+	// ExtraHeaders are additional HTTP headers to include with every request.
+	// Use this for provider-specific headers not covered by the auth mechanism.
+	ExtraHeaders map[string]string
 }
 
 // --- OpenAI API request/response types ---
@@ -170,20 +177,24 @@ type openAIErrorDetail struct {
 // --- Constructor functions ---
 
 // NewOpenAIProvider creates a new OpenAI provider with the given API key and REST client options.
+// The API key is used as a bearer token for authentication via the rest client's AuthProvider.
 func NewOpenAIProvider(apiKey string, opts *rest.ClientOpts) *OpenAIProvider {
-	client := rest.NewClientWithOptions(opts)
-	return &OpenAIProvider{
-		client:      client,
-		baseURL:     OpenAIDefaultBaseURL,
-		apiKey:      apiKey,
-		models:      []string{},
-		description: OpenAIProviderDescription,
-		version:     OpenAIProviderVersion,
-	}
+	return NewOpenAIProviderWithConfig(&OpenAIProviderConfig{
+		Auth: clients.NewBearerAuth(apiKey),
+	}, opts)
 }
 
 // NewOpenAIProviderWithConfig creates a new OpenAI provider with custom configuration.
 func NewOpenAIProviderWithConfig(config *OpenAIProviderConfig, opts *rest.ClientOpts) *OpenAIProvider {
+	if opts == nil {
+		opts = rest.CliOptsBuilder().Build()
+	}
+	// Set the auth provider on the client options so the rest client
+	// automatically handles Authorization headers
+	if config.Auth != nil {
+		opts.Auth = config.Auth
+	}
+
 	client := rest.NewClientWithOptions(opts)
 
 	baseURL := config.BaseURL
@@ -202,13 +213,13 @@ func NewOpenAIProviderWithConfig(config *OpenAIProviderConfig, opts *rest.Client
 	}
 
 	return &OpenAIProvider{
-		client:      client,
-		baseURL:     baseURL,
-		apiKey:      config.APIKey,
-		orgID:       config.OrgID,
-		models:      config.Models,
-		description: description,
-		version:     version,
+		client:       client,
+		baseURL:      baseURL,
+		orgID:        config.OrgID,
+		models:       config.Models,
+		description:  description,
+		version:      version,
+		extraHeaders: config.ExtraHeaders,
 	}
 }
 
@@ -374,11 +385,14 @@ func (o *OpenAIProvider) Close() error {
 
 // --- Internal helpers ---
 
-// setHeaders sets the authorization and optional org headers on a request.
+// setHeaders sets the optional org header and any extra headers on a request.
+// Authorization is handled automatically by the rest client's AuthProvider.
 func (o *OpenAIProvider) setHeaders(req *rest.Request) {
-	req.AddHeader("Authorization", "Bearer "+o.apiKey)
 	if o.orgID != "" {
 		req.AddHeader("OpenAI-Organization", o.orgID)
+	}
+	for k, v := range o.extraHeaders {
+		req.AddHeader(k, v)
 	}
 }
 

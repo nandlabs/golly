@@ -5,6 +5,7 @@ import "oss.nandlabs.io/golly/textutils"
 const (
 	AuthTypeBasic  AuthType = "Basic"
 	AuthTypeBearer AuthType = "Token"
+	AuthTypeAPIKey AuthType = "APIKey"
 )
 
 // Authenticatable represents an interface that requires the implementation
@@ -166,5 +167,54 @@ func (b *TokenBearerAuth) Refresh() error {
 func NewBearerAuth(token string) AuthProvider {
 	return &TokenBearerAuth{
 		token: token,
+	}
+}
+
+// APIKeyAuth represents API key authentication where the key
+// is sent as a custom header (e.g., X-API-Key, api-key).
+// This is commonly used by OpenAI-compatible providers like Azure OpenAI.
+type APIKeyAuth struct {
+	headerName string
+	apiKey     string
+}
+
+// Type returns the authentication type for APIKeyAuth, which is AuthTypeAPIKey.
+func (a *APIKeyAuth) Type() AuthType {
+	return AuthTypeAPIKey
+}
+
+// User returns an empty string. APIKeyAuth does not use username credentials.
+func (a *APIKeyAuth) User() (string, error) {
+	return textutils.EmptyStr, nil
+}
+
+// Pass returns an empty string. APIKeyAuth does not use password credentials.
+func (a *APIKeyAuth) Pass() (string, error) {
+	return textutils.EmptyStr, nil
+}
+
+// Token returns the API key value.
+func (a *APIKeyAuth) Token() (string, error) {
+	return a.apiKey, nil
+}
+
+// HeaderName returns the HTTP header name used to send the API key.
+func (a *APIKeyAuth) HeaderName() string {
+	return a.headerName
+}
+
+// NewAPIKeyAuth creates a new APIKeyAuth instance.
+// Parameters:
+//
+//	headerName (string): The HTTP header name (e.g., "X-API-Key", "api-key").
+//	apiKey (string): The API key value.
+//
+// Returns:
+//
+//	AuthProvider: The APIKeyAuth instance.
+func NewAPIKeyAuth(headerName, apiKey string) AuthProvider {
+	return &APIKeyAuth{
+		headerName: headerName,
+		apiKey:     apiKey,
 	}
 }

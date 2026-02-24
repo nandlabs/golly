@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 
+	"oss.nandlabs.io/golly/clients"
 	"oss.nandlabs.io/golly/genai"
 	"oss.nandlabs.io/golly/rest"
 )
@@ -27,6 +28,13 @@ type OllamaProvider struct {
 
 // OllamaProviderConfig contains configuration for the Ollama provider
 type OllamaProviderConfig struct {
+	// Auth is an optional authentication provider. Set this when Ollama is
+	// deployed behind an authenticated reverse proxy or gateway.
+	// For example, use clients.NewBasicAuth(user, pass) for HTTP Basic Auth,
+	// clients.NewBearerAuth(token) for Bearer tokens, or
+	// clients.NewAPIKeyAuth("X-API-Key", key) for custom header auth.
+	// Leave nil for unauthenticated local instances.
+	Auth clients.AuthProvider
 	// BaseURL is the Ollama server URL (default: http://localhost:11434/v1)
 	BaseURL string
 	// Models is the list of available models
@@ -35,20 +43,15 @@ type OllamaProviderConfig struct {
 	Description string
 	// Version is a custom version
 	Version string
+	// ExtraHeaders are additional HTTP headers to include with every request.
+	ExtraHeaders map[string]string
 }
 
 // NewOllamaProvider creates a new Ollama provider with default settings and the given REST client options.
 // No API key is required for a local Ollama instance.
 func NewOllamaProvider(opts *rest.ClientOpts) *OllamaProvider {
-	openai := NewOpenAIProviderWithConfig(&OpenAIProviderConfig{
-		APIKey:      "", // Ollama does not require an API key
-		BaseURL:     OllamaDefaultBaseURL,
-		Models:      []string{},
-		Description: OllamaProviderDescription,
-		Version:     OllamaProviderVersion,
-	}, opts)
-
-	return &OllamaProvider{OpenAIProvider: openai}
+	openai := NewOllamaProviderWithConfig(&OllamaProviderConfig{}, opts)
+	return openai
 }
 
 // NewOllamaProviderWithConfig creates a new Ollama provider with custom configuration.
@@ -69,11 +72,12 @@ func NewOllamaProviderWithConfig(config *OllamaProviderConfig, opts *rest.Client
 	}
 
 	openai := NewOpenAIProviderWithConfig(&OpenAIProviderConfig{
-		APIKey:      "", // Ollama does not require an API key
-		BaseURL:     baseURL,
-		Models:      config.Models,
-		Description: description,
-		Version:     version,
+		Auth:         config.Auth, // nil for unauthenticated local instances
+		BaseURL:      baseURL,
+		Models:       config.Models,
+		Description:  description,
+		Version:      version,
+		ExtraHeaders: config.ExtraHeaders,
 	}, opts)
 
 	return &OllamaProvider{OpenAIProvider: openai}

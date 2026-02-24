@@ -61,6 +61,25 @@ var bearerAuthHandlerFunc = func(client *Client, req *http.Request) error {
 	return nil
 }
 
+var apiKeyAuthHandlerFunc = func(client *Client, req *http.Request) error {
+	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeAPIKey {
+		return fmt.Errorf("invalid auth type")
+	}
+	apiKeyAuth, ok := client.options.Auth.(*clients.APIKeyAuth)
+	if !ok {
+		return fmt.Errorf("auth provider is not an APIKeyAuth instance")
+	}
+	key, err := apiKeyAuth.Token()
+	if err != nil {
+		return fmt.Errorf("failed to obtain API key: %w", err)
+	}
+	if key == "" {
+		return fmt.Errorf("empty API key received")
+	}
+	req.Header.Set(apiKeyAuth.HeaderName(), key)
+	return nil
+}
+
 // ClientOpts represents the options for the REST client.
 
 type ClientOpts struct {
@@ -220,6 +239,7 @@ func NewClientWithOptions(options *ClientOpts) *Client {
 		options.AuthHandlers = map[clients.AuthType]AuthHandlerFunc{
 			clients.AuthTypeBasic:  basicAuthHandlerFunc,
 			clients.AuthTypeBearer: bearerAuthHandlerFunc,
+			clients.AuthTypeAPIKey: apiKeyAuthHandlerFunc,
 		}
 	}
 	client.options = options
