@@ -130,11 +130,12 @@ func sanitizePath(p string) (string, error) {
 		// Path Variable can be defined using {<name>} syntax or :<name> syntax
 		// Allowed characters in the path are A-Z, a-z, 0-9, -, _, ., ~, :, /, {, }
 		if (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c == 45 || c == 95 || c == 46 || c == 126 || c == 58 || c == 47 || c == 123 || c == 125 {
-			if c == textutils.OpenBraceChar {
+			switch c {
+			case textutils.OpenBraceChar:
 				sb.WriteRune(textutils.ColonChar)
-			} else if c == textutils.CloseBraceChar {
+			case textutils.CloseBraceChar:
 				logger.Debug("Ignoring char ", textutils.CloseBraceStr)
-			} else {
+			default:
 				sb.WriteRune(c)
 			}
 		} else {
