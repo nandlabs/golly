@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -37,6 +38,16 @@ type oAuth2Provider struct {
 }
 
 func NewOAuth2Provider(clientId, clientSecret, grantType, tokenEndpoint string) clients.AuthProvider {
+	return NewOAuth2ProviderWithClient(clientId, clientSecret, grantType, tokenEndpoint, nil)
+}
+
+// NewOAuth2ProviderWithClient creates a new OAuth2Provider with a custom REST client.
+// If client is nil, a default client will be used.
+// Use this when the token endpoint requires custom TLS, proxy, or timeout configuration.
+func NewOAuth2ProviderWithClient(clientId, clientSecret, grantType, tokenEndpoint string, client *Client) clients.AuthProvider {
+	if client == nil {
+		client = NewClient()
+	}
 	return &oAuth2Provider{
 		clientId:      clientId,
 		clientSecret:  clientSecret,
@@ -44,7 +55,7 @@ func NewOAuth2Provider(clientId, clientSecret, grantType, tokenEndpoint string) 
 		tokenEndpoint: tokenEndpoint,
 		extraParams:   make(map[string]any),
 		tokenData:     make(map[string]any),
-		client:        NewClient(),
+		client:        client,
 		lock:          &sync.Mutex{},
 	}
 }
@@ -56,14 +67,14 @@ func (o *oAuth2Provider) Type() clients.AuthType {
 
 // User returns the OAuth2 client ID which represents the user identifier for the provider.
 // This method satisfies the Provider interface by providing access to the client identifier.
-func (o *oAuth2Provider) User() string {
-	return o.clientId
+func (o *oAuth2Provider) User() (string, error) {
+	return o.clientId, nil
 }
 
 // Pass returns the OAuth2Provider's client secret.
 // This method is used to access the client secret in a controlled manner.
-func (o *oAuth2Provider) Pass() string {
-	return o.clientSecret
+func (o *oAuth2Provider) Pass() (string, error) {
+	return o.clientSecret, nil
 }
 
 // AddParam adds a key-value parameter to the OAuth2Provider's extra parameters.
@@ -92,27 +103,24 @@ func (o *oAuth2Provider) AddParam(key string, value any) {
 //
 // Returns:
 //   - The access token as a string if successful
-//   - An empty string if any error occurs during the token acquisition process
+//   - An error if any step of the token acquisition process fails
 //
 // Thread safety:
 //
 //	Uses mutex locking to ensure concurrent calls don't interfere with token refresh
-func (o *oAuth2Provider) Token() string {
-	if expiry, ok := o.tokenData[EXPIRY_EPOCH]; ok && expiry.(int64) > time.Now().UnixMilli() {
-
-		if o.tokenData != nil {
-			access_token, ok := o.tokenData["access_token"]
-			if ok {
-				return access_token.(string)
-			}
-		}
-	}
+func (o *oAuth2Provider) Token() (string, error) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
+
+	// Check if we have a valid cached token
+	if token := o.getCachedToken(); token != textutils.EmptyStr {
+		return token, nil
+	}
+
+	// No valid token, request a new one
 	request, err := o.client.NewRequest(o.tokenEndpoint, http.MethodPost)
 	if err != nil {
-		logger.Error("Error creating request: %v", err)
-		return ""
+		return textutils.EmptyStr, fmt.Errorf("error creating token request: %w", err)
 	}
 	request.SetContentType("application/x-www-form-urlencoded")
 	request.AddFormData(GRANT_TYPE, o.grantType)
@@ -120,32 +128,82 @@ func (o *oAuth2Provider) Token() string {
 	request.AddFormData(CLIENT_SECRET, o.clientSecret)
 	if o.extraParams != nil {
 		for k, v := range o.extraParams {
-			request.AddFormData(k, v.(string))
+			request.AddFormData(k, fmt.Sprintf("%v", v))
 		}
 	}
 	response, err := o.client.Execute(request)
 	if err != nil {
-		logger.Error("Error executing request: %v", err)
-		return textutils.EmptyStr
+		return textutils.EmptyStr, fmt.Errorf("error executing token request: %w", err)
 	}
 	if response.StatusCode() != http.StatusOK {
-		logger.Error("Error: %v", response.StatusCode())
-		return textutils.EmptyStr
+		return textutils.EmptyStr, fmt.Errorf("token endpoint returned status %d", response.StatusCode())
 	}
 	if err := response.Decode(&o.tokenData); err != nil {
-		logger.Error("Error decoding response: %v", err)
-		return textutils.EmptyStr
+		return textutils.EmptyStr, fmt.Errorf("error decoding token response: %w", err)
 	}
-	if o.tokenData != nil {
-		access_token, ok := o.tokenData[ACCESS_TOKEN]
-		if ok {
-			o.tokenData[EXPIRY_EPOCH] = (time.Now().UnixMilli() + int64(o.tokenData[EXPIRES_IN].(float64))*1000) - 100
-			return access_token.(string)
-		} else {
-			logger.Error("Error: %v", response.StatusCode())
-			return textutils.EmptyStr
+	if o.tokenData == nil {
+		return textutils.EmptyStr, fmt.Errorf("token response body is nil")
+	}
+	accessToken, ok := o.tokenData[ACCESS_TOKEN]
+	if !ok {
+		return textutils.EmptyStr, fmt.Errorf("access_token not found in token response")
+	}
+	tokenStr, ok := accessToken.(string)
+	if !ok {
+		return textutils.EmptyStr, fmt.Errorf("access_token is not a string, got %T", accessToken)
+	}
+	// Calculate and store expiry epoch
+	if expiresIn, ok := o.tokenData[EXPIRES_IN]; ok {
+		if expiresInSec, err := toFloat64(expiresIn); err == nil {
+			// Subtract 100ms buffer so we refresh slightly before actual expiry
+			o.tokenData[EXPIRY_EPOCH] = (time.Now().UnixMilli() + int64(expiresInSec)*1000) - 100
 		}
 	}
-	return textutils.EmptyStr
+	return tokenStr, nil
+}
 
+// getCachedToken returns the cached access token if it exists and has not expired.
+func (o *oAuth2Provider) getCachedToken() string {
+	if o.tokenData == nil {
+		return textutils.EmptyStr
+	}
+	expiry, ok := o.tokenData[EXPIRY_EPOCH]
+	if !ok {
+		return textutils.EmptyStr
+	}
+	expiryEpoch, ok := expiry.(int64)
+	if !ok {
+		return textutils.EmptyStr
+	}
+	if expiryEpoch <= time.Now().UnixMilli() {
+		return textutils.EmptyStr
+	}
+	accessToken, ok := o.tokenData[ACCESS_TOKEN]
+	if !ok {
+		return textutils.EmptyStr
+	}
+	tokenStr, ok := accessToken.(string)
+	if !ok {
+		return textutils.EmptyStr
+	}
+	return tokenStr
+}
+
+// toFloat64 safely converts a numeric value to float64.
+// JSON unmarshalling may produce float64 or other numeric types.
+func toFloat64(v any) (float64, error) {
+	switch n := v.(type) {
+	case float64:
+		return n, nil
+	case float32:
+		return float64(n), nil
+	case int:
+		return float64(n), nil
+	case int64:
+		return float64(n), nil
+	case int32:
+		return float64(n), nil
+	default:
+		return 0, fmt.Errorf("unsupported type for expires_in: %T", v)
+	}
 }

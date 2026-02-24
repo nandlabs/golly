@@ -13,13 +13,15 @@ func main() {
 	fmt.Println("=== Basic Auth ===")
 	basicAuth := clients.NewBasicAuth("admin", "secret123")
 	fmt.Println("Type:", basicAuth.Type())
-	fmt.Println("Token:", basicAuth.Token())
+	token, _ := basicAuth.Token()
+	fmt.Println("Token:", token)
 
 	// --- Bearer Auth ---
 	fmt.Println("\n=== Bearer Auth ===")
 	bearerAuth := clients.NewBearerAuth("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example")
 	fmt.Println("Type:", bearerAuth.Type())
-	fmt.Println("Token:", bearerAuth.Token()[:30], "...")
+	bToken, _ := bearerAuth.Token()
+	fmt.Println("Token:", bToken[:30], "...")
 
 	// --- Retry with exponential backoff ---
 	fmt.Println("\n=== RetryInfo (Exponential Backoff) ===")

@@ -31,9 +31,17 @@ type AuthHandlerFunc func(client *Client, req *http.Request) error
 var basicAuthHandlerFunc = func(client *Client, req *http.Request) error {
 
 	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBasic {
-		return fmt.Errorf("invalid auth type ")
+		return fmt.Errorf("invalid auth type")
 	}
-	req.SetBasicAuth(client.options.Auth.User(), client.options.Auth.Pass())
+	user, err := client.options.Auth.User()
+	if err != nil {
+		return fmt.Errorf("failed to obtain username: %w", err)
+	}
+	pass, err := client.options.Auth.Pass()
+	if err != nil {
+		return fmt.Errorf("failed to obtain password: %w", err)
+	}
+	req.SetBasicAuth(user, pass)
 	return nil
 }
 
@@ -41,7 +49,14 @@ var bearerAuthHandlerFunc = func(client *Client, req *http.Request) error {
 	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBearer {
 		return fmt.Errorf("invalid auth type")
 	}
-	req.Header.Set("Authorization", "Bearer "+client.options.Auth.Token())
+	token, err := client.options.Auth.Token()
+	if err != nil {
+		return fmt.Errorf("failed to obtain bearer token: %w", err)
+	}
+	if token == "" {
+		return fmt.Errorf("empty bearer token received")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	return nil
 }
