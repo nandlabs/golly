@@ -85,7 +85,7 @@ func (fs *FileStorage) readState() (*fileState, error) {
 		logger.ErrorF("FileStorage: failed to open state file %s: %v", fs.path, err)
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var state fileState
 	if err := fs.c.Read(f, &state); err != nil {
@@ -106,13 +106,13 @@ func (fs *FileStorage) writeState(state *fileState) error {
 	}
 
 	if writeErr := fs.c.Write(state, f); writeErr != nil {
-		f.Close()
-		os.Remove(tmp)
+		_ = f.Close()
+		_ = os.Remove(tmp)
 		logger.ErrorF("FileStorage: failed to encode state to %s: %v", tmp, writeErr)
 		return writeErr
 	}
 	if closeErr := f.Close(); closeErr != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return closeErr
 	}
 

@@ -31,16 +31,16 @@ type jsonRW struct {
 // Returns:
 //   - error: An error if the encoding or writing fails, otherwise nil.
 func (j *jsonRW) Write(v interface{}, w io.Writer) error {
-	//only utf-8 charset is supported
+	// only utf-8 charset is supported
 	var escapeHtml = false
 	var prettyPrint = false
 	if j.options != nil {
-		if v, ok := j.options[JsonEscapeHTML]; ok {
-			escapeHtml = v.(bool)
+		if opt, ok := j.options[JsonEscapeHTML]; ok {
+			escapeHtml = opt.(bool)
 		}
 
-		if v, ok := j.options[PrettyPrint]; ok {
-			prettyPrint = v.(bool)
+		if opt, ok := j.options[PrettyPrint]; ok {
+			prettyPrint = opt.(bool)
 		}
 
 	}

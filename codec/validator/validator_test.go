@@ -1,8 +1,9 @@
 package validator_test
 
 import (
-	"oss.nandlabs.io/golly/codec/validator"
 	"testing"
+
+	"oss.nandlabs.io/golly/codec/validator"
 )
 
 var sv = validator.NewStructValidator()

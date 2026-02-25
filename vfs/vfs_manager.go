@@ -88,7 +88,7 @@ func (fs *fileSystems) CopyRaw(src, dst string) (err error) {
 	return
 }
 
-//func (fs *fileSystems) CopyAll(src, dst *url.URL) (err error) {
+// func (fs *fileSystems) CopyAll(src, dst *url.URL) (err error) {
 //	var vfs VFileSystem
 //	vfs, err = fs.getFsFor(src)
 //	if err == nil {
@@ -98,7 +98,7 @@ func (fs *fileSystems) CopyRaw(src, dst string) (err error) {
 //	return
 //}
 
-//func (fs *fileSystems) CopyAllRaw(src, dst string) (err error) {
+// func (fs *fileSystems) CopyAllRaw(src, dst string) (err error) {
 //	var srcUrl, dstUrl *url.URL
 //	srcUrl, err = url.Parse(src)
 //	if err == nil {

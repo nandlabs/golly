@@ -31,7 +31,7 @@ var (
 )
 
 // JobFunc is the function signature for scheduled jobs.
-// The context is cancelled when the scheduler is stopped or when the job times out.
+// The context is canceled when the scheduler is stopped or when the job times out.
 type JobFunc func(ctx context.Context) error
 
 // JobStatus represents the current execution status of a job.
@@ -46,7 +46,7 @@ const (
 	JobStatusCompleted
 	// JobStatusFailed indicates the job has failed its last execution.
 	JobStatusFailed
-	// JobStatusCancelled indicates the job has been cancelled.
+	// JobStatusCancelled indicates the job has been canceled.
 	JobStatusCancelled
 )
 
@@ -62,7 +62,7 @@ func (s JobStatus) String() string {
 	case JobStatusFailed:
 		return "failed"
 	case JobStatusCancelled:
-		return "cancelled"
+		return "canceled"
 	default:
 		return "unknown"
 	}
@@ -97,7 +97,7 @@ func WithMaxRetries(n int) JobOption {
 }
 
 // WithTimeout sets the maximum execution time for a single job run.
-// If the job does not complete within the timeout, its context is cancelled.
+// If the job does not complete within the timeout, its context is canceled.
 func WithTimeout(d time.Duration) JobOption {
 	return func(c *jobConfig) {
 		if d > 0 {
@@ -251,7 +251,7 @@ func New(opts ...Option) Scheduler {
 	}
 	// Backward compatibility: if checkInterval was customized but storagePollInterval
 	// was not explicitly set via WithStoragePollInterval, use checkInterval as the
-	// storage poll interval. This preserves behaviour for existing users of
+	// storage poll interval. This preserves behavior for existing users of
 	// WithCheckInterval.
 	if s.storagePollInterval == 30*time.Second && s.checkInterval != time.Second {
 		s.storagePollInterval = s.checkInterval

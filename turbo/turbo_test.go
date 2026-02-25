@@ -140,15 +140,14 @@ func TestRouter_GetPathParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var params []Param = nil
-			params = []Param{}
+			params := []Param{}
 			params = append(params,
 				Param{
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := GetPathParam(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
-			logger.Info(tt.args.r.Context().Value("params"))
+			got, _ := GetPathParam(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), paramsKey{}, params)))
+			logger.Info(tt.args.r.Context().Value(paramsKey{}))
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetPathParams() = %v, want %v", got, tt.want)
 			}
@@ -218,14 +217,13 @@ func TestRouter_GetIntPathParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var params []Param = nil
-			params = []Param{}
+			params := []Param{}
 			params = append(params,
 				Param{
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := GetPathParamAsInt(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := GetPathParamAsInt(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), paramsKey{}, params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetIntPathParams() = %v, want %v", got, tt.want)
@@ -297,14 +295,13 @@ func TestRouter_GetFloatPathParams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var params []Param = nil
-			params = []Param{}
+			params := []Param{}
 			params = append(params,
 				Param{
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := GetPathParamAsFloat(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := GetPathParamAsFloat(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), paramsKey{}, params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetFloatPathParams() = %v, want %v", got, tt.want)
@@ -375,14 +372,13 @@ func TestRouter_GetBoolPathParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var params []Param = nil
-			params = []Param{}
+			params := []Param{}
 			params = append(params,
 				Param{
 					key:   tt.args.id,
 					value: tt.args.val,
 				})
-			got, _ := GetPathParamAsBool(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), "params", params)))
+			got, _ := GetPathParamAsBool(tt.args.id, tt.args.r.WithContext(context.WithValue(tt.args.r.Context(), paramsKey{}, params)))
 
 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("GetBoolPathParams() = %v, want %v", got, tt.want)

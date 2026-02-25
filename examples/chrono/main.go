@@ -236,9 +236,9 @@ func cronExample() {
 	fmt.Println()
 }
 
-// gracefulShutdownExample demonstrates clean shutdown on SIGINT/SIGTERM.
+// GracefulShutdownExample demonstrates clean shutdown on SIGINT/SIGTERM.
 // Not called in demo mode to avoid blocking.
-func gracefulShutdownExample() {
+func GracefulShutdownExample() {
 	s := chrono.New()
 
 	s.AddIntervalJob("worker", "Background Worker", func(ctx context.Context) error {

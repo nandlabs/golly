@@ -71,7 +71,7 @@ func (ba *BasicAuthFilter) Apply(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		} else {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Not Authorised"))
+			w.Write([]byte("Not Authorized"))
 		}
 	})
 }

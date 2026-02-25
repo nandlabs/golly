@@ -653,8 +653,7 @@ func (o *OpenAIProvider) openAIMsgToGenMessage(msg *openAIMessage) *genai.Messag
 	}
 
 	// Content can be a string or nil (e.g. when tool_calls are present)
-	switch c := msg.Content.(type) {
-	case string:
+	if c, ok := msg.Content.(string); ok {
 		if c != "" {
 			message.Parts = append(message.Parts, genai.Part{
 				Name:     "text",

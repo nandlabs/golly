@@ -147,7 +147,7 @@ func (m *managerImpl) Close() (err error) {
 		}
 	}
 	if multiError != nil {
-		//TODO check bug why multi error is retuned to calling function as not nil always
+		// TODO check bug why multi error is retuned to calling function as not nil always
 		err = multiError
 
 	}
@@ -159,7 +159,7 @@ func (m *managerImpl) Wait() {
 	m.waitgroup.Wait()
 }
 
-// Setup function initialises the default manager
+// Setup function initializes the default manager
 
 // GetManager returns the facade messaging instance
 func GetManager() Manager {
@@ -172,9 +172,9 @@ func GetManager() Manager {
 				knownProviders: make(map[string]Provider),
 				mutex:          sync.Mutex{},
 			}
-			defaultManager.Setup()
+			_ = defaultManager.Setup()
 			localProvider := &LocalProvider{}
-			localProvider.Setup()
+			_ = localProvider.Setup()
 			defaultManager.Register(localProvider)
 		}
 	}

@@ -47,9 +47,9 @@ func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 			if field.PkgPath != "" {
 				continue
 			}
-			prop, err := GenerateSchema(field.Type)
-			if err != nil {
-				return nil, err
+			prop, propErr := GenerateSchema(field.Type)
+			if propErr != nil {
+				return nil, propErr
 			}
 			fieldName := field.Name
 			if tag, ok := field.Tag.Lookup("json"); ok {
@@ -69,9 +69,9 @@ func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 		schema = &Schema{
 			Type: "array",
 		}
-		elemSchema, err := GenerateSchema(t.Elem())
-		if err != nil {
-			return nil, err
+		elemSchema, elemErr := GenerateSchema(t.Elem())
+		if elemErr != nil {
+			return nil, elemErr
 		}
 		schema.Items = elemSchema
 	case reflect.Map:
@@ -79,9 +79,9 @@ func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 			Type:       "object",
 			Properties: make(map[string]*Schema),
 		}
-		elemSchema, err := GenerateSchema(t.Elem())
-		if err != nil {
-			return nil, err
+		elemSchema, elemErr := GenerateSchema(t.Elem())
+		if elemErr != nil {
+			return nil, elemErr
 		}
 		schema.AdditionalItems = elemSchema
 

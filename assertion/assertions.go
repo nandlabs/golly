@@ -6,17 +6,17 @@ import (
 
 // Equal compares the expected and actual values and logs an error if they are not equal
 func Equal(expected, actual any) bool {
-	//if expected is nil and actual is not nil
-	if expected == nil && actual != nil {
+	switch {
+	// if expected is nil and actual is not nil
+	case expected == nil && actual != nil:
 		return false
-	} else if expected != nil && actual == nil {
+	case expected != nil && actual == nil:
 		return false
-	} else if expected == nil && actual == nil {
-		//if both are nil, then they are equal
+	// if both are nil, then they are equal
+	case expected == nil && actual == nil:
 		return true
 	}
 	return reflect.DeepEqual(expected, actual)
-
 }
 
 // NotEqual compares the expected and actual values and logs an error if they are equal
@@ -113,8 +113,7 @@ func Empty(obj any) bool {
 
 }
 
-//NotEmpty checks if an object is not empty
-
+// NotEmpty checks if an object is not empty
 func NotEmpty(obj any) bool {
 	return !Empty(obj)
 }

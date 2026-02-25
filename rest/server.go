@@ -49,7 +49,7 @@ type Server interface {
 	Unsupported(handler HandlerFunc) (err error)
 	// AddGlobalFilter adds a global filter to the server
 	AddGlobalFilter(filter turbo.FilterFunc) (err error)
-	//Turbo returns the turbo router
+	// Turbo returns the turbo router
 	Router() *turbo.Router
 }
 
@@ -268,10 +268,10 @@ func printStartupSummary(router *turbo.Router, opts *SrvOptions) {
 	sb.WriteString("┌──────────────────────────────────────────────────────────┐\n")
 	sb.WriteString("│                    Turbo Server Started                  │\n")
 	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
-	sb.WriteString(fmt.Sprintf("│  Protocol  : %-43s│\n", protocol))
-	sb.WriteString(fmt.Sprintf("│  Host      : %-43s│\n", opts.ListenHost))
-	sb.WriteString(fmt.Sprintf("│  Port      : %-43d│\n", opts.ListenPort))
-	sb.WriteString(fmt.Sprintf("│  URL       : %-43s│\n", fmt.Sprintf("%s://%s:%d", protocol, opts.ListenHost, opts.ListenPort)))
+	_, _ = fmt.Fprintf(&sb, "│  Protocol  : %-43s│\n", protocol)
+	_, _ = fmt.Fprintf(&sb, "│  Host      : %-43s│\n", opts.ListenHost)
+	_, _ = fmt.Fprintf(&sb, "│  Port      : %-43d│\n", opts.ListenPort)
+	_, _ = fmt.Fprintf(&sb, "│  URL       : %-43s│\n", fmt.Sprintf("%s://%s:%d", protocol, opts.ListenHost, opts.ListenPort))
 	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
 	sb.WriteString("│  Registered Routes                                      │\n")
 	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
@@ -283,7 +283,7 @@ func printStartupSummary(router *turbo.Router, opts *SrvOptions) {
 		for _, route := range routes {
 			methods := strings.Join(route.Methods, ", ")
 			line := fmt.Sprintf("  %-10s %s", methods, route.Path)
-			sb.WriteString(fmt.Sprintf("│%-58s│\n", line))
+			_, _ = fmt.Fprintf(&sb, "│%-58s│\n", line)
 		}
 	}
 

@@ -264,8 +264,8 @@ func TestFileStorage_AcquireReleaseLock(t *testing.T) {
 			t.Fatal("expected lock denied for different owner")
 		}
 
-		if err := fs.ReleaseLock(ctx, "job1", "owner-a"); err != nil {
-			t.Fatalf("ReleaseLock error: %v", err)
+		if relErr := fs.ReleaseLock(ctx, "job1", "owner-a"); relErr != nil {
+			t.Fatalf("ReleaseLock error: %v", relErr)
 		}
 
 		ok, err = fs.AcquireLock(ctx, "job1", "owner-b", 5*time.Minute)

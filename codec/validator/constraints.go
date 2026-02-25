@@ -11,11 +11,11 @@ import (
 Numerical Type Constraints
 */
 
-func min(field field, param string) error {
+func minVal(field field, param string) error {
 	return checkMin(field, param, false)
 }
 
-func max(field field, param string) error {
+func maxVal(field field, param string) error {
 	return checkMax(field, param, false)
 }
 
@@ -58,7 +58,7 @@ func notnull(field field, param string) error {
 		if err != nil {
 			return fmt.Errorf(ErrBadConstraint, "notnull", param, field.name)
 		}
-		if c == true {
+		if c {
 			in, _ := field.value.Interface().(string)
 			if in == "" {
 				return fmt.Errorf(ErrNotNull, field.name)
@@ -128,7 +128,7 @@ func enum(field field, param string) error {
 		flag = checkIfEnumExists(input, param, ",")
 	}
 
-	if flag == false {
+	if !flag {
 		return fmt.Errorf(ErrEnums, field.name)
 	}
 	return nil
