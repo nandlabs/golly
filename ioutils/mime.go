@@ -193,6 +193,7 @@ var mapExtToMime = map[string]string{
 	".md":        MimeMarkDown,
 	".markdown":  MimeMarkDown,
 	".yaml":      MimeTextYAML,
+	".yml":       MimeTextYAML,
 	".xml":       MimeTextXML,
 	".json":      MimeApplicationJSON,
 	".bin":       MimeApplicationOctetStream,

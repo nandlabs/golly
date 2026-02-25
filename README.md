@@ -82,16 +82,17 @@ go get oss.nandlabs.io/golly
 
 ### 🛠️ Infrastructure
 
-| Package                          | Description                                                                |
-| -------------------------------- | -------------------------------------------------------------------------- |
-| [fsutils](fsutils/README.md)     | Filesystem utilities: existence checks, content type detection             |
-| [ioutils](ioutils/README.md)     | MIME type lookup, channel utilities, and checksum calculation              |
-| [vfs](vfs/README.md)             | Virtual File System with unified interface, extensible for cloud storage   |
-| [l3](l3/README.md)               | Lightweight Levelled Logger with console/file writers and async support    |
-| [lifecycle](lifecycle/README.md) | Component lifecycle management with dependency ordering and state tracking |
-| [managers](managers/README.md)   | Generic item manager for registering, retrieving, and listing named items  |
-| [pool](pool/README.md)           | Generic, thread-safe object pool with configurable capacity                |
-| [secrets](secrets/README.md)     | AES encryption and decryption for strings and byte slices                  |
+| Package                          | Description                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [chrono](chrono/README.md)       | Task scheduler with cron, interval, and one-shot scheduling, pluggable storage, and cluster support |
+| [fsutils](fsutils/README.md)     | Filesystem utilities: existence checks, content type detection                                      |
+| [ioutils](ioutils/README.md)     | MIME type lookup, channel utilities, and checksum calculation                                       |
+| [vfs](vfs/README.md)             | Virtual File System with unified interface, extensible for cloud storage                            |
+| [l3](l3/README.md)               | Lightweight Levelled Logger with console/file writers and async support                             |
+| [lifecycle](lifecycle/README.md) | Component lifecycle management with dependency ordering and state tracking                          |
+| [managers](managers/README.md)   | Generic item manager for registering, retrieving, and listing named items                           |
+| [pool](pool/README.md)           | Generic, thread-safe object pool with configurable capacity                                         |
+| [secrets](secrets/README.md)     | AES encryption and decryption for strings and byte slices                                           |
 
 ### 🧪 Testing
 
