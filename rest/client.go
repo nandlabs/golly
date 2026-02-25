@@ -140,10 +140,8 @@ func (co *ClientOptsBuilder) BaseUrl(baseurl string) (err error) {
 	co.restOptions.baseUrl, err = url.Parse(baseurl)
 	if err == nil && co.restOptions.baseUrl.Scheme == textutils.EmptyStr && co.restOptions.baseUrl.Host == textutils.EmptyStr {
 		err = errors.New("invalid base url")
-	} else {
-		if !strings.HasSuffix(co.restOptions.baseUrl.Path, textutils.ForwardSlashStr) {
-			co.restOptions.baseUrl.Path = co.restOptions.baseUrl.Path + textutils.ForwardSlashStr
-		}
+	} else if !strings.HasSuffix(co.restOptions.baseUrl.Path, textutils.ForwardSlashStr) {
+		co.restOptions.baseUrl.Path += textutils.ForwardSlashStr
 	}
 
 	return

@@ -29,7 +29,7 @@ type LogMessage struct {
 	Content *bytes.Buffer `json:"msg"`
 	Level   Level         `json:"level"`
 	Buf     *bytes.Buffer
-	//SevBytes []byte
+	// SevBytes []byte
 }
 
 func getLogMessageF(level Level, f string, v ...interface{}) *LogMessage {

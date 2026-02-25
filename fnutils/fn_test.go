@@ -50,22 +50,6 @@ func TestExecuteAfter(t *testing.T) {
 		}
 	})
 
-	//t.Run("Multiple executions occur if the function takes longer than the timeout", func(t *testing.T) {
-	//	executionCount := 0
-	//	fn := func() {
-	//		executionCount++
-	//		time.Sleep(2 * time.Second)
-	//	}
-	//	timeout := 1 * time.Second
-	//
-	//	go ExecuteAfter(fn, timeout)
-	//	time.Sleep(3 * time.Second)
-	//
-	//	if executionCount != 2 {
-	//		t.Errorf("Expected execution to occur twice, got %d times", executionCount)
-	//	}
-	//})
-
 	t.Run("No execution occurs if the function is nil", func(t *testing.T) {
 		_ = func() {
 			// This function should not be executed

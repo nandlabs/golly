@@ -96,7 +96,7 @@ func NewPipelineFrom(values map[string]any) (pipeline Pipeline) {
 		data: make(map[string]any),
 	}
 	for k, v := range values {
-		pipeline.Set(k, v)
+		_ = pipeline.Set(k, v)
 	}
 	return
 }
@@ -256,7 +256,7 @@ func (p *MapPipeline) Merge(pipeline Pipeline) error {
 	for _, key := range pipeline.Keys() {
 		value, err := pipeline.Get(key)
 		if err == nil {
-			p.Set(key, value)
+			_ = p.Set(key, value)
 		}
 	}
 	return nil

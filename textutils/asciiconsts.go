@@ -1,6 +1,6 @@
 package textutils
 
-//goland:noinspection GoUnusedConst
+// goland:noinspection GoUnusedConst
 const (
 	// AUpperChar = 'A'
 	AUpperChar = 'A'
@@ -171,7 +171,7 @@ const (
 	GraveAccentChar = '`'
 	// PipeChar = '|'
 	PipeChar = '|'
-	//WhiteSpace char
+	// WhiteSpace char
 	WhiteSpaceChar  = ' '
 	NewLineChar     = '\n'
 	CarriageRtnChar = '\r'
@@ -347,10 +347,10 @@ const (
 	PipeStr = "|"
 	// EmptyStr = ""
 	EmptyStr = ""
-	//WhiteSpace String
+	// WhiteSpace String
 	WhiteSpaceStr = " "
 	// NewLine String
 	NewLineString = "\n"
-	//Carriage Return String
+	// Carriage Return String
 	CarriageRtnString = "\r"
 )

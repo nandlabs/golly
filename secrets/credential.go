@@ -9,8 +9,8 @@ const (
 	TextSecret = "TextSecret"
 )
 
-//Credential Struct that can represent any secret value.
-//Fields
+// Credential Struct that can represent any secret value.
+// Fields
 //
 // Value is an array of bytes to hold decrypted value of a secret.
 
@@ -20,7 +20,7 @@ const (
 // maintains multiple version the previous version info can be maintained in metadata field.
 //
 // MetaData Any additional key,value attributes that needs to be associated with the credentials can be done using this
-//property
+// property
 
 type Credential struct {
 	Value       []byte

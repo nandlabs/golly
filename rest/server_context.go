@@ -129,7 +129,7 @@ func (c *ServerContext) WriteData(data []byte) (int, error) {
 // WriteString writes the string to the response.
 func (c *ServerContext) WriteString(data string) {
 
-	io.Copy(c.response, strings.NewReader(data))
+	_, _ = io.Copy(c.response, strings.NewReader(data))
 }
 
 // SetHeader sets the header of the response.
@@ -154,7 +154,7 @@ func (c *ServerContext) SetCookie(cookie *http.Cookie) {
 
 // WriteFrom writes the data from the reader to the response.
 func (c *ServerContext) WriteFrom(data io.Reader) {
-	io.Copy(c.response, data)
+	_, _ = io.Copy(c.response, data)
 }
 
 // HttpResWriter returns the http.ResponseWriter

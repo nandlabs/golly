@@ -109,15 +109,15 @@ const (
 	MimeApplication7z string = "application/x-7z-compressed"
 	// MimeApplicationMSWord is the MIME type for Microsoft Word documents
 	MimeApplicationMSWord string = "application/msword"
-	//MimeApplicationMSWordOpenXML is the MIME type for Microsoft Word Open XML documents
+	// MimeApplicationMSWordOpenXML is the MIME type for Microsoft Word Open XML documents
 	MimeApplicationMSWordOpenXML string = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 	// MimeApplicationMSPowerpoint is the MIME type for Microsoft PowerPoint presentations
 	MimeApplicationMSPowerpoint string = "application/vnd.ms-powerpoint"
-	//MimeApplicationMSPowerpointOpenXML is the MIME type for Microsoft PowerPoint Open XML presentations
+	// MimeApplicationMSPowerpointOpenXML is the MIME type for Microsoft PowerPoint Open XML presentations
 	MimeApplicationMSPowerpointOpenXML string = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 	// MimeApplicationMSExcel is the MIME type for Microsoft Excel spreadsheets
 	MimeApplicationMSExcel string = "application/vnd.ms-excel"
-	//MimeApplicationMsExcelOpenXML is the MIME type for Microsoft Excel Open XML spreadsheets
+	// MimeApplicationMsExcelOpenXML is the MIME type for Microsoft Excel Open XML spreadsheets
 	MimeApplicationMsExcelOpenXML string = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 

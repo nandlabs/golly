@@ -19,8 +19,8 @@ type BaseConstraints struct {
 	TargetConfig map[string]string
 	// Sequence specifies the order  of the fields in the source/target format
 	Sequence int
-	//SkipField indicates that if the value of the field is absent/nil then skip the field while writing to data
-	//This is similar to omitempty
+	// SkipField indicates that if the value of the field is absent/nil then skip the field while writing to data
+	// This is similar to omitempty
 	SkipField bool
 }
 
@@ -38,32 +38,32 @@ type StrConstraints struct {
 type IntConstraints struct {
 	BaseConstraints
 	DefaultVal *int
-	Min        *int //The value is inclusive
-	Max        *int //The value is inclusive
+	Min        *int // The value is inclusive
+	Max        *int // The value is inclusive
 }
 
 // UIntConstraints Struct
 type UIntConstraints struct {
 	BaseConstraints
 	DefaultVal *uint
-	Min        *uint //The value is inclusive
-	Max        *uint //The value is inclusive
+	Min        *uint // The value is inclusive
+	Max        *uint // The value is inclusive
 }
 
 // F32Constraints Struct
 type F32Constraints struct {
 	BaseConstraints
 	DefaultVal *float32
-	Min        *float32 //The value is inclusive
-	Max        *float32 //The value is inclusive
+	Min        *float32 // The value is inclusive
+	Max        *float32 // The value is inclusive
 }
 
 // F64Constraints Struct
 type F64Constraints struct {
 	BaseConstraints
 	DefaultVal *float64
-	Min        *float64 //The value is inclusive
-	Max        *float64 //The value is inclusive
+	Min        *float64 // The value is inclusive
+	Max        *float64 // The value is inclusive
 }
 
 // BoolConstraints Struct

@@ -38,9 +38,9 @@ func (o *OsFile) ContentType() string {
 }
 
 func (o *OsFile) ListAll() (files []VFile, err error) {
-	manager := GetManager()
+	mgr := GetManager()
 	var children []VFile
-	err = filepath.WalkDir(o.Location.Path, visit(manager, &children))
+	err = filepath.WalkDir(o.Location.Path, visit(mgr, &children))
 	if err == nil {
 		files = children
 	}

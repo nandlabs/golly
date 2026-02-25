@@ -32,8 +32,7 @@ func (q *queueImpl[T]) Dequeue() (v T, err error) {
 
 // Add an element to the queue
 func (q *queueImpl[T]) Enqueue(elem T) error {
-	q.AddLast(elem)
-	return nil
+	return q.AddLast(elem)
 }
 
 // Return the element at the front of the queue without removing it

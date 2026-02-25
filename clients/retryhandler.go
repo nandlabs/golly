@@ -24,7 +24,7 @@ type RetryInfo struct {
 	// When set to > 0, the computed backoff will never exceed this value.
 	MaxWait int
 
-	// Jitter adds randomised jitter to the wait time when true.
+	// Jitter adds randomized jitter to the wait time when true.
 	// A random duration between 0 and the computed backoff is added,
 	// which helps prevent thundering-herd problems.
 	Jitter bool
@@ -58,7 +58,7 @@ func (r *RetryInfo) WaitTime(retryCount int) time.Duration {
 
 	if r.Jitter && backoff > 0 {
 		jitter := time.Duration(rand.Int64N(int64(backoff)))
-		backoff = backoff + jitter
+		backoff += jitter
 	}
 
 	return backoff

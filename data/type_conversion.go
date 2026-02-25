@@ -62,12 +62,7 @@ func Convert[T any](in any) (out T, err error) {
 			if err != nil {
 				return out, fmt.Errorf("failed to convert string to int: %w", err)
 			}
-			if outType.Kind() == reflect.Int64 {
-				outValue.SetInt(i)
-			} else {
-				// Check if the int64 value fits into the target int type
-				outValue.SetInt(i)
-			}
+			outValue.SetInt(i)
 		case reflect.Float32, reflect.Float64:
 			outValue.SetInt(int64(inValue.Float()))
 		case reflect.Bool:

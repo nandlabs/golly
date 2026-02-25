@@ -21,9 +21,9 @@ import (
 const (
 	// LogConfigEnvProperty specifies the environment variable that would specify the file location
 	LogConfigEnvProperty = "GC_LOG_CONFIG_FILE"
-	//DefaultlogFilePath specifies the location where the application should search for log config if the LogConfigEnvProperty is not specified
+	// DefaultlogFilePath specifies the location where the application should search for log config if the LogConfigEnvProperty is not specified
 	DefaultlogFilePath = "./log-config.json"
-	//newLineBytes
+	// newLineBytes
 )
 
 // LogWriter interface
@@ -113,7 +113,7 @@ func Configure(l *LogConfig) {
 func (l *BaseLogger) updateLvlFlags() error {
 
 	if l.level < 0 || l.level > 5 {
-		return errors.New("Invalid Log Level  ")
+		return errors.New("invalid log level")
 	}
 	l.errorEnabled = l.level >= 1
 	l.warnEnabled = l.level >= 2
@@ -147,7 +147,7 @@ func loadDefaultConfig() *LogConfig {
 
 // loadConfig function will load the log configuration.
 func loadConfig() *LogConfig {
-	var logConfig = &LogConfig{}
+	var lc = &LogConfig{}
 	fileName := config.GetEnvAsString(LogConfigEnvProperty, DefaultlogFilePath)
 	if fsutils.FileExists(fileName) {
 		contentType := fsutils.LookupContentType(fileName)
@@ -155,26 +155,26 @@ func loadConfig() *LogConfig {
 			logConfigFile, err := os.Open(fileName)
 			if err != nil {
 				writeLog(os.Stderr, "Unable to open the log config file using default log configuration", err)
-				logConfig = loadDefaultConfig()
+				lc = loadDefaultConfig()
 			} else {
-				defer logConfigFile.Close()
+				defer func() { _ = logConfigFile.Close() }()
 				bytes, _ := io.ReadAll(logConfigFile)
-				err = json.Unmarshal(bytes, &logConfig)
+				err = json.Unmarshal(bytes, &lc)
 				if err != nil {
 					writeLog(os.Stderr, "Unable to open the log config file using default log config", err)
-					logConfig = loadDefaultConfig()
+					lc = loadDefaultConfig()
 				}
 			}
 		} else {
 			writeLog(os.Stderr, "Invalid file format supported format : application/json . Loading Default configuration")
-			logConfig = loadDefaultConfig()
+			lc = loadDefaultConfig()
 		}
-		//TODO Add yaml support once its available
+		// TODO Add yaml support once its available
 	} else {
 		writeLog(os.Stderr, "Log Config file not found. Loading default configuration")
-		logConfig = loadDefaultConfig()
+		lc = loadDefaultConfig()
 	}
-	return logConfig
+	return lc
 }
 
 // Get function will return the logger object for that package
@@ -220,8 +220,8 @@ func writeLogMsg(writer io.Writer, logMsg *LogMessage) {
 
 	switch format {
 	case "json":
-		//TODO update marshalling to direct field access to avoid reflection.
-		//This will be based on codec branch.
+		// TODO update marshaling to direct field access to avoid reflection.
+		// This will be based on codec branch.
 		data, _ := json.Marshal(logMsg)
 		_, _ = writer.Write(data)
 
@@ -304,14 +304,14 @@ func doAsyncLog() {
 
 // writeLog will write to the io.Writer interface
 func writeLog(w io.Writer, a ...interface{}) {
-	//TODO check error handling here
+	// TODO check error handling here
 	_, _ = fmt.Fprintln(w, a...)
 }
 
 // String method to get the Severity String
 func (sev Level) String() (string, error) {
 	if sev < 0 || sev > 5 {
-		return "", errors.New("Invalid severity ")
+		return "", errors.New("invalid severity")
 	}
 	return Levels[sev], nil
 }

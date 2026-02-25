@@ -30,7 +30,7 @@ type Receiver interface {
 // It also includes Schemes method to get the supported schemes,
 // Setup method to perform initial setup and NewMessage method to create a new message
 type Provider interface {
-	//Extends io.Closer
+	// Extends io.Closer
 	io.Closer
 	// Producer Interface included
 	Producer

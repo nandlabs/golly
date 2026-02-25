@@ -54,19 +54,17 @@ func (s *SemVer) IsCurrentPreRelease() bool {
 	input = strings.TrimPrefix(input, " ")
 	semverRegex := regexp.MustCompile(RegexPreRelease)
 	match := semverRegex.FindStringSubmatch(input)
-	if match == nil {
-		return false
-	}
-	return true
+	return match != nil
 }
 
 // New creates a new SemVer struct with the given major, minor, and patch versions.
 func (s *SemVer) String() string {
-	if s.preRelease != "" && s.build != "" {
+	switch {
+	case s.preRelease != "" && s.build != "":
 		return fmt.Sprintf("%d.%d.%d-%s+%s", s.major, s.minor, s.patch, s.preRelease, s.build)
-	} else if s.preRelease != "" {
+	case s.preRelease != "":
 		return fmt.Sprintf("%d.%d.%d-%s", s.major, s.minor, s.patch, s.preRelease)
-	} else if s.build != "" {
+	case s.build != "":
 		return fmt.Sprintf("%d.%d.%d+%s", s.major, s.minor, s.patch, s.build)
 	}
 	return fmt.Sprintf("%d.%d.%d", s.major, s.minor, s.patch)
@@ -107,7 +105,7 @@ func (s *SemVer) Compare(v *SemVer) (int, error) {
 
 // Next Major Increments the major version
 func (s *SemVer) NextMajor() *SemVer {
-	s.major = s.major + 1
+	s.major++
 	s.minor = 0
 	s.patch = 0
 	return s
@@ -116,7 +114,7 @@ func (s *SemVer) NextMajor() *SemVer {
 // NextMinor Increments the minor version
 func (s *SemVer) NextMinor() *SemVer {
 
-	s.minor = s.minor + 1
+	s.minor++
 	s.patch = 0
 	return s
 }
@@ -124,7 +122,7 @@ func (s *SemVer) NextMinor() *SemVer {
 // NextPatch Increments the patch version
 func (s *SemVer) NextPatch() *SemVer {
 
-	s.patch = s.patch + 1
+	s.patch++
 	return s
 }
 

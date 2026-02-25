@@ -267,7 +267,7 @@ func (s *defaultScheduler) signalWake() {
 	select {
 	case s.wake <- struct{}{}:
 	default:
-		// Already signalled; the run loop will pick it up.
+		// Already signaled; the run loop will pick it up.
 	}
 }
 
@@ -436,10 +436,10 @@ func (s *defaultScheduler) executeJob(entry *jobEntry, rec *JobRecord) {
 			break
 		}
 
-		// Check if context was cancelled (scheduler stopping)
+		// Check if context was canceled (scheduler stopping)
 		select {
 		case <-s.ctx.Done():
-			logger.WarnF("executeJob: job %q cancelled due to scheduler shutdown", rec.ID)
+			logger.WarnF("executeJob: job %q canceled due to scheduler shutdown", rec.ID)
 			rec.Status = JobStatusCancelled
 			rec.LastRun = time.Now()
 			_ = s.storage.SaveJob(context.Background(), rec)

@@ -196,7 +196,6 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 	u, err = url.Parse(r.url)
 
 	if err == nil {
-		//path := u.Path
 		if strings.Contains(u.Path, pathParamPrefix) {
 			pathValues := strings.Split(u.Path, textutils.ForwardSlashStr)
 			for i := range pathValues {
@@ -215,9 +214,9 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 			path := ""
 			for i, pv := range pathValues {
 				if i != 0 {
-					path = path + textutils.ForwardSlashStr
+					path += textutils.ForwardSlashStr
 				}
-				path = path + pv
+				path += pv
 			}
 			u.Path = path
 		}

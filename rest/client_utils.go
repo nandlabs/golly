@@ -39,7 +39,7 @@ func WriteMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r i
 
 // IsValidMultipartVerb checks if the method is valid for multipart content
 func IsValidMultipartVerb(method string) (err error) {
-	if !(method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch) {
+	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch {
 		err = fmt.Errorf("multipart content is now allowed on [%v]", method)
 	}
 	return

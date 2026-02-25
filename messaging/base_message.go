@@ -62,7 +62,7 @@ func (bm *BaseMessage) WriteXML(input interface{}) (err error) {
 
 func (bm *BaseMessage) WriteContent(input interface{}, contentType string) (err error) {
 	var cdc codec.Codec
-	// TODO : provide options to customise codec options
+	// TODO : provide options to customize codec options
 	cdc, err = codec.GetDefault(contentType)
 	if err == nil {
 		err = cdc.Write(input, bm.body)
@@ -94,7 +94,7 @@ func (bm *BaseMessage) ReadXML(out interface{}) (err error) {
 
 func (bm *BaseMessage) ReadContent(out interface{}, contentType string) (err error) {
 	var cdc codec.Codec
-	// TODO: provide options to customise codec options
+	// TODO: provide options to customize codec options
 	cdc, err = codec.GetDefault(contentType)
 	if err == nil {
 		err = cdc.Read(bm.body, out)

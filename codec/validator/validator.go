@@ -45,8 +45,8 @@ func NewStructValidator() *StructValidator {
 			// Base Constraints
 			// Numeric Constraints
 			// <, > only
-			"min": min,
-			"max": max,
+			"min": minVal,
+			"max": maxVal,
 			// <=, >= this is inclusive of the input value
 			"exclusiveMin": exclusiveMin,
 			"exclusiveMax": exclusiveMax,
@@ -73,7 +73,7 @@ func NewStructValidatorWithCache() *StructValidator {
 }
 
 func (sv *StructValidator) Validate(v interface{}) error {
-	//check for cache
+	// check for cache
 	sv.fields = sv.cachedTypeFields(v)
 	if err := sv.validateFields(); err != nil {
 		return err
@@ -103,15 +103,15 @@ func (sv *StructValidator) parseTag(tag string) ([]tStruct, error) {
 	t := make([]tStruct, 0, len(tl))
 
 	for _, s := range tl {
-		s = strings.Replace(s, `\,`, ",", -1)
+		s = strings.ReplaceAll(s, `\,`, ",")
 		tg := tStruct{}
 		v := strings.SplitN(s, "=", 2)
 		tg.name = strings.Trim(v[0], " ")
-		//check for blank tag name
+		// check for blank tag name
 		if len(v) > 1 {
 			tg.value = strings.Trim(v[1], " ")
 		}
-		tg.fnc, _ = sv.validationFunc[tg.name]
+		tg.fnc = sv.validationFunc[tg.name]
 		// check for not found
 		t = append(t, tg)
 	}
@@ -160,11 +160,9 @@ func (sv *StructValidator) parseFields(v interface{}) structFields {
 
 			for i := 0; i < f.typ.NumField(); i++ {
 				sf := f.typ.Field(i)
-				if sf.Anonymous {
-					t := sf.Type
-					if t.Kind() == reflect.Ptr {
-						t = t.Elem()
-					}
+				if sf.Anonymous && sf.Type.Kind() == reflect.Ptr {
+					// embedded pointer field — reserved for future use
+					continue
 				}
 				tag := sf.Tag.Get("constraints")
 				// if the constraints tag is -, skip the field validation
@@ -190,13 +188,13 @@ func (sv *StructValidator) parseFields(v interface{}) structFields {
 					} else {
 						val = fv.Field(i)
 					}
-					field := field{
+					fld := field{
 						name:        sf.Name,
 						typ:         ft,
 						constraints: consts,
 						value:       val,
 					}
-					fields = append(fields, field)
+					fields = append(fields, fld)
 					if count[f.typ] > 1 {
 						fields = append(fields, fields[len(fields)-1])
 					}
@@ -213,7 +211,7 @@ func (sv *StructValidator) parseFields(v interface{}) structFields {
 	return structFields{fields}
 }
 
-var fieldCache sync.Map //map[reflect.Type]structFields
+var fieldCache sync.Map // map[reflect.Type]structFields
 
 func (sv *StructValidator) cachedTypeFields(v interface{}) structFields {
 	if sv.enableCache {

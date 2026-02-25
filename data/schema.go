@@ -5,7 +5,7 @@ const (
 	SchemaTypeBool = "boolean"
 	// SchemaTypeString is a string schema type.
 	SchemaTypeString = "string"
-	//SchemaTypeNumber is a number schema type.
+	// SchemaTypeNumber is a number schema type.
 	SchemaTypeNumber = "number"
 	// SchemaTypeObject is an object schema type.
 	SchemaTypeObject = "object"

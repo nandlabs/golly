@@ -32,11 +32,11 @@ func TestWaitTime_ExponentialBackoff_DefaultMultiplier(t *testing.T) {
 		retryCount int
 		want       time.Duration
 	}{
-		{0, 100 * time.Millisecond},  // 100 * 2^0 = 100
-		{1, 200 * time.Millisecond},  // 100 * 2^1 = 200
-		{2, 400 * time.Millisecond},  // 100 * 2^2 = 400
-		{3, 800 * time.Millisecond},  // 100 * 2^3 = 800
-		{4, 1600 * time.Millisecond}, // 100 * 2^4 = 1600
+		{0, 100 * time.Millisecond},
+		{1, 200 * time.Millisecond},
+		{2, 400 * time.Millisecond},
+		{3, 800 * time.Millisecond},
+		{4, 1600 * time.Millisecond},
 	}
 
 	for _, tt := range tests {
@@ -59,10 +59,10 @@ func TestWaitTime_ExponentialBackoff_CustomMultiplier(t *testing.T) {
 		retryCount int
 		want       time.Duration
 	}{
-		{0, 100 * time.Millisecond},  // 100 * 3^0 = 100
-		{1, 300 * time.Millisecond},  // 100 * 3^1 = 300
-		{2, 900 * time.Millisecond},  // 100 * 3^2 = 900
-		{3, 2700 * time.Millisecond}, // 100 * 3^3 = 2700
+		{0, 100 * time.Millisecond},  // base * multiplier^0
+		{1, 300 * time.Millisecond},  // base * multiplier^1
+		{2, 900 * time.Millisecond},  // base * multiplier^2
+		{3, 2700 * time.Millisecond}, // base * multiplier^3
 	}
 
 	for _, tt := range tests {
@@ -85,11 +85,11 @@ func TestWaitTime_ExponentialBackoff_MaxWaitCap(t *testing.T) {
 		retryCount int
 		want       time.Duration
 	}{
-		{0, 100 * time.Millisecond}, // 100 * 2^0 = 100
-		{1, 200 * time.Millisecond}, // 100 * 2^1 = 200
-		{2, 400 * time.Millisecond}, // 100 * 2^2 = 400
-		{3, 500 * time.Millisecond}, // 100 * 2^3 = 800, capped to 500
-		{4, 500 * time.Millisecond}, // 100 * 2^4 = 1600, capped to 500
+		{0, 100 * time.Millisecond}, // base * multiplier^0
+		{1, 200 * time.Millisecond}, // base * multiplier^1
+		{2, 400 * time.Millisecond}, // base * multiplier^2
+		{3, 500 * time.Millisecond}, // base * multiplier^3, capped to MaxWait
+		{4, 500 * time.Millisecond}, // base * multiplier^4, capped to MaxWait
 	}
 
 	for _, tt := range tests {

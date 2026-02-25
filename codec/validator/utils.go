@@ -45,7 +45,7 @@ func convertBool(param string) (bool, error) {
 
 func checkMin(field field, param string, isExclusive bool) error {
 	val := field.value
-	valid := true
+	var valid bool
 	switch field.typ.Kind() {
 	case reflect.Int:
 		c, err := convertInt(param, 0)
@@ -166,11 +166,7 @@ func checkMin(field field, param string, isExclusive bool) error {
 			valid = in > c
 		}
 	case reflect.Uintptr:
-		/*c, err := convertUint(param)
-		if err != nil {
-			return err
-		}
-		valid = input.Uint() < c*/
+		// Uintptr validation not yet implemented
 		valid = true
 	case reflect.Float32:
 		c, err := convertFloat(param, 32)
@@ -210,7 +206,7 @@ func checkMin(field field, param string, isExclusive bool) error {
 }
 
 func checkMax(field field, param string, isExclusive bool) error {
-	valid := true
+	var valid bool
 	val := field.value
 	switch field.typ.Kind() {
 	case reflect.Int:
@@ -332,11 +328,7 @@ func checkMax(field field, param string, isExclusive bool) error {
 			valid = in < c
 		}
 	case reflect.Uintptr:
-		/*c, err := convertUint(param)
-		if err != nil {
-			return err
-		}
-		valid = input.Uint() < c*/
+		// Uintptr validation not yet implemented
 		valid = true
 	case reflect.Float32:
 		c, err := convertFloat(param, 32)

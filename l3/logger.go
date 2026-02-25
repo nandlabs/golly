@@ -1,17 +1,17 @@
 package l3
 
 const (
-	//Off - No logging
+	// Off - No logging
 	Off Level = iota
-	//Err - logging only for error level.
+	// Err - logging only for error level.
 	Err
-	//Warn - logging turned on for warning & error levels
+	// Warn - logging turned on for warning & error levels
 	Warn
-	//Info - logging turned on for Info, Warning and Error levels.
+	// Info - logging turned on for Info, Warning and Error levels.
 	Info
-	//Debug - Logging turned on for Debug, Info, Warning and Error levels.
+	// Debug - Logging turned on for Debug, Info, Warning and Error levels.
 	Debug
-	//Trace - Logging turned on for Trace,Info, Warning and error Levels.
+	// Trace - Logging turned on for Trace,Info, Warning and error Levels.
 	Trace
 )
 

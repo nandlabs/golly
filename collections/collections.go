@@ -24,11 +24,11 @@ var ErrInvalidCapacity error = errors.New("invalid capacity")
 // ErrInvalidIndex is an error that is returned when an invalid index is specified
 var ErrInvalidIndex error = errors.New("invalid index")
 
-//Collection is a generic interface that defines a collection of elements with various methods to manipulate them.
-//The Collection interface uses a type parameter T to represent the type of elements stored in the collection.
+// Collection is a generic interface that defines a collection of elements with various methods to manipulate them.
+// The Collection interface uses a type parameter T to represent the type of elements stored in the collection.
 
 type Collection[T any] interface {
-	//Include Iterable[T]
+	// Include Iterable[T]
 	Iterable[T]
 	// Include Stringer
 	fmt.Stringer

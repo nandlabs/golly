@@ -1,6 +1,6 @@
 package config
 
-//This program contains utility functions related to environment variables
+// This program contains utility functions related to environment variables
 import (
 	"os"
 	"strconv"

@@ -95,11 +95,7 @@ func ExecuteAfter(fn func(), timeout time.Duration) (err error) {
 		err = errors.New("timeout cannot be negative")
 		return
 	}
-	select {
-	case <-time.After(timeout):
-		{
-			fn()
-		}
-	}
+	time.Sleep(timeout)
+	fn()
 	return
 }

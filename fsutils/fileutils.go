@@ -48,10 +48,11 @@ func DetectContentType(path string) (string, error) {
 	file, err := os.Open(path)
 	if err == nil {
 		buffer := make([]byte, 512)
-		n, err := file.Read(buffer)
-		if err == nil {
+		n, readErr := file.Read(buffer)
+		if readErr == nil {
 			return http.DetectContentType(buffer[:n]), nil
 		}
+		return "", readErr
 	}
 	return "", err
 

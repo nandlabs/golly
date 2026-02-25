@@ -44,7 +44,9 @@ func (ll *LinkedList[T]) Add(elem T) error {
 func (ll *LinkedList[T]) AddAll(list Collection[T]) error {
 	it := list.Iterator()
 	for it.HasNext() {
-		ll.Add(it.Next())
+		if err := ll.Add(it.Next()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -72,14 +74,12 @@ func (ll *LinkedList[T]) AddAt(index int, elem T) error {
 
 // AddFirst adds an element at the beginning of the list
 func (ll *LinkedList[T]) AddFirst(elem T) error {
-	ll.AddAt(0, elem)
-	return nil
+	return ll.AddAt(0, elem)
 }
 
 // AddLast adds an element at the end of the list
 func (ll *LinkedList[T]) AddLast(elem T) error {
-	ll.Add(elem)
-	return nil
+	return ll.Add(elem)
 }
 
 // Clear removes all elements from the list
@@ -144,7 +144,7 @@ func (ll *LinkedList[T]) IsEmpty() bool {
 
 // LastIndexOf returns the last index of the specified element
 func (ll *LinkedList[T]) LastIndexOf(elem T) int {
-	var index int = -1
+	var index = -1
 	current := ll.head
 	for i := 0; current != nil; i++ {
 		if assertion.Equal(current.value, elem) {
@@ -275,15 +275,14 @@ func NewSyncedLinkedList[T any]() *SyncedLinkedList[T] {
 func (sll *SyncedLinkedList[T]) Add(elem T) {
 	sll.mutex.Lock()
 	defer sll.mutex.Unlock()
-	sll.list.Add(elem)
+	_ = sll.list.Add(elem)
 }
 
 // AddAll adds all elements from another list to this list
 func (sll *SyncedLinkedList[T]) AddAll(list Collection[T]) error {
 	sll.mutex.Lock()
 	defer sll.mutex.Unlock()
-	sll.list.AddAll(list)
-	return nil
+	return sll.list.AddAll(list)
 }
 
 // AddAt adds an element at the specified index
@@ -298,16 +297,14 @@ func (sll *SyncedLinkedList[T]) AddAt(index int, elem T) error {
 func (sll *SyncedLinkedList[T]) AddFirst(elem T) error {
 	sll.mutex.Lock()
 	defer sll.mutex.Unlock()
-	sll.list.AddFirst(elem)
-	return nil
+	return sll.list.AddFirst(elem)
 }
 
 // AddLast adds an element at the end of the list
 func (sll *SyncedLinkedList[T]) AddLast(elem T) error {
 	sll.mutex.Lock()
 	defer sll.mutex.Unlock()
-	sll.list.AddLast(elem)
-	return nil
+	return sll.list.AddLast(elem)
 }
 
 // Clear removes all elements from the list
@@ -440,5 +437,5 @@ func (sli *syncedLinkedListIterator[T]) Remove() {
 	sli.list.mutex.Lock()
 	defer sli.list.mutex.Unlock()
 	sli.index--
-	sli.list.RemoveAt(sli.index)
+	_, _ = sli.list.RemoveAt(sli.index)
 }

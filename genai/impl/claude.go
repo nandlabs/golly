@@ -689,7 +689,7 @@ func (c *ClaudeProvider) claudeContentToGenMessage(role string, content []claude
 				if inputMap, ok := block.Input.(map[string]interface{}); ok {
 					args = inputMap
 				} else {
-					// Try marshalling and unmarshalling for nested types
+					// Try marshaling and unmarshaling for nested types
 					if b, err := json.Marshal(block.Input); err == nil {
 						_ = json.Unmarshal(b, &args)
 					}

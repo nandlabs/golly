@@ -54,7 +54,7 @@ func (ls *localStore) Get(key string, ctx context.Context) (cred *Credential, er
 	if v, ok := ls.credentials[key]; ok {
 		cred = v
 	} else {
-		err = fmt.Errorf("Unable to find a credential with key %s", key)
+		err = fmt.Errorf("unable to find a credential with key %s", key)
 	}
 
 	return

@@ -25,7 +25,7 @@ func AesEncrypt(key, message []byte) (encrypted []byte, err error) {
 		encrypted = make([]byte, aes.BlockSize+len(message))
 		iv := encrypted[:aes.BlockSize]
 		if _, err = io.ReadFull(rand.Reader, iv); err == nil {
-			stream := cipher.NewCFBEncrypter(block, iv)
+			stream := cipher.NewCTR(block, iv)
 			stream.XORKeyStream(encrypted[aes.BlockSize:], message)
 		}
 	}
@@ -55,7 +55,7 @@ func AesDecrypt(encrypted, key []byte) (message []byte, err error) {
 		} else {
 			iv := message[:aes.BlockSize]
 			message = message[aes.BlockSize:]
-			stream := cipher.NewCFBDecrypter(block, iv)
+			stream := cipher.NewCTR(block, iv)
 			stream.XORKeyStream(message, message)
 		}
 	}

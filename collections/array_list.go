@@ -28,7 +28,9 @@ func (al *ArrayList[T]) Add(elem T) (err error) {
 func (l *ArrayList[T]) AddAll(list Collection[T]) (err error) {
 	it := list.Iterator()
 	for it.HasNext() {
-		l.Add(it.Next())
+		if err = l.Add(it.Next()); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -130,7 +132,7 @@ func (l *ArrayList[T]) LastIndexOf(elem T) int {
 
 // Clear removes all elements from the list
 func (l *ArrayList[T]) Remove(elem T) bool {
-	//find the index of the element. Loop through the elements and remove the element
+	// find the index of the element. Loop through the elements and remove the element
 	for i, e := range l.elements {
 		if assertion.Equal(e, elem) {
 			if i == len(l.elements)-1 {

@@ -77,7 +77,7 @@ func TestLocalMessage_WriteJSON(t *testing.T) {
 	}
 }
 
-//func TestLocalMessage_WriteXML(t *testing.T) {
+// func TestLocalMessage_WriteXML(t *testing.T) {
 //	message := &BaseMessage{
 //		headers:     make(map[string]interface{}),
 //		headerTypes: make(map[string]reflect.Kind),

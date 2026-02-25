@@ -31,7 +31,7 @@ type objectCache[T any] struct {
 	maxWait int
 	// closed indicates whether the pool has been closed.
 	closed bool
-	// mutex synchronises access to mutable state.
+	// mutex synchronizes access to mutable state.
 	mutex sync.Mutex
 	// pool is a buffered channel holding idle objects.
 	pool chan *PooledObject[T]
