@@ -65,9 +65,9 @@ type Route struct {
 // QueryParam for the Route configuration
 type QueryParam struct {
 	// required flag : fail upfront if a required query param not present
-	required bool //nolint:unused // reserved for future use
+	required bool //nolint:unused //lint:ignore U1000 reserved for future use
 	// name of the query parameter
-	name string //nolint:unused // reserved for future use
+	name string //nolint:unused //lint:ignore U1000 reserved for future use
 	// TODO add mechanism for creating a typed query parameter to do auto type conversion in the framework.
 }
 
@@ -268,7 +268,9 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 }
 
 // addQueryVar to add query params to the route
-func (route *Route) addQueryVar(name string, required bool) *Route { //nolint:unused // reserved for future use
+//
+//lint:ignore U1000 reserved for future use
+func (route *Route) addQueryVar(name string, required bool) *Route { //nolint:unused
 	// TODO add name validation.
 	queryParams := &QueryParam{
 		required: required,
