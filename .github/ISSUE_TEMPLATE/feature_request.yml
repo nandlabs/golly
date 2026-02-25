@@ -1,0 +1,81 @@
+name: "✨ Feature Request"
+description: Suggest a new feature or enhancement for this project
+title: "[FEATURE]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible to help us understand your request.
+
+  - type: checkboxes
+    id: existing-issues
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search existing issues before creating a new one.
+      options:
+        - label: I have searched the existing issues and none match my feature request.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Describe the problem you're trying to solve.
+      placeholder: "I'm always frustrated when [...]"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: A clear and concise description of what you want to happen. Include API design ideas if applicable.
+      placeholder: Describe the solution you'd like...
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: API Design (if applicable)
+      description: Provide example code showing how the feature would be used.
+      render: go
+      placeholder: |
+        // Example usage of the proposed feature
+        result, err := pkg.NewFunction(args)
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: A clear and concise description of any alternative solutions or features you've considered.
+      placeholder: Describe the alternatives...
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: How important is this feature to you?
+      options:
+        - "Nice to have"
+        - "Important - workaround exists"
+        - "Critical - blocking my work"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Willingness to Contribute
+      description: Would you be willing to submit a PR for this feature?
+      options:
+        - label: I would be willing to submit a PR to implement this feature.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references about the feature request here.

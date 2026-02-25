@@ -133,25 +133,29 @@ func TestRestServer_Opts(t *testing.T) {
 
 // TestRestServer_Lifecycle tests the lifecycle functions
 func TestRestServer_Lifecycle(t *testing.T) {
-	server, err := DefaultServer()
+	opts := DefaultSrvOptions().SetListenPort(9081)
+	uid, _ := uuid.V4()
+	opts.Id = uid.String()
+	server, err := NewServer(opts)
 	assert.NoError(t, err)
 	mgr := lifecycle.NewSimpleComponentManager()
 	mgr.Register(server)
-	err = mgr.StartAll()
 	go func() {
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		err := mgr.StopAll()
 		assert.NoError(t, err)
 	}()
-	assert.NoError(t, err)
+	mgr.StartAndWait()
 }
 
 // TestRestServer_TLS tests the TLS functions
 func TestRestServer_TLS(t *testing.T) {
-
 	opts := DefaultSrvOptions().SetEnableTLS(true).
 		SetCertPath("testdata/server.crt").
-		SetPrivateKeyPath("testdata/server.key")
+		SetPrivateKeyPath("testdata/server.key").
+		SetListenPort(9082)
+	uid, _ := uuid.V4()
+	opts.Id = uid.String()
 	server, err := NewServer(opts)
 	assert.NoError(t, err)
 	mgr := lifecycle.NewSimpleComponentManager()
@@ -162,7 +166,6 @@ func TestRestServer_TLS(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 	mgr.StartAndWait()
-
 }
 
 // TestRestServer_Router tests the Router function

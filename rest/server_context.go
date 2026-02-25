@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -24,6 +25,13 @@ var yamlCodec = codec.YamlCodec()
 type ServerContext struct {
 	request  *http.Request
 	response http.ResponseWriter
+}
+
+// Context returns the request's context. This is the context associated with
+// the incoming HTTP request and can be used for cancellation, deadlines,
+// and passing request-scoped values to downstream operations.
+func (c *ServerContext) Context() context.Context {
+	return c.request.Context()
 }
 
 // Options is the struct that holds the configuration for the Server.

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -799,7 +798,6 @@ func TestRouter_Get(t *testing.T) {
 
 func TestRouter_Add(t *testing.T) {
 	type fields struct {
-		lock                     sync.RWMutex
 		unManagedRouteHandler    http.Handler
 		unsupportedMethodHandler http.Handler
 		topLevelRoutes           map[string]*Route

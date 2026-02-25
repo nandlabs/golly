@@ -1,119 +1,274 @@
-# go-l3
-A Lightweight Levelled Logger for Go
+# l3 — Lightweight Levelled Logger
 
-# Features
-* Multiple logging levels ```OFF,ERROR,INFO,DEBUG,TRACE```
-* Console and File based writers
-* Rolling file support ([WIP]
-* Ability to specify log levels for a specific package
-* Internationalisation (i18n) support ([WIP])
-* Async logging support
-* Configuration can be done using either a file,env variables,Struct values at runtime.
+A fast, levelled logging package for Go with console and file writers, per-package log levels, async mode, and zero external dependencies.
 
-## Usage
+---
 
-### Simple Usage
-The simplest example is  as shown below.
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Logger Interface](#logger-interface)
+- [Log Levels](#log-levels)
+- [Configuration](#configuration)
+  - [File-Based Configuration](#1-file-based-configuration)
+  - [Environment Variables](#2-environment-variables)
+  - [Programmatic Configuration](#3-programmatic-configuration)
+- [Writers](#writers)
+  - [Console Writer](#console-writer)
+  - [File Writer](#file-writer)
+- [Async Logging](#async-logging)
+- [Thread Safety](#thread-safety)
+
+---
+
+## Features
+
+- **Six log levels**: `OFF`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`
+- **Console and file writers** — route levels to different destinations
+- **Per-package log levels** — fine-grained control without global noise
+- **Formatted logging** — `printf`-style methods (`ErrorF`, `InfoF`, etc.)
+- **Async logging** — non-blocking writes via buffered channel
+- **Configuration** via JSON file, environment variables, or runtime API
+- **Thread-safe** — all writers are mutex-protected
+
+## Installation
+
+```sh
+go get oss.nandlabs.io/golly
 ```
-    import (
-	"errors"
-	
-	"oss.nandlabs.io/golly/l3"
+
+## Quick Start
+
+```go
+package main
+
+import (
+    "errors"
+
+    "oss.nandlabs.io/golly/l3"
 )
 
-//logger Package Level Logger
-var logger l3.Logger = l3.Get()
+// Package-level logger — call l3.Get() once per package.
+var logger = l3.Get()
 
 func main() {
-	logger.Info("This is an info log msg")
-	logger.Warn("This is an warning msg")
-	logger.Error("This is an error log msg")
-	logger.Error("This is an error log msg with optional error", errors.New("Some error happened here "))
-	logger.Warn("Message with any level can also have an error", errors.New("Some error happened here but want it as info"))
+    // Simple messages
+    logger.Info("Server starting on port 8080")
+    logger.Warn("Cache size exceeds 80% capacity")
+    logger.Error("Failed to connect to database", errors.New("connection refused"))
 
+    // Formatted messages (printf-style)
+    logger.InfoF("Listening on %s:%d", "localhost", 8080)
+    logger.DebugF("Request processed in %dms", 42)
+    logger.ErrorF("HTTP %d: %s", 500, "internal server error")
+
+    // Level checks (avoid expensive arg computation)
+    logger.Trace("Detailed trace data: ", someExpensiveCall())
 }
 
-    
-   ```
-This will create a logger with default configuration
-
-* Logs get written to console
-* Log levels  ```ERROR, WARN``` get written to stderr and remaining levels to stdout
-* The default log level is ```INFO``` this can be overwritten using an env variable or log config file.
-  See Log [Configuration](#Log Configuration) section for more details.
-
-###
-
-
-
-
-# Log Configuration
-The below table specifies the configuration parameters for logging
-The log can be configured in the following ways.
-
-### 1. File Based Configuration
-The file based configuration allows a file with log configuration to be specified. Here is a sample file configuration
-based on ```json```.
+func someExpensiveCall() string {
+    return "trace-payload"
+}
 ```
+
+**Default output** (text format, `INFO` level, to stdout/stderr):
+
+```
+2026-02-21T10:00:00+11:00 INFO Server starting on port 8080
+2026-02-21T10:00:00+11:00 WARN Cache size exceeds 80% capacity
+2026-02-21T10:00:00+11:00 ERROR Failed to connect to database connection refused
+2026-02-21T10:00:00+11:00 INFO Listening on localhost:8080
+```
+
+## Logger Interface
+
+```go
+type Logger interface {
+    Error(a ...interface{})
+    ErrorF(f string, a ...interface{})
+    Warn(a ...interface{})
+    WarnF(f string, a ...interface{})
+    Info(a ...interface{})
+    InfoF(f string, a ...interface{})
+    Debug(a ...interface{})
+    DebugF(f string, a ...interface{})
+    Trace(a ...interface{})
+    TraceF(f string, a ...interface{})
+}
+```
+
+Get a logger instance with `l3.Get()`. Each call returns a logger scoped to the calling package — log levels can be configured per package.
+
+## Log Levels
+
+Levels are ordered by severity. Setting a level enables that level and all levels above it.
+
+| Level   | Value | Includes                        |
+| ------- | ----- | ------------------------------- |
+| `OFF`   | 0     | Nothing                         |
+| `ERROR` | 1     | Error                           |
+| `WARN`  | 2     | Error, Warn                     |
+| `INFO`  | 3     | Error, Warn, Info               |
+| `DEBUG` | 4     | Error, Warn, Info, Debug        |
+| `TRACE` | 5     | Error, Warn, Info, Debug, Trace |
+
+## Configuration
+
+### 1. File-Based Configuration
+
+Place a `log-config.json` file in the application directory, or set `GC_LOG_CONFIG_FILE` to a custom path.
+
+```json
 {
-     "format": "json",
-     "async": false,
-     "defaultLvl": "INFO",
-     "includeFunction": true,
-     "includeLineNum": true,
-     "pkgConfigs": [
-       {
-         "pkgName": "main",
-         "level": "INFO"
-       }
-     ],
-     "writers": [
-       {
-         "console": {
-           "errToStdOut": false,
-           "warnToStdOut": false
-         }
-       }
-       {
-         "file": {
-           "defaultPath": "/tmp/default.log"
-         }
-       },
-       
-     ]
-   }
+  "format": "text",
+  "async": false,
+  "defaultLvl": "INFO",
+  "datePattern": "2006-01-02T15:04:05Z07:00",
+  "includeFunction": true,
+  "includeLineNum": true,
+  "pkgConfigs": [
+    {
+      "pkgName": "main",
+      "level": "DEBUG"
+    },
+    {
+      "pkgName": "server",
+      "level": "WARN"
+    }
+  ],
+  "writers": [
+    {
+      "console": {
+        "errToStdOut": false,
+        "warnToStdOut": false
+      }
+    },
+    {
+      "file": {
+        "defaultPath": "/var/log/app/app.log",
+        "errorPath": "/var/log/app/error.log"
+      }
+    }
+  ]
+}
 ```
 
-following table specifies the field values
-|Field Name   | Type    | Description   | Default Value|
-|:-|:-|:-|:-:|
-|format|String| The output format of the log message. The valid values are `text` or `json`| `text` |
-|async|Boolean| Determines if the message is to be written to the destination asynchronously. If set to `true` then the LogMessage is prepared synchronously.However, it is written to destination in a async fashion.|`false`|
-|defaultLvl| String|Sets the default Logging level for the Logger. This is a global value. For overriding the log levels for a specific packages use `pkgConfigs`. The valid values are `OFF,ERROR,INFO,DEBUG,TRACE`| `INFO`|
-|datePattern|String| The timestamp format for the log entries.Valid values are the ones acceptable by`time.Format(<pattern>)` function.|As defined by `time.RFC3339` |
-|includeFunction| Boolean| Determines if the Function Name needs to be printed in logs. |`false`|
-|includeLineNum|Boolean| Determines if the line number needs to be printed in logs. This config takes into effect only if `includeFunction=true`|`false`|
-|pkgConfigs   |Array|This field consists array of package specific configuration.<br>`{"pkgName": "<packageName>","level": "<Level>"}`|`null`|
-|writers| Array|Array of writers either `file` or `console` based writer. Console Writer Has the following has the following configuration `{"console": {"errToStdOut": false,"warnToStdOut": false}}`.Log levels except `ERROR and WARN` are written to `os.Stdout`. The Entries for the `ERROR,WARN` can be written to either os.StdErr or os.Stdout <br> For a file based log destination,paths for each level can be specified as follows.<br> `{"file": { "defaultPath": "<file Path>","errorPath": "<file Path>","warnPath": "<file Path>","infoPath": "<file Path>","debugPath": "<file Path>","tracePath": "<file Path>" }`<br> If any of the `errorPath,warnPath,infoPath,debugPath,tracePath` is not specified then default path for that level is applied. If all of the level specific paths are specified then the `defaultPath` value is ignored.| N/A|
+**Configuration fields:**
 
-By Default the logging framework looks for a file named `log-config.json` in the same directory if the application.
-This is the default location.This location can be overridden using an environment variable `GC_LOG_CONFIG_FILE`.
-If the framework cannot resolve the configuration file either in the default location or at the location specified by
-environment  variable, then the framework loads a default configuration as described below.
+| Field             | Type    | Description                                                                                           | Default        |
+| ----------------- | ------- | ----------------------------------------------------------------------------------------------------- | -------------- |
+| `format`          | String  | Output format: `"text"` or `"json"`                                                                   | `"text"`       |
+| `async`           | Boolean | Write log messages asynchronously via a buffered channel                                              | `false`        |
+| `queueSize`       | Integer | Channel buffer size when `async` is `true`                                                            | `4096`         |
+| `defaultLvl`      | String  | Global default log level: `OFF`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`                            | `"INFO"`       |
+| `datePattern`     | String  | Timestamp format (Go `time.Format` layout)                                                            | `time.RFC3339` |
+| `includeFunction` | Boolean | Include the calling function name in log entries                                                      | `false`        |
+| `includeLineNum`  | Boolean | Include line number (only works when `includeFunction` is `true`)                                     | `false`        |
+| `pkgConfigs`      | Array   | Per-package level overrides: `[{"pkgName": "pkg", "level": "DEBUG"}]`                                 | `null`         |
+| `writers`         | Array   | Array of writer configs — each entry is either a `console` or `file` writer (see [Writers](#writers)) | Console only   |
 
+### 2. Environment Variables
 
-### 2. Default Log Config- With ENV variables override
-The default log configuration will write the log entries to the console and the framework default log  level is  `INFO`.
-Few fields can be overwritten using environment variables. The following table shows those env variables
-|Environment Var | Converted Type  | Description   | Default Value|
-|:-|:-|:-|:-:|
-|GC_LOG_ASYNC|Boolean|Determines if the message is to be written to the destination asynchronously. If set to `true` then the LogMessage is prepared synchronously.However, it is written to destination in a async fashion.|`false`|
-|GC_LOG_FMT|String| The output format of the log message. The valid values are `text` or `json`| `text` |
-|GC_LOG_DEF_LEVEL| String|Sets the default Logging level for the Logger. This is a global value. For overriding the log levels for a specific packages use `pkgConfigs`. The valid values are `OFF,ERROR,INFO,DEBUG,TRACE`| `INFO`|
-|GC_LOG_TIME_FMT|String| The timestamp format for the log entries.Valid values are the ones acceptable by`time.Format(<pattern>)` function.|As defined by `time.RFC3339`|
-|GC_LOG_WARN_STDOUT|Boolean|Indicates whether the log entries with `WARN` level needs to be written to `os.Stdout` instead of `os.Stderr`|`false`|
-|GC_LOG_ERR_STDOUT|Boolean|Indicates whether the log entries with `ERROR` level needs to be written to `os.Stdout` instead of `os.Stderr`|`false`|
+When no config file is found, the framework loads a default console configuration. These environment variables override the defaults:
 
-### 3. Configuring logging during runtime.
+| Variable             | Type    | Description                               | Default             |
+| -------------------- | ------- | ----------------------------------------- | ------------------- |
+| `GC_LOG_CONFIG_FILE` | String  | Path to the JSON config file              | `./log-config.json` |
+| `GC_LOG_ASYNC`       | Boolean | Enable async logging                      | `false`             |
+| `GC_LOG_FMT`         | String  | Output format: `"text"` or `"json"`       | `"text"`            |
+| `GC_LOG_DEF_LEVEL`   | String  | Default log level                         | `"INFO"`            |
+| `GC_LOG_TIME_FMT`    | String  | Timestamp format                          | `time.RFC3339`      |
+| `GC_LOG_ERR_STDOUT`  | Boolean | Write `ERROR` to stdout instead of stderr | `false`             |
+| `GC_LOG_WARN_STDOUT` | Boolean | Write `WARN` to stdout instead of stderr  | `false`             |
 
-The log configuration can be set at runtime using the `l3.Configure(l *LogConfig)`. This is a global level log configuration and will impact all instances of logger
+### 3. Programmatic Configuration
+
+Use `l3.Configure()` to set the log configuration at runtime:
+
+```go
+package main
+
+import "oss.nandlabs.io/golly/l3"
+
+func main() {
+    l3.Configure(&l3.LogConfig{
+        Format:          "json",
+        Async:           true,
+        QueueSize:       8192,
+        DefaultLvl:      "DEBUG",
+        IncludeFunction: true,
+        IncludeLineNum:  true,
+        PkgConfigs: []*l3.PackageConfig{
+            {PackageName: "main", Level: "TRACE"},
+            {PackageName: "db", Level: "WARN"},
+        },
+        Writers: []*l3.WriterConfig{
+            {Console: &l3.ConsoleConfig{
+                WriteErrToStdOut:  false,
+                WriteWarnToStdOut: false,
+            }},
+        },
+    })
+
+    logger := l3.Get()
+    logger.InfoF("Logging configured at %s level", "DEBUG")
+}
+```
+
+## Writers
+
+### Console Writer
+
+Routes log messages to `os.Stdout` / `os.Stderr`:
+
+- `INFO`, `DEBUG`, `TRACE` → `os.Stdout`
+- `ERROR`, `WARN` → `os.Stderr` (configurable via `errToStdOut` / `warnToStdOut`)
+
+```json
+{
+  "console": {
+    "errToStdOut": false,
+    "warnToStdOut": false
+  }
+}
+```
+
+### File Writer
+
+Routes log messages to files. Each level can have its own file, or share a `defaultPath`:
+
+```json
+{
+  "file": {
+    "defaultPath": "/var/log/app/app.log",
+    "errorPath": "/var/log/app/error.log",
+    "warnPath": "/var/log/app/warn.log",
+    "infoPath": "/var/log/app/info.log",
+    "debugPath": "/var/log/app/debug.log",
+    "tracePath": "/var/log/app/trace.log"
+  }
+}
+```
+
+If a level-specific path is omitted, that level falls back to `defaultPath`. Files are opened with `O_RDWR|O_APPEND|O_CREATE`.
+
+## Async Logging
+
+When `async` is `true`, log messages are dispatched to a buffered channel and written by a background goroutine. This avoids blocking the calling goroutine on I/O:
+
+```go
+l3.Configure(&l3.LogConfig{
+    Async:      true,
+    QueueSize:  4096, // channel buffer size
+    DefaultLvl: "INFO",
+    Writers: []*l3.WriterConfig{
+        {Console: &l3.ConsoleConfig{}},
+    },
+})
+```
+
+> **Note**: If the channel is full, `handleLog` will block until space is available.
+
+## Thread Safety
+
+All writers (`ConsoleWriter`, `FileWriter`) are protected by `sync.Mutex`. The global log configuration is accessed under a package-level mutex. It is safe to log from multiple goroutines concurrently.

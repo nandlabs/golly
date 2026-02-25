@@ -1,0 +1,60 @@
+name: "❓ Question / Support"
+description: Ask a question or request help using this project
+title: "[QUESTION]: "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question? We're here to help! Please provide as much detail as possible.
+
+        > **Note:** For security-related questions, please refer to our [Security Policy](../../SECURITY.md) instead.
+
+  - type: checkboxes
+    id: existing-resources
+    attributes:
+      label: Have you checked existing resources?
+      description: Please verify you've checked these before asking.
+      options:
+        - label: I have read the README and documentation.
+          required: true
+        - label: I have searched existing issues for my question.
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+      placeholder: Describe your question in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide any relevant context, code, or configuration that relates to your question.
+      placeholder: Add any context here...
+
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: Code Snippet (if applicable)
+      description: If your question involves code, provide a minimal example.
+      render: go
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      description: "Output of `go version` (if relevant)"
+      placeholder: "e.g., go1.22.0"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about your question here.

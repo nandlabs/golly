@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -30,9 +31,17 @@ type AuthHandlerFunc func(client *Client, req *http.Request) error
 var basicAuthHandlerFunc = func(client *Client, req *http.Request) error {
 
 	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBasic {
-		return fmt.Errorf("invalid auth type ")
+		return fmt.Errorf("invalid auth type")
 	}
-	req.SetBasicAuth(client.options.Auth.User(), client.options.Auth.Pass())
+	user, err := client.options.Auth.User()
+	if err != nil {
+		return fmt.Errorf("failed to obtain username: %w", err)
+	}
+	pass, err := client.options.Auth.Pass()
+	if err != nil {
+		return fmt.Errorf("failed to obtain password: %w", err)
+	}
+	req.SetBasicAuth(user, pass)
 	return nil
 }
 
@@ -40,8 +49,34 @@ var bearerAuthHandlerFunc = func(client *Client, req *http.Request) error {
 	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeBearer {
 		return fmt.Errorf("invalid auth type")
 	}
-	req.Header.Set("Authorization", "Bearer "+client.options.Auth.Token())
+	token, err := client.options.Auth.Token()
+	if err != nil {
+		return fmt.Errorf("failed to obtain bearer token: %w", err)
+	}
+	if token == "" {
+		return fmt.Errorf("empty bearer token received")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
+	return nil
+}
+
+var apiKeyAuthHandlerFunc = func(client *Client, req *http.Request) error {
+	if client.options.Auth == nil || client.options.Auth.Type() != clients.AuthTypeAPIKey {
+		return fmt.Errorf("invalid auth type")
+	}
+	apiKeyAuth, ok := client.options.Auth.(*clients.APIKeyAuth)
+	if !ok {
+		return fmt.Errorf("auth provider is not an APIKeyAuth instance")
+	}
+	key, err := apiKeyAuth.Token()
+	if err != nil {
+		return fmt.Errorf("failed to obtain API key: %w", err)
+	}
+	if key == "" {
+		return fmt.Errorf("empty API key received")
+	}
+	req.Header.Set(apiKeyAuth.HeaderName(), key)
 	return nil
 }
 
@@ -204,6 +239,7 @@ func NewClientWithOptions(options *ClientOpts) *Client {
 		options.AuthHandlers = map[clients.AuthType]AuthHandlerFunc{
 			clients.AuthTypeBasic:  basicAuthHandlerFunc,
 			clients.AuthTypeBearer: bearerAuthHandlerFunc,
+			clients.AuthTypeAPIKey: apiKeyAuthHandlerFunc,
 		}
 	}
 	client.options = options
@@ -253,6 +289,7 @@ func (c *Client) NewRequest(reqUrl, method string) (req *Request, err error) {
 	}
 
 	req = &Request{
+		ctx:    context.Background(),
 		url:    finalUrl,
 		method: method,
 		header: map[string][]string{},
@@ -301,10 +338,17 @@ func (c *Client) Execute(req *Request) (res *Response, err error) {
 	}
 	if isErr && c.options.RetryPolicy != nil {
 		retryCount := 0
-		// For each retry, sleep for the backoff interval and retry the request
+		ctx := req.Context()
+		// For each retry, sleep for the backoff interval and retry the request.
+		// The retry loop respects context cancellation so callers can abort.
 		for isErr && retryCount < c.options.RetryPolicy.MaxRetries {
 			sleepFor := c.options.RetryPolicy.WaitTime(retryCount)
-			time.Sleep(sleepFor)
+			select {
+			case <-ctx.Done():
+				err = ctx.Err()
+				return
+			case <-time.After(sleepFor):
+			}
 			retryCount++
 			httpRes, err = c.httpClient.Do(httpReq)
 			isErr = c.isError(err, httpRes)

@@ -193,6 +193,7 @@ var mapExtToMime = map[string]string{
 	".md":        MimeMarkDown,
 	".markdown":  MimeMarkDown,
 	".yaml":      MimeTextYAML,
+	".yml":       MimeTextYAML,
 	".xml":       MimeTextXML,
 	".json":      MimeApplicationJSON,
 	".bin":       MimeApplicationOctetStream,
@@ -250,4 +251,16 @@ func GetMimeFromExt(ext string) string {
 
 func GetExtsFromMime(mime string) []string {
 	return mimeToExt[mime]
+}
+
+func IsImageMime(mime string) bool {
+	return len(mime) > 6 && mime[:6] == "image/"
+}
+
+func IsAudioMime(mime string) bool {
+	return len(mime) > 6 && mime[:6] == "audio/"
+}
+
+func IsVideoMime(mime string) bool {
+	return len(mime) > 6 && mime[:6] == "video/"
 }

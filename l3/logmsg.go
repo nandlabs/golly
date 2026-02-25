@@ -54,5 +54,6 @@ func getLogMessage(level Level, v ...interface{}) *LogMessage {
 
 func putLogMessage(logMsg *LogMessage) {
 	logMsg.Content.Reset()
+	logMsg.Buf.Reset()
 	logMsgPool.Put(logMsg)
 }
