@@ -14,7 +14,7 @@ const (
 	Error
 	// Stopped is the state of the component when it is stopped.
 	Stopped
-	//Stopping is the state of the component when it is stopping.
+	// Stopping is the state of the component when it is stopping.
 	Stopping
 	// Running is the state of the component when it is running.
 	Running
@@ -56,7 +56,7 @@ type ComponentManager interface {
 	AddDependency(id, dependsOn string) error
 	// GetState will return the current state of the LifeCycle for the component with the given id.
 	GetState(id string) ComponentState
-	//List will return a list of all the Components.
+	// List will return a list of all the Components.
 	List() []Component
 	// OnChange is the function that will be called when the component state changes.
 	OnChange(id string, f func(prevState, newState ComponentState))
@@ -67,7 +67,7 @@ type ComponentManager interface {
 	// StartAllWithTimeout will start all the Components with a timeout.
 	// Returns ErrTimeout if the operation exceeds the specified duration.
 	StartAllWithTimeout(timeout time.Duration) error
-	//StartAndWait will start all the Components and wait for them to finish.
+	// StartAndWait will start all the Components and wait for them to finish.
 	StartAndWait()
 	// Start will start the LifeCycle for the component with the given id.
 	// It returns an error if the component was not found or if the component failed to start.

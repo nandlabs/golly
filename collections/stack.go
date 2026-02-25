@@ -25,7 +25,7 @@ func NewStack[T any]() Stack[T] {
 
 // Push an element onto the stack
 func (s *stackImpl[T]) Push(elem T) {
-	s.AddLast(elem)
+	_ = s.AddLast(elem)
 }
 
 // Pop and return the element at the top of the stack
@@ -74,7 +74,7 @@ func (si *stackIterator[T]) Next() T {
 
 // Remove removes the last element returned by the iterator
 func (si *stackIterator[T]) Remove() {
-	si.RemoveAt(si.index)
+	_, _ = si.RemoveAt(si.index)
 	si.index--
 }
 
@@ -90,7 +90,7 @@ func NewSyncStack[T any]() Stack[T] {
 
 // Push an element onto the stack
 func (ss *syncStackImpl[T]) Push(elem T) {
-	ss.AddLast(elem)
+	_ = ss.AddLast(elem)
 }
 
 // Pop and return the element at the top of the stack
@@ -136,7 +136,7 @@ func (ssi *syncStackIterator[T]) Next() T {
 func (ssi *syncStackIterator[T]) Remove() {
 
 	if ssi.index > -1 && ssi.index < ssi.list.Size() {
-		ssi.list.RemoveAt(ssi.index)
+		_, _ = ssi.list.RemoveAt(ssi.index)
 	}
 	ssi.index--
 }

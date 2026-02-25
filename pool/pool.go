@@ -52,7 +52,7 @@ type Pool[T any] interface {
 	MaxWait() int
 	// SetMaxWait sets the maximum wait time in seconds.
 	SetMaxWait(int)
-	// Start initialises the pool and pre-creates Min objects.
+	// Start initializes the pool and pre-creates Min objects.
 	Start() error
 	// Close drains the pool and destroys all objects.
 	Close() error
@@ -65,5 +65,3 @@ type PooledObject[T any] struct {
 	// obj is the object of type T that is being wrapped.
 	obj T
 }
-
-

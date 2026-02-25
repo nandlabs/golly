@@ -21,7 +21,7 @@ type PromptTemplate struct {
 	UpdatedAt      int64              `json:"updated_at" yaml:"updated_at" toml:"updated_at"`
 }
 
-//PromptStore defines the interface for managing PromptTemplates.
+// PromptStore defines the interface for managing PromptTemplates.
 
 type PromptStore interface {
 	// Get retrieves a PromptTemplate by its ID.

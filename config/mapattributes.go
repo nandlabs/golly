@@ -178,7 +178,7 @@ func (m *MapAttributes) Keys() []string {
 		defer m.mutex.RUnlock()
 	}
 	if m.attrs == nil {
-		//return an empty array
+		// return an empty array
 		return []string{}
 
 	}
@@ -197,7 +197,7 @@ func (m *MapAttributes) AsMap() map[string]any {
 		defer m.mutex.RUnlock()
 	}
 	if m.attrs == nil {
-		//return an empty map
+		// return an empty map
 		return make(map[string]any)
 	}
 	newMap := make(map[string]any)

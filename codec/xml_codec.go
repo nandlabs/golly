@@ -31,8 +31,8 @@ func (x *xmlRW) Write(v interface{}, w io.Writer) error {
 	encoder := xml.NewEncoder(w)
 	var prettyPrint = false
 	if x.options != nil {
-		if v, ok := x.options[PrettyPrint]; ok {
-			prettyPrint = v.(bool)
+		if opt, ok := x.options[PrettyPrint]; ok {
+			prettyPrint = opt.(bool)
 		}
 	}
 	if prettyPrint {

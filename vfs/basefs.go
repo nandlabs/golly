@@ -24,7 +24,7 @@ func (b *BaseVFS) Copy(src, dst *url.URL) (err error) {
 		srcFileInfo, err = srcFile.Info()
 		if err == nil {
 			if srcFileInfo.IsDir() {
-				//Prepare url for destination
+				// Prepare url for destination
 				var dstFile VFile
 				dstFile, err = b.MkdirAll(dst)
 				if err == nil {

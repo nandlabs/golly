@@ -16,7 +16,7 @@ import (
 type SimpleComponent struct {
 	// stateChangeFuncs
 	stateChangeFuncs []func(prevState, newState ComponentState)
-	//mutex
+	// mutex
 	mutex sync.RWMutex
 	// CompId is the unique identifier for the component.
 	CompId string
@@ -32,7 +32,7 @@ type SimpleComponent struct {
 	BeforeStop func()
 	// CompState is the current state of the component.
 	CompState ComponentState
-	//StartFunc is the function that will be called when the component is started.
+	// StartFunc is the function that will be called when the component is started.
 	// It returns an error if the component failed to start.
 	StartFunc func() error
 	// StopFunc is the function that will be called when the component is stopped.
@@ -42,9 +42,6 @@ type SimpleComponent struct {
 
 // handleStateChange is the function that will be called when the component state changes.
 func (sc *SimpleComponent) handleStateChange(prevState, newState ComponentState) {
-	// if sc.OnStateChange != nil {
-	// 	sc.OnStateChange(prevState, newState)
-	// }
 	for _, f := range sc.stateChangeFuncs {
 		f(prevState, newState)
 	}
@@ -146,7 +143,7 @@ func (scm *SimpleComponentManager) AddDependency(id, dependsOn string) (err erro
 		return ErrCompNotFound
 	}
 
-	//detect cyclic dependencies
+	// detect cyclic dependencies
 	if v, ok := scm.dependencies[dependsOn]; ok && v.Contains(id) {
 		return ErrCyclicDependency
 	}
@@ -154,7 +151,7 @@ func (scm *SimpleComponentManager) AddDependency(id, dependsOn string) (err erro
 	if _, exists := scm.dependencies[id]; !exists {
 		scm.dependencies[id] = collections.NewArrayList[string]()
 	}
-	scm.dependencies[id].Add(dependsOn)
+	_ = scm.dependencies[id].Add(dependsOn)
 	logger.InfoF("Added dependency %s depends on %s:", id, dependsOn)
 	return
 }
@@ -197,7 +194,7 @@ func (scm *SimpleComponentManager) OnChange(id string, f func(prevState, newStat
 func (scm *SimpleComponentManager) Register(component Component) Component {
 	scm.cMutex.Lock()
 	defer scm.cMutex.Unlock()
-	//if the component is already registered, get the old component and stop it
+	// if the component is already registered, get the old component and stop it
 	oldComponent, exists := scm.components[component.Id()]
 	if !exists {
 		scm.components[component.Id()] = component
@@ -221,7 +218,7 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 	if v, ok := scm.dependencies[id]; ok {
 		logger.DebugF("Component %s has dependencies. Starting dependencies", id)
 		dependecyWait := sync.WaitGroup{}
-		var multiError *errutils.MultiError = errutils.NewMultiErr(nil)
+		var multiError = errutils.NewMultiErr(nil)
 		for ite := v.Iterator(); ite.HasNext(); {
 			dependentComp := scm.components[ite.Next()]
 			if dependentComp.State() != Running {
@@ -278,7 +275,7 @@ func (scm *SimpleComponentManager) StartWithTimeout(id string, timeout time.Dura
 
 // StartAll will start all the Components. Returns the number of components started
 func (scm *SimpleComponentManager) StartAll() error {
-	var err *errutils.MultiError = errutils.NewMultiErr(nil)
+	var err = errutils.NewMultiErr(nil)
 	for _, id := range scm.componentIds {
 		e := scm.Start(id)
 		if e != nil {
@@ -309,8 +306,8 @@ func (scm *SimpleComponentManager) StartAllWithTimeout(timeout time.Duration) er
 
 // StartAndWait will start all the Components. And will wait for them to be stopped.
 func (scm *SimpleComponentManager) StartAndWait() {
-	scm.StartAll() // Start all the components
-	scm.Wait()     // Wait for all the components to finish
+	_ = scm.StartAll() // Start all the components
+	scm.Wait()         // Wait for all the components to finish
 
 }
 
@@ -328,7 +325,7 @@ func (scm *SimpleComponentManager) Stop(id string) (err error) {
 	if v, ok := scm.dependencies[id]; ok {
 		logger.DebugF("Component %s has dependencies", id)
 		dependecyWait := sync.WaitGroup{}
-		var multiError *errutils.MultiError = errutils.NewMultiErr(nil)
+		var multiError = errutils.NewMultiErr(nil)
 		for ite := v.Iterator(); ite.HasNext(); {
 			dependentComp := scm.components[ite.Next()]
 			logger.DebugF("Checking dependent component %s", dependentComp.Id())
@@ -434,7 +431,7 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 	// If component is not registered, return
 	if component, exists := scm.components[id]; exists {
 		if component.State() == Running {
-			component.Stop()
+			_ = component.Stop()
 		}
 		delete(scm.components, id)
 		for i, compId := range scm.componentIds {
@@ -448,13 +445,6 @@ func (scm *SimpleComponentManager) Unregister(id string) {
 
 // Wait will wait for all the Components to finish.
 func (scm *SimpleComponentManager) Wait() {
-	// go func() {
-	// 	// Wait for a signal to stop the components.
-	// 	signalChan := make(chan os.Signal, 1)
-	// 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-	// 	<-signalChan
-	// 	scm.StopAll()
-	// }()
 	<-scm.waitChan
 
 }

@@ -74,7 +74,7 @@ type Provider interface {
 	Description() string
 	// Version returns the version of the provider.
 	Version() string
-	//Models returns the list of model ids supported by the provider.
+	// Models returns the list of model ids supported by the provider.
 	Models() []string
 	// Generate generates a response based on the provided messages and parameters.
 	Generate(ctx context.Context, model string, message *Message, options *Options) (*GenResponse, error)

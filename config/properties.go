@@ -37,7 +37,7 @@ func NewProperties() *Properties {
 func (p *Properties) resolve(v *value) string {
 	var sb strings.Builder
 	if v.hasVars {
-		//Check if the value starts with a variable
+		// Check if the value starts with a variable
 		if varName, ok := v.vars[0]; ok {
 			sb.WriteString(p.resolveAndGet(varName, createVarStructure(varName)))
 		}
@@ -81,20 +81,20 @@ func createValue(k, v string) *value {
 		val.content = append(val.content, v)
 	} else {
 		for i, c := range v {
-			//safe to check the i-1 and i-2 as the min length at this point is at-least 4
+			// safe to check the i-1 and i-2 as the min length at this point is at-least 4
 			if c == textutils.OpenBraceChar && v[i-1] == textutils.DollarChar && v[i-2] != textutils.BackSlashChar {
 				val.content = append(val.content, v[startIndex:i-1])
 				varStart = i + 1
 			} else if varStart > 0 && c == textutils.CloseBraceChar {
 				startIndex = i + 1
-				//if First variable then make map
+				// if First variable then make map
 				if varCount == 0 {
 					val.vars = make(map[int]string)
 				}
 				val.vars[len(val.content)] = v[varStart:i]
-				//reset varStart
+				// reset varStart
 				varStart = 0
-				//increment variable counter
+				// increment variable counter
 				varCount++
 				val.hasVars = true
 			}
@@ -260,7 +260,7 @@ func (p *Properties) Load(r io.Reader) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		l := len(line)
-		//Cases where it is not a valid props entry.
+		// Cases where it is not a valid props entry.
 		if l == 0 || line[0] == textutils.HashChar || line[0] == textutils.EqualChar {
 			continue
 		}
@@ -292,7 +292,7 @@ func (p *Properties) Save(w io.Writer) error {
 		}
 		v := p.props[k]
 		if v.hasVars {
-			//Check if the value starts with a variable
+			// Check if the value starts with a variable
 			if varName, ok := v.vars[0]; ok {
 				_, err = bufWriter.WriteString(createVarStructure(varName))
 				if err != nil {

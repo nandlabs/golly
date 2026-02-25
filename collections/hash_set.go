@@ -27,7 +27,9 @@ func (hs *HashSet[T]) Add(elem T) error {
 func (hs *HashSet[T]) AddAll(set Collection[T]) error {
 	it := set.Iterator()
 	for it.HasNext() {
-		hs.Add(it.Next())
+		if err := hs.Add(it.Next()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -101,8 +103,8 @@ func (hs *HashSet[T]) String() string {
 // Union returns a new set containing all elements from this set and another set.
 func (hs *HashSet[T]) Union(set Set[T]) Set[T] {
 	union := NewHashSet[T]()
-	union.AddAll(hs)
-	union.AddAll(set)
+	_ = union.AddAll(hs)
+	_ = union.AddAll(set)
 	return union
 }
 
@@ -113,7 +115,7 @@ func (hs *HashSet[T]) Intersection(set Set[T]) Set[T] {
 	for it.HasNext() {
 		elem := it.Next()
 		if set.Contains(elem) {
-			intersection.Add(elem)
+			_ = intersection.Add(elem)
 		}
 	}
 	return intersection
@@ -126,7 +128,7 @@ func (hs *HashSet[T]) Difference(set Set[T]) Set[T] {
 	for it.HasNext() {
 		elem := it.Next()
 		if !set.Contains(elem) {
-			difference.Add(elem)
+			_ = difference.Add(elem)
 		}
 	}
 	return difference

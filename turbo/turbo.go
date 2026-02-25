@@ -15,16 +15,20 @@ import (
 	"oss.nandlabs.io/golly/turbo/filters"
 )
 
+// paramsKey is a private type used as a context key for path parameters,
+// avoiding collisions with other packages using built-in types as keys.
+type paramsKey struct{}
+
 // Router struct that holds the router configuration
 type Router struct {
 	lock sync.RWMutex
-	//Handler for any route that is not defined
+	// Handler for any route that is not defined
 	unManagedRouteHandler http.Handler
-	//Handler for any methods that are not supported
+	// Handler for any methods that are not supported
 	unsupportedMethodHandler http.Handler
-	//Routes Managed by this router
+	// Routes Managed by this router
 	topLevelRoutes map[string]*Route
-	//global filters
+	// global filters
 	globalFilters []FilterFunc
 }
 
@@ -36,34 +40,34 @@ type Param struct {
 
 // Route base struct to hold the route information
 type Route struct {
-	//name of the route fragment if this is a path variable the name of the variable will be used here.
+	// name of the route fragment if this is a path variable the name of the variable will be used here.
 	path string
-	//Checks if this is a variable. only one path variable at this level will be supported.
+	// Checks if this is a variable. only one path variable at this level will be supported.
 	isPathVar bool
-	//childVarName varName
+	// childVarName varName
 	childVarName string
-	//hasChildVar
+	// hasChildVar
 	hasChildVar bool
-	//isAuthenticated keeps a check whether the route is authenticated or not
+	// isAuthenticated keeps a check whether the route is authenticated or not
 	authFilter auth.Authenticator
-	//filters array to store the ...http.handler being registered for middleware in the router
+	// filters array to store the ...http.handler being registered for middleware in the router
 	filters []FilterFunc
-	//handlers for HTTP Methods <method>|<Handler>
+	// handlers for HTTP Methods <method>|<Handler>
 	handlers map[string]http.Handler
-	//Sub Routes from this path
+	// Sub Routes from this path
 	subRoutes map[string]*Route
-	//Query Parameters that may be used.
+	// Query Parameters that may be used.
 	queryParams map[string]*QueryParam
-	//logger to set the external logger if required using SetLogger()
+	// logger to set the external logger if required using SetLogger()
 	logger l3.Logger
 }
 
 // QueryParam for the Route configuration
 type QueryParam struct {
-	//required flag : fail upfront if a required query param not present
-	required bool
-	//name of the query parameter
-	name string
+	// required flag : fail upfront if a required query param not present
+	required bool //nolint:unused //lint:ignore U1000 reserved for future use
+	// name of the query parameter
+	name string //nolint:unused //lint:ignore U1000 reserved for future use
 	// TODO add mechanism for creating a typed query parameter to do auto type conversion in the framework.
 }
 
@@ -153,7 +157,7 @@ func (router *Router) AddHandler(path string, h http.Handler, methods ...string)
 	var pathValue string
 	var pathValues []string
 	var length int
-	//Check if the methods provided are valid if not return error straight away
+	// Check if the methods provided are valid if not return error straight away
 	for _, method := range methods {
 		if _, contains := Methods[strings.ToUpper(method)]; !contains {
 			return nil, ErrInvalidMethod
@@ -173,7 +177,7 @@ func (router *Router) AddHandler(path string, h http.Handler, methods ...string)
 
 	if length > 0 && pathValues[0] != textutils.EmptyStr {
 		isPathVar := false
-		currentPathName := textutils.EmptyStr
+		var currentPathName string
 		for i, pathValue := range pathValues {
 			isPathVar = pathValue[0] == textutils.ColonChar
 			if isPathVar {
@@ -197,7 +201,7 @@ func (router *Router) AddHandler(path string, h http.Handler, methods ...string)
 				if v, ok := router.topLevelRoutes[currentPathName]; ok {
 					route = v
 				} else {
-					//No Parent present add the current route as route and continue
+					// No Parent present add the current route as route and continue
 					if currentRoute.isPathVar {
 						return nil, ErrInvalidPath
 					}
@@ -248,9 +252,9 @@ func (router *Router) AddHandler(path string, h http.Handler, methods ...string)
 			logger:       logger,
 		}
 		for _, method := range methods {
-			currentRoute.handlers[method] = prepareHandler(method, h)
+			currentRoute.handlers[method] = h
 		}
-		//Root route will not have any path value
+		// Root route will not have any path value
 		router.topLevelRoutes[textutils.EmptyStr] = currentRoute
 	}
 	return route, nil
@@ -263,20 +267,16 @@ func (router *Router) Add(path string, f func(w http.ResponseWriter, r *http.Req
 	return router.AddHandler(path, http.HandlerFunc(f), methods...)
 }
 
-// prepareHandler to add any default features like logging, auth... will be injected here
-func prepareHandler(method string, handler http.Handler) http.Handler {
-	//TODO add features later
-	return handler
-}
-
 // addQueryVar to add query params to the route
-func (route *Route) addQueryVar(name string, required bool) *Route {
-	//TODO add name validation.
+//
+//lint:ignore U1000 reserved for future use
+func (route *Route) addQueryVar(name string, required bool) *Route { //nolint:unused
+	// TODO add name validation.
 	queryParams := &QueryParam{
 		required: required,
 		name:     name,
 	}
-	//TODO Check if this name can be url encoded and save decoding per request,
+	// TODO Check if this name can be url encoded and save decoding per request,
 	route.queryParams[name] = queryParams
 	return route
 }
@@ -293,20 +293,20 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p = url.String()
 		w.Header().Set("Location", p)
 		w.WriteHeader(http.StatusMovedPermanently)
-		fmt.Fprintf(w, "Path Moved : %q \n", html.EscapeString(p))
+		_, _ = fmt.Fprintf(w, "Path Moved : %q \n", html.EscapeString(p))
 		return
 	}
 	// start by checking where the method of the Request is same as that of the registered method
 	match, params := router.findRoute(r)
 	if match != nil {
 		handler = match.handlers[r.Method]
-		//Global Middlewares added
+		// Global Middlewares added
 		if router.globalFilters != nil {
 			for i := range router.globalFilters {
 				handler = router.globalFilters[len(router.globalFilters)-1-i](handler)
 			}
 		}
-		//Route specific Middlewares added
+		// Route specific Middlewares added
 		if len(match.filters) > 0 {
 			for i := range match.filters {
 				handler = match.filters[len(match.filters)-1-i](handler)
@@ -324,7 +324,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		handler = router.unsupportedMethodHandler
 	}
 	if params != nil {
-		r = r.WithContext(context.WithValue(r.Context(), "params", params))
+		r = r.WithContext(context.WithValue(r.Context(), paramsKey{}, params))
 	}
 	handler.ServeHTTP(w, r)
 }
@@ -384,7 +384,7 @@ func (router *Router) findRoute(req *http.Request) (*Route, []Param) {
 
 // GetPathParam fetches the path parameters
 func GetPathParam(id string, r *http.Request) (string, error) {
-	params, ok := r.Context().Value("params").([]Param)
+	params, ok := r.Context().Value(paramsKey{}).([]Param)
 	if !ok {
 		logger.ErrorF("Error Fetching Path Param %s", id)
 

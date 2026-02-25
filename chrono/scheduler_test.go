@@ -505,7 +505,7 @@ func TestJobStatus_String(t *testing.T) {
 		{JobStatusRunning, "running"},
 		{JobStatusCompleted, "completed"},
 		{JobStatusFailed, "failed"},
-		{JobStatusCancelled, "cancelled"},
+		{JobStatusCancelled, "canceled"},
 		{JobStatus(99), "unknown"},
 	}
 	for _, tt := range tests {

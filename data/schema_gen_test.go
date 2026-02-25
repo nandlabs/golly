@@ -171,11 +171,12 @@ func TestGenerateSchema(t *testing.T) {
 			}
 
 			if tt.expected.Properties != nil {
-				if schema.Properties == nil {
+				switch {
+				case schema.Properties == nil:
 					t.Errorf("expected Properties but got nil")
-				} else if len(schema.Properties) != len(tt.expected.Properties) {
+				case len(schema.Properties) != len(tt.expected.Properties):
 					t.Errorf("expected Properties length %d but got %d", len(tt.expected.Properties), len(schema.Properties))
-				} else {
+				default:
 					for k, v := range tt.expected.Properties {
 						prop, ok := schema.Properties[k]
 						if !ok {

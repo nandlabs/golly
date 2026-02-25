@@ -148,7 +148,7 @@ func (cli *CLI) Execute() error {
 				}
 			}
 
-			flagSet.Parse(parsedArgs)
+			_ = flagSet.Parse(parsedArgs)
 			flagSet.Visit(func(f *flag.Flag) {
 				ctx.SetFlag(f.Name, f.Value.String())
 			})

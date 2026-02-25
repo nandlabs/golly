@@ -88,8 +88,8 @@ type Message interface {
 	Header
 	Body
 	// Rsvp function provides a facade to acknowledge the message to the provider indicating the acceptance or rejection
-	//as mentioned by the first bool parameter.
-	//Additional options can be set for indicating further actions.
-	//This functionality is purely dependent on the capability of the provider to accept an acknowledgement.
+	// as mentioned by the first bool parameter.
+	// Additional options can be set for indicating further actions.
+	// This functionality is purely dependent on the capability of the provider to accept an acknowledgement.
 	Rsvp(bool, ...Option) error
 }

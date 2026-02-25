@@ -26,7 +26,7 @@ var codecManager = managers.NewItemManager[ReaderWriter]()
 
 // StringEncoder Interface
 type StringEncoder interface {
-	//EncodeToString will encode a type to string
+	// EncodeToString will encode a type to string
 	EncodeToString(v interface{}) (string, error)
 }
 
@@ -38,13 +38,13 @@ type BytesEncoder interface {
 
 // StringDecoder Interface
 type StringDecoder interface {
-	//DecodeString will decode  a type from string
+	// DecodeString will decode  a type from string
 	DecodeString(s string, v interface{}) error
 }
 
 // BytesDecoder Interface
 type BytesDecoder interface {
-	//DecodeBytes will decode a type from an array of bytes
+	// DecodeBytes will decode a type from an array of bytes
 	DecodeBytes(b []byte, v interface{}) error
 }
 
@@ -69,11 +69,11 @@ type Decoder interface {
 // Read reads data from the provided reader into the given value.
 // It takes an io.Reader and an interface{} value, and returns an error if the read operation fails.
 type ReaderWriter interface {
-	//Write a type to writer
+	// Write a type to writer
 	Write(v interface{}, w io.Writer) error
-	//Read a type from a reader
+	// Read a type from a reader
 	Read(r io.Reader, v interface{}) error
-	//MimeTypes returns a slice of strings representing the MIME types
+	// MimeTypes returns a slice of strings representing the MIME types
 	MimeTypes() []string
 }
 
@@ -89,7 +89,7 @@ type Codec interface {
 	Decoder
 	Encoder
 	ReaderWriter
-	//SetOption sets an option to the reader and writer
+	// SetOption sets an option to the reader and writer
 	SetOption(key string, value interface{})
 }
 
@@ -186,13 +186,11 @@ func Get(contentType string, options map[string]interface{}) (c Codec, err error
 			val := strings.TrimSpace(values[i])
 			if i == 0 {
 				typ = val
-			} else {
-				if strings.HasPrefix(val, Charset) {
-					charset := strings.Split(val, textutils.EqualStr)
-					if len(charset) == 2 {
-						//Charset is added to the options but not used by the known json,xml and yaml Read Writers
-						bc.SetOption(Charset, strings.TrimSpace(charset[1]))
-					}
+			} else if strings.HasPrefix(val, Charset) {
+				charset := strings.Split(val, textutils.EqualStr)
+				if len(charset) == 2 {
+					// Charset is added to the options but not used by the known json,xml and yaml Read Writers
+					bc.SetOption(Charset, strings.TrimSpace(charset[1]))
 				}
 			}
 		}
@@ -244,26 +242,24 @@ func (bc *BaseCodec) EncodeToBytes(v interface{}) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	e := bc.Write(v, buf)
 	if e == nil {
-		return buf.Bytes(), e
-	} else {
-		return nil, e
+		return buf.Bytes(), nil
 	}
+	return nil, e
 }
 
 func (bc *BaseCodec) EncodeToString(v interface{}) (string, error) {
 	buf := &bytes.Buffer{}
 	e := bc.Write(v, buf)
 	if e == nil {
-		return buf.String(), e
-	} else {
-		return textutils.EmptyStr, e
+		return buf.String(), nil
 	}
+	return textutils.EmptyStr, e
 }
 
 func (bc *BaseCodec) Read(r io.Reader, v interface{}) (err error) {
 
 	err = bc.readerWriter.Read(r, v)
-	//Check if validation is  required after read
+	// Check if validation is  required after read
 	if err == nil && bc.options != nil {
 		if v, ok := bc.options[ValidateOnRead]; ok && v.(bool) {
 			err = structValidator.Validate(v)
@@ -274,9 +270,9 @@ func (bc *BaseCodec) Read(r io.Reader, v interface{}) (err error) {
 
 func (bc *BaseCodec) Write(v interface{}, w io.Writer) (err error) {
 
-	//Check if validation is  required before write
+	// Check if validation is  required before write
 	if bc.options != nil {
-		if v, ok := bc.options[ValidateBefWrite]; ok && v.(bool) {
+		if opt, ok := bc.options[ValidateBefWrite]; ok && opt.(bool) {
 			err = structValidator.Validate(v)
 		}
 	}

@@ -31,7 +31,7 @@ func (u *UUID) String() string {
 // V1 generates a version 1 UUID.
 func V1() (u *UUID, err error) {
 
-	var uuid []byte = make([]byte, 16)
+	var uuid = make([]byte, 16)
 
 	// Set the version (4 most significant bits of the time_hi_and_version field) to 1.
 	uuid[6] = (uuid[6] & 0x0f) | 0x10
@@ -93,7 +93,7 @@ func V2() (u *UUID, err error) {
 
 	// Generate a hash using MD5
 	hash := md5.New()
-	hash.Write([]byte(fmt.Sprintf("%s%d%d", mac.String(), pid, now)))
+	_, _ = fmt.Fprintf(hash, "%s%d%d", mac.String(), pid, now)
 	hashBytes := hash.Sum(nil)
 
 	// Set the version and variant bits
