@@ -1,0 +1,56 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosimple
+    - gocritic
+    - misspell
+    - gofmt
+    - goimports
+  settings:
+    errcheck:
+      check-type-assertions: false
+      exclude-functions:
+        # Common functions where ignoring errors is acceptable
+        - io.Close
+        - (io.Closer).Close
+    govet:
+      enable:
+        - assign
+        - atomic
+        - bools
+        - buildtag
+        - copylocks
+        - httpresponse
+        - loopclosure
+        - lostcancel
+        - nilfunc
+        - printf
+        - shadow
+        - shift
+        - structtag
+        - tests
+        - unmarshal
+        - unreachable
+        - unusedresult
+    gocritic:
+      enabled-tags:
+        - diagnostic
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      # Ignore unchecked errors in test files (common pattern)
+      - linters:
+          - errcheck
+        path: _test\.go
+    paths:
+      - examples

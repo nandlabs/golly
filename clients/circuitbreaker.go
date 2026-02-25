@@ -72,9 +72,10 @@ func NewCircuitBreaker(info *BreakerInfo) (cb *CircuitBreaker) {
 // It returns an error if the circuit is open or if the maximum number of requests in the half-open state is reached.
 func (cb *CircuitBreaker) CanExecute() (err error) {
 	state := cb.getState()
-	if state == circuitOpen {
+	switch state {
+	case circuitOpen:
 		err = ErrCBOpen
-	} else if state == circuitHalfOpen {
+	case circuitHalfOpen:
 		val := atomic.AddUint32(&cb.halfOpenCounter, 1)
 		if val > cb.MaxHalfOpen {
 			cb.updateState(circuitHalfOpen, circuitOpen)

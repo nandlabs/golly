@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -24,6 +25,7 @@ const (
 
 // Request struct holds the http Request for the rest client
 type Request struct {
+	ctx            context.Context
 	url            string
 	method         string
 	formData       url.Values
@@ -41,6 +43,34 @@ type Request struct {
 type MultipartFile struct {
 	ParamName string
 	FilePath  string
+}
+
+// WithContext returns the Request with the given context set.
+// The context controls cancellation, deadlines, and request-scoped values.
+// It is used when building the underlying http.Request.
+// Returns an error if ctx is nil.
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer cancel()
+//	req, _ := client.NewRequest(url, http.MethodGet)
+//	req.WithContext(ctx)
+func (r *Request) WithContext(ctx context.Context) (*Request, error) {
+	if ctx == nil {
+		return r, fmt.Errorf("nil context")
+	}
+	r.ctx = ctx
+	return r, nil
+}
+
+// Context returns the request's context. The returned context is always
+// non-nil; it defaults to the background context.
+func (r *Request) Context() context.Context {
+	if r.ctx == nil {
+		return context.Background()
+	}
+	return r.ctx
 }
 
 // Method function prints the current method for this Request
@@ -219,7 +249,7 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 			}
 
 			if err == nil {
-				httpReq, err = http.NewRequest(r.method, u.String(), r.bodyReader)
+				httpReq, err = http.NewRequestWithContext(r.Context(), r.method, u.String(), r.bodyReader)
 				if r.header != nil {
 					if r.contentType != "" {
 						r.header.Set(ContentTypeHeader, r.contentType)

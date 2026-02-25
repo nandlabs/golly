@@ -1,232 +1,186 @@
-# Golly
+# GenAI Package
 
-Golly is a generative AI framework that allows you to create and manage AI models.
+The `genai` package defines the provider abstraction for Generative AI services. It provides interfaces and types for interacting with large language models (LLMs) in a provider-agnostic way.
 
-## Index
+---
 
 - [Installation](#installation)
+- [Features](#features)
 - [Usage](#usage)
-  - [Creating a Provider](#creating-a-provider)
-  - [Using Templates](#using-templates)
-  - [Managing Options](#managing-options)
-  - [Memory Management](#memory-management)
-  - [Messages](#messages)
-- [Components](#components)
-  - [Provider](#provider)
-  - [Template](#template)
+  - [Creating Messages](#creating-messages)
+  - [Multi-Part Messages](#multi-part-messages)
+  - [Prompt Templates](#prompt-templates)
+  - [Provider Interface](#provider-interface)
   - [Options](#options)
-  - [Memory](#memory)
-  - [Message](#message)
+- [Providers](#providers)
+- [Authentication](#authentication)
+
+---
 
 ## Installation
 
-To install Golly, use the following command:
-
 ```sh
-go get -u oss.nandlabs.io/golly
+go get oss.nandlabs.io/golly
 ```
+
+## Features
+
+- **Provider-agnostic**: Uniform interface for OpenAI, Claude, Ollama, and other LLM providers
+- **Message types**: Text, binary, file reference, JSON, and YAML messages
+- **Multi-part messages**: Combine text, images, and files in a single message
+- **Prompt templates**: In-memory prompt store with Go template variable substitution
+- **Streaming support**: `GenerateStream` for token-by-token response streaming
+- **Configurable options**: Max tokens, temperature, top-p, penalties, and more
+- **Flexible authentication**: Bearer tokens, API keys, Basic auth, OAuth2, and custom providers via the `clients.AuthProvider` interface
 
 ## Usage
 
-### Creating a Provider
-
-To create a new provider, implement the `Provider` interface:
+### Creating Messages
 
 ```go
-package main
+import "oss.nandlabs.io/golly/genai"
 
-import (
-    "oss.nandlabs.io/golly/genai"
-    "fmt"
-)
+// Simple text message
+msg := genai.NewMsgFromPrompt(genai.RoleUser, "greeting", "Hello!")
 
-type MyProvider struct {
-    // ...existing code...
-}
+// System instruction
+sys := genai.NewMsgFromPrompt(genai.RoleSystem, "system", "You are a helpful assistant.")
 
-func (p *MyProvider) Name() string {
-    return "MyProvider"
-}
+// Binary message (e.g., image)
+bin := genai.NewBinMessage(genai.RoleUser, "photo", imageBytes, "image/jpeg")
 
-func (p *MyProvider) Description() string {
-    return "A custom provider"
-}
+// File reference
+file := genai.NewFileMessage(genai.RoleUser, "doc", "gs://bucket/doc.pdf", "application/pdf")
 
-func (p *MyProvider) Version() string {
-    return "1.0.0"
-}
-
-func (p *MyProvider) Author() string {
-    return "Author Name"
-}
-
-func (p *MyProvider) License() string {
-    return "MIT"
-}
-
-func (p *MyProvider) Supports(model, mime string) (consumer bool, provider bool) {
-    // ...existing code...
-}
-
-func (p *MyProvider) Accepts(model string) []string {
-    // ...existing code...
-}
-
-func (p *MyProvider) Produces(model string) []string {
-    // ...existing code...
-}
-
-func (p *MyProvider) Generate(model string, exchange genai.Exchange, options *genai.Options) error {
-    // ...existing code...
-}
-
-func (p *MyProvider) GenerateStream(model string, exchange genai.Exchange, handler func(reader io.Reader), options genai.Options) error {
-    // ...existing code...
-}
-
-func main() {
-    provider := &MyProvider{}
-    genai.Providers.Register(provider)
-    fmt.Println("Provider registered:", provider.Name())
-}
+// JSON message
+jsonMsg, _ := genai.NewJsonMessage(genai.RoleUser, "data", myStruct)
 ```
 
-### Using Templates
-
-To create and use templates, use the `PromptTemplate` interface and related functions:
+### Multi-Part Messages
 
 ```go
-package main
-
-import (
-    "oss.nandlabs.io/golly/genai"
-    "fmt"
-)
-
-func main() {
-    templateContent := "Hello, {{.Name}}!"
-    templateID := "greeting"
-
-    tmpl, err := genai.NewGoTemplate(templateID, templateContent)
-    if err != nil {
-        fmt.Println("Error creating template:", err)
-        return
-    }
-
-    data := map[string]any{
-        "Name": "World",
-    }
-
-    result, err := tmpl.FormatAsText(data)
-    if err != nil {
-        fmt.Println("Error formatting template:", err)
-        return
-    }
-
-    fmt.Println(result)
-}
+msg := genai.NewMsgFromPrompt(genai.RoleUser, "analysis", "Analyze this:")
+genai.AddBinPart(msg, "image", imageBytes, "image/png")
+genai.AddTextPart(msg, "followup", "What do you see?")
 ```
 
-### Managing Options
-
-To manage options for the provider, use the `Options` and `OptionsBuilder` structs:
+### Prompt Templates
 
 ```go
-package main
+store := genai.NewInMemoryPromptStore()
+pt, _ := genai.NewPromptTemplate("greet", "greeting", "Hello {{.name}}!")
+store.Add(pt)
 
-import (
-    "oss.nandlabs.io/golly/genai"
-    "fmt"
-)
-
-func main() {
-    options := genai.NewOptionsBuilder().
-        SetMaxTokens(100).
-        SetTemperature(0.7).
-        Build()
-
-    fmt.Println("Max Tokens:", options.GetMaxTokens(0))
-    fmt.Println("Temperature:", options.GetTemperature(0))
-}
+msg, _ := genai.NewMsgFromPromptId(genai.RoleAssistant, store, "greet",
+    map[string]any{"name": "Alice"})
 ```
 
-### Memory Management
-
-To manage memory, use the `Memory` interface and related functions:
+### Provider Interface
 
 ```go
-package main
-
-import (
-    "oss.nandlabs.io/golly/genai"
-    "fmt"
-)
-
-func main() {
-    memory := genai.NewRamMemory()
-    sessionID := "session1"
-    exchange := genai.Exchange{
-        // ...existing code...
-    }
-
-    err := memory.Add(sessionID, exchange)
-    if err != nil {
-        fmt.Println("Error adding to memory:", err)
-        return
-    }
-
-    exchanges, err := memory.Fetch(sessionID, "")
-    if err != nil {
-        fmt.Println("Error fetching from memory:", err)
-        return
-    }
-
-    fmt.Println("Exchanges:", exchanges)
+type Provider interface {
+    Name() string
+    Description() string
+    Version() string
+    Models() []string
+    Generate(ctx context.Context, model string, message *Message, options *Options) (*GenResponse, error)
+    GenerateStream(ctx context.Context, model string, message *Message, options *Options) (<-chan *GenResponse, <-chan error)
+    Close() error
 }
 ```
-
-### Messages
-
-To work with messages, use the `Message` struct:
-
-```go
-package main
-
-import (
-    "oss.nandlabs.io/golly/genai"
-    "bytes"
-    "fmt"
-)
-
-func main() {
-    message := &genai.Message{
-        rwer:     bytes.NewBufferString("Hello, World!"),
-        mimeType: "text/plain",
-    }
-
-    fmt.Println("Message MIME type:", message.Mime())
-    fmt.Println("Message content:", message.String())
-}
-```
-
-## Components
-
-### Provider
-
-The `Provider` interface represents a generative AI model. It includes methods for generating responses and handling input and output MIME types.
-
-### Template
-
-The `PromptTemplate` interface represents a template for formatting prompts. The `goTemplate` struct provides an implementation using Go templates.
 
 ### Options
 
-The `Options` struct represents the options for the provider. The `OptionsBuilder` struct provides a builder for creating options.
+```go
+opts := genai.NewOptionsBuilder().
+    SetMaxTokens(1024).
+    SetTemperature(0.7).
+    SetTopP(0.9).
+    Build()
 
-### Memory
+// Or set individually
+opts2 := genai.NewOptionsBuilder().Build()
+opts2.Set(genai.OptionMaxTokens, 2048)
+opts2.Set(genai.OptionSystemInstructions, "You are a coding assistant.")
+```
 
-The `Memory` interface represents a memory for storing exchanges. The `RamMemory` struct provides an in-memory implementation.
+## Providers
 
-### Message
+Three provider implementations are available in the `genai/impl` sub-package:
 
-The `Message` struct represents a message with MIME type and content.
+| Provider               | Auth Mechanism                               | Documentation                    |
+| ---------------------- | -------------------------------------------- | -------------------------------- |
+| **OpenAI**             | Bearer token (`Authorization: Bearer <key>`) | [impl/openai.md](impl/openai.md) |
+| **Claude (Anthropic)** | API key header (`x-api-key: <key>`)          | [impl/claude.md](impl/claude.md) |
+| **Ollama**             | None (local) or configurable for proxied     | [impl/ollama.md](impl/ollama.md) |
+
+**Quick start for each:**
+
+```go
+import "oss.nandlabs.io/golly/genai/impl"
+
+// OpenAI
+openai := impl.NewOpenAIProvider("sk-...", nil)
+
+// Claude
+claude := impl.NewClaudeProvider("sk-ant-...", nil)
+
+// Ollama (local, no auth)
+ollama := impl.NewOllamaProvider(nil)
+```
+
+All three implement `genai.Provider`, so you can swap providers without changing your application logic:
+
+```go
+func summarize(provider genai.Provider, text string) (string, error) {
+    msg := genai.NewTextMessage(genai.RoleUser, "Summarize: "+text)
+    opts := genai.NewOptionsBuilder().SetMaxTokens(256).Build()
+    resp, err := provider.Generate(context.Background(), "model-id", msg, opts)
+    if err != nil {
+        return "", err
+    }
+    if len(resp.Candidates) > 0 && len(resp.Candidates[0].Message.Parts) > 0 {
+        if p := resp.Candidates[0].Message.Parts[0].Text; p != nil {
+            return p.Text, nil
+        }
+    }
+    return "", fmt.Errorf("no response")
+}
+```
+
+## Authentication
+
+All providers use the `clients.AuthProvider` interface for authentication, which supports multiple mechanisms:
+
+| Auth Type      | Constructor                          | Usage                                          |
+| -------------- | ------------------------------------ | ---------------------------------------------- |
+| Bearer Token   | `clients.NewBearerAuth(token)`       | OpenAI, custom providers                       |
+| API Key Header | `clients.NewAPIKeyAuth(header, key)` | Claude (`x-api-key`), Azure OpenAI (`api-key`) |
+| Basic Auth     | `clients.NewBasicAuth(user, pass)`   | Authenticated proxies                          |
+| OAuth2         | `rest.NewOAuth2Provider(...)`        | Enterprise SSO/OAuth2 flows                    |
+| Custom         | Implement `clients.AuthProvider`     | Vault, AWS Secrets Manager, etc.               |
+
+**Custom auth provider example (e.g., fetching keys from a secrets store):**
+
+```go
+type VaultAuth struct {
+    vaultClient *vault.Client
+    path        string
+}
+
+func (v *VaultAuth) Type() clients.AuthType { return clients.AuthTypeAPIKey }
+func (v *VaultAuth) User() (string, error)  { return "", nil }
+func (v *VaultAuth) Pass() (string, error)  { return "", nil }
+func (v *VaultAuth) Token() (string, error) {
+    secret, err := v.vaultClient.Logical().Read(v.path)
+    if err != nil {
+        return "", err
+    }
+    return secret.Data["api_key"].(string), nil
+}
+
+// Use with any provider
+provider := impl.NewClaudeProviderWithConfig(&impl.ClaudeProviderConfig{
+    Auth: &VaultAuth{vaultClient: vc, path: "secret/claude"},
+}, nil)
+```

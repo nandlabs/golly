@@ -1,10 +1,12 @@
 package lifecycle
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"oss.nandlabs.io/golly/collections"
 	"oss.nandlabs.io/golly/errutils"
@@ -68,20 +70,25 @@ func (sc *SimpleComponent) OnChange(f func(prevState, newState ComponentState)) 
 // Start will starting the LifeCycle.
 func (sc *SimpleComponent) Start() (err error) {
 	if sc.StartFunc != nil {
+		sc.mutex.Lock()
 		sc.handleStateChange(sc.CompState, Starting)
 		sc.CompState = Starting
+		sc.mutex.Unlock()
+
 		err = sc.StartFunc()
+
+		sc.mutex.Lock()
 		if err != nil {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Running
-
 		}
 		sc.handleStateChange(Starting, sc.CompState)
+		sc.mutex.Unlock()
+
 		if sc.AfterStart != nil {
 			sc.AfterStart(err)
 		}
-
 	}
 	return
 }
@@ -89,26 +96,33 @@ func (sc *SimpleComponent) Start() (err error) {
 // Stop will stop the LifeCycle.
 func (sc *SimpleComponent) Stop() (err error) {
 	if sc.StopFunc != nil {
+		sc.mutex.Lock()
 		sc.handleStateChange(sc.CompState, Stopping)
 		sc.CompState = Stopping
+		sc.mutex.Unlock()
+
 		err = sc.StopFunc()
+
+		sc.mutex.Lock()
 		if err != nil {
 			sc.CompState = Error
 		} else {
 			sc.CompState = Stopped
 		}
 		sc.handleStateChange(Stopping, sc.CompState)
+		sc.mutex.Unlock()
+
 		if sc.AfterStop != nil {
 			sc.AfterStop(err)
-
 		}
-
 	}
 	return
 }
 
 // State will return the current state of the LifeCycle.
 func (sc *SimpleComponent) State() ComponentState {
+	sc.mutex.RLock()
+	defer sc.mutex.RUnlock()
 	return sc.CompState
 }
 
@@ -247,6 +261,21 @@ func (scm *SimpleComponentManager) Start(id string) (err error) {
 	return
 }
 
+// StartWithTimeout will start the component with the given id, subject to a timeout.
+// Returns ErrTimeout if the operation exceeds the specified duration.
+func (scm *SimpleComponentManager) StartWithTimeout(id string, timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- scm.Start(id)
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(timeout):
+		return fmt.Errorf("%w: start %q exceeded %v", ErrTimeout, id, timeout)
+	}
+}
+
 // StartAll will start all the Components. Returns the number of components started
 func (scm *SimpleComponentManager) StartAll() error {
 	var err *errutils.MultiError = errutils.NewMultiErr(nil)
@@ -260,6 +289,21 @@ func (scm *SimpleComponentManager) StartAll() error {
 		return err
 	} else {
 		return nil
+	}
+}
+
+// StartAllWithTimeout will start all the Components with a timeout.
+// Returns ErrTimeout if the overall operation exceeds the specified duration.
+func (scm *SimpleComponentManager) StartAllWithTimeout(timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- scm.StartAll()
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(timeout):
+		return fmt.Errorf("%w: StartAll exceeded %v", ErrTimeout, timeout)
 	}
 }
 
@@ -329,6 +373,21 @@ func (scm *SimpleComponentManager) Stop(id string) (err error) {
 	return
 }
 
+// StopWithTimeout will stop the component with the given id, subject to a timeout.
+// Returns ErrTimeout if the operation exceeds the specified duration.
+func (scm *SimpleComponentManager) StopWithTimeout(id string, timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- scm.Stop(id)
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(timeout):
+		return fmt.Errorf("%w: stop %q exceeded %v", ErrTimeout, id, timeout)
+	}
+}
+
 // StopAll will stop all the Components.
 func (scm *SimpleComponentManager) StopAll() error {
 	logger.InfoF("Stopping all components")
@@ -350,6 +409,21 @@ func (scm *SimpleComponentManager) StopAll() error {
 		return err
 	} else {
 		return nil
+	}
+}
+
+// StopAllWithTimeout will stop all the Components with a timeout.
+// Returns ErrTimeout if the overall operation exceeds the specified duration.
+func (scm *SimpleComponentManager) StopAllWithTimeout(timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- scm.StopAll()
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(timeout):
+		return fmt.Errorf("%w: StopAll exceeded %v", ErrTimeout, timeout)
 	}
 }
 

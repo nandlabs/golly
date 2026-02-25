@@ -4,116 +4,220 @@
 
 ## Overview
 
-The `golly/lifecycle` package provides a lifecycle management library for Go
-applications. It allows you to easily manage the lifecycle of your application
-components, such as starting and stopping them in a controlled manner.
+The `lifecycle` package provides a component lifecycle management framework for Go applications. It lets you register, start, stop, and monitor application components in a controlled manner -- including dependency ordering, state tracking, timeout enforcement, and graceful shutdown on OS signals.
 
 ## Installation
-
-To install the package, use the `go get` command:
 
 ```sh
 go get oss.nandlabs.io/golly/lifecycle
 ```
 
-## Usage
+## Key Concepts
 
-The `golly/lifecycle` package provides a simple and flexible way to manage the lifecycle of your application components. It allows you to start and stop components in a controlled manner, ensuring that they are properly initialized and cleaned up.
+| Concept | Description |
+|---|---|
+| **Component** | An entity with `Start()` / `Stop()` methods and observable state |
+| **ComponentManager** | Orchestrates multiple components: registration, ordering, lifecycle operations |
+| **SimpleComponent** | Ready-made `Component` implementation backed by function callbacks |
+| **Dependencies** | Declare ordering constraints so dependents start after, and stop before, their dependencies |
+| **Timeout Methods** | Run any lifecycle operation with a deadline -- returns `ErrTimeout` on expiry |
 
-### Simple Component
+## Component States
 
-The `simple_component.go` file contains a simple implementation of a component that can be used with the `golly/lifecycle` package. This component demonstrates the basic structure and behavior of a component.
+```
+Unknown -> Starting -> Running -> Stopping -> Stopped
+                  \      Error      /
+```
 
-To use the `SimpleComponent`, follow these steps:
+| State | Value | Meaning |
+|---|---|---|
+| `Unknown` | 0 | Initial / unset |
+| `Error` | 1 | Start or stop returned an error |
+| `Stopped` | 2 | Successfully stopped |
+| `Stopping` | 3 | Stop in progress |
+| `Running` | 4 | Successfully started |
+| `Starting` | 5 | Start in progress |
 
-1. Import the `golly/lifecycle` package and the `simple_component.go` file.
+## Quick Start
 
 ```go
+package main
+
 import (
+    "fmt"
     "oss.nandlabs.io/golly/lifecycle"
-    "oss.nandlabs.io/golly/lifecycle/examples/simple_component"
 )
+
+func main() {
+    // 1. Create a manager
+    manager := lifecycle.NewSimpleComponentManager()
+
+    // 2. Register components
+    manager.Register(&lifecycle.SimpleComponent{
+        CompId: "db",
+        StartFunc: func() error {
+            fmt.Println("DB connected")
+            return nil
+        },
+        StopFunc: func() error {
+            fmt.Println("DB disconnected")
+            return nil
+        },
+    })
+
+    manager.Register(&lifecycle.SimpleComponent{
+        CompId: "server",
+        StartFunc: func() error {
+            fmt.Println("Server listening")
+            return nil
+        },
+        StopFunc: func() error {
+            fmt.Println("Server shut down")
+            return nil
+        },
+    })
+
+    // 3. Declare dependencies (server depends on db)
+    manager.AddDependency("server", "db")
+
+    // 4. Start all and wait for SIGINT/SIGTERM
+    manager.StartAndWait()
+}
 ```
 
-2. Create an instance of the `SimpleComponent` struct.
+## API Reference
+
+### Component Interface
 
 ```go
-simpleComponent := &simple_component.SimpleComponent{}
+type Component interface {
+    Id() string
+    Start() error
+    Stop() error
+    State() ComponentState
+    OnChange(f func(prevState, newState ComponentState))
+}
 ```
 
-3. Add the `SimpleComponent` to the `Lifecycle` struct.
+### SimpleComponent
+
+A concrete `Component` backed by callback functions:
 
 ```go
-lifecycle.AddComponent(simpleComponent)
+comp := &lifecycle.SimpleComponent{
+    CompId:    "my-service",
+    StartFunc: func() error { /* start logic */ return nil },
+    StopFunc:  func() error { /* stop logic */ return nil },
+}
 ```
 
-4. Start and stop the components using the `Start` and `Stop` methods of the `Lifecycle` struct.
+### ComponentManager Interface
+
+| Method | Description |
+|---|---|
+| `Register(component)` | Register a component |
+| `Unregister(id)` | Unregister and stop a component |
+| `AddDependency(id, dependsOn)` | Declare that `id` depends on `dependsOn` |
+| `Start(id)` | Start a single component (starts dependencies first) |
+| `StartWithTimeout(id, timeout)` | Start with a deadline; returns `ErrTimeout` on expiry |
+| `StartAll()` | Start all registered components in dependency order |
+| `StartAllWithTimeout(timeout)` | Start all with a deadline |
+| `StartAndWait()` | Start all and block until `StopAll` or OS signal |
+| `Stop(id)` | Stop a single component (stops dependents first) |
+| `StopWithTimeout(id, timeout)` | Stop with a deadline; returns `ErrTimeout` on expiry |
+| `StopAll()` | Stop all components in reverse order |
+| `StopAllWithTimeout(timeout)` | Stop all with a deadline |
+| `Wait()` | Block until all components are stopped |
+| `GetState(id)` | Return a component's current state |
+| `List()` | Return all registered components |
+| `OnChange(id, f)` | Register a state-change callback |
+
+### Timeout Methods
+
+The timeout variants wrap the corresponding operation in a goroutine and apply `time.After`. If the operation does not complete within the specified duration, `ErrTimeout` is returned.
 
 ```go
-err := lifecycle.Start()
-if err != nil {
-    // handle start error
+import "time"
+
+// Start with a 5-second deadline
+err := manager.StartWithTimeout("db", 5*time.Second)
+if errors.Is(err, lifecycle.ErrTimeout) {
+    log.Fatal("db took too long to start")
 }
 
-// ...
-
-err = lifecycle.Stop()
-if err != nil {
-    // handle stop error
-}
+// Stop all with a 10-second deadline
+err = manager.StopAllWithTimeout(10 * time.Second)
 ```
 
-By following these steps, you can use the `SimpleComponent` in your application and manage its lifecycle along with other components in the `golly/lifecycle` package.
+### Sentinel Errors
 
-## Cusom Components
+| Error | Meaning |
+|---|---|
+| `ErrCompNotFound` | Component ID not registered |
+| `ErrCompAlreadyStarted` | Component is already running |
+| `ErrCompAlreadyStopped` | Component is already stopped |
+| `ErrInvalidComponentState` | Invalid state transition |
+| `ErrCyclicDependency` | Dependency graph has a cycle |
+| `ErrTimeout` | Operation exceeded its timeout |
 
-The `component.go` file contains the interfaces that define the behavior of components in the `golly/lifecycle` package. These interfaces allow you to create custom components and integrate them into the lifecycle management system.
+## Dependencies
 
-To use the `component.go` interfaces, follow these steps:
+Components can declare dependencies so that:
 
-1. Implement the `Component` interface in your custom component struct. This interface defines the `Start` and `Stop` methods that will be called when the component is started or stopped.
+- On **Start**, dependencies are started first (with a `sync.WaitGroup`).
+- On **Stop**, dependents are stopped before the component itself.
 
 ```go
-type MyComponent struct {
-    // component fields
+manager.AddDependency("server", "db")    // server depends on db
+manager.AddDependency("server", "cache") // server also depends on cache
+
+manager.StartAll() // starts db, cache first, then server
+manager.StopAll()  // stops server first, then db and cache
+```
+
+Cyclic dependencies are detected and return `ErrCyclicDependency`.
+
+## Graceful Shutdown
+
+`NewSimpleComponentManager()` automatically listens for `SIGINT` and `SIGTERM`. On receipt, it calls `StopAll()` to shut down components in reverse order. Use `StartAndWait()` to block the main goroutine until shutdown completes.
+
+## Custom Components
+
+Implement the `Component` interface directly for full control:
+
+```go
+type MyServer struct {
+    state lifecycle.ComponentState
+    mu    sync.RWMutex
 }
 
-func (c *MyComponent) Start() error {
-    // implementation of start logic
+func (s *MyServer) Id() string { return "my-server" }
+
+func (s *MyServer) Start() error {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    // ... start server ...
+    s.state = lifecycle.Running
     return nil
 }
 
-func (c *MyComponent) Stop() error {
-    // implementation of stop logic
+func (s *MyServer) Stop() error {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    // ... stop server ...
+    s.state = lifecycle.Stopped
     return nil
 }
-```
 
-2. Create an instance of your custom component and add it to the `Lifecycle` struct. The `Lifecycle` struct manages the lifecycle of all registered components.
-
-```go
-lifecycle := &lifecycle.Lifecycle{}
-
-myComponent := &MyComponent{}
-lifecycle.AddComponent(myComponent)
-```
-
-3. Start and stop the components using the `Start` and `Stop` methods of the `Lifecycle` struct.
-
-```go
-err := lifecycle.Start()
-if err != nil {
-    // handle start error
+func (s *MyServer) State() lifecycle.ComponentState {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    return s.state
 }
 
-// ...
-
-err = lifecycle.Stop()
-if err != nil {
-    // handle stop error
+func (s *MyServer) OnChange(f func(prev, next lifecycle.ComponentState)) {
+    // optional: store and call on state transitions
 }
 ```
-
-By following these steps, you can integrate your custom components into the `golly/lifecycle` package and manage their lifecycle in a controlled manner.
 
 For more information, refer to the [GoDoc](https://pkg.go.dev/oss.nandlabs.io/golly/lifecycle) documentation.

@@ -1,6 +1,9 @@
 package lifecycle
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type ComponentState int
 
@@ -28,6 +31,9 @@ var ErrCompAlreadyStopped = errors.New("component already stopped")
 var ErrInvalidComponentState = errors.New("invalid component state")
 
 var ErrCyclicDependency = errors.New("cyclic dependency")
+
+// ErrTimeout is returned when a lifecycle operation exceeds its timeout.
+var ErrTimeout = errors.New("lifecycle operation timed out")
 
 // Component is the interface that wraps the basic Start and Stop methods.
 type Component interface {
@@ -58,15 +64,27 @@ type ComponentManager interface {
 	Register(component Component) Component
 	// StartAll will start all the Components. Returns the number of components started
 	StartAll() error
+	// StartAllWithTimeout will start all the Components with a timeout.
+	// Returns ErrTimeout if the operation exceeds the specified duration.
+	StartAllWithTimeout(timeout time.Duration) error
 	//StartAndWait will start all the Components and wait for them to finish.
 	StartAndWait()
 	// Start will start the LifeCycle for the component with the given id.
 	// It returns an error if the component was not found or if the component failed to start.
 	Start(id string) error
+	// StartWithTimeout will start the component with the given id, subject to a timeout.
+	// Returns ErrTimeout if the operation exceeds the specified duration.
+	StartWithTimeout(id string, timeout time.Duration) error
 	// StopAll will stop all the Components.
 	StopAll() error
+	// StopAllWithTimeout will stop all the Components with a timeout.
+	// Returns ErrTimeout if the operation exceeds the specified duration.
+	StopAllWithTimeout(timeout time.Duration) error
 	// Stop will stop the LifeCycle for the component with the given id. It returns if the component was stopped.
 	Stop(id string) error
+	// StopWithTimeout will stop the component with the given id, subject to a timeout.
+	// Returns ErrTimeout if the operation exceeds the specified duration.
+	StopWithTimeout(id string, timeout time.Duration) error
 	// Unregister will unregister a Component.
 	Unregister(id string)
 	// Wait will wait for all the Components to finish.

@@ -5,6 +5,7 @@ import "oss.nandlabs.io/golly/textutils"
 const (
 	AuthTypeBasic  AuthType = "Basic"
 	AuthTypeBearer AuthType = "Token"
+	AuthTypeAPIKey AuthType = "APIKey"
 )
 
 // Authenticatable represents an interface that requires the implementation
@@ -18,19 +19,19 @@ type AuthType string
 
 // AuthProvider defines an interface for authentication mechanisms.
 // It provides methods to retrieve the type of authentication, user credentials,
-// token, and to refresh the authentication token.
+// and token. All credential-fetching methods return errors to support
+// implementations backed by external stores (e.g., Vault, AWS Secrets Manager).
 //
 // Methods:
 //   - Type() AuthType: Returns the type of authentication.
-//   - User() string: Returns the username.
-//   - Pass() string: Returns the password.
-//   - Token() string: Returns the authentication token.
-//   - Refresh() error: Refreshes the authentication token and returns an error if the operation fails.
+//   - User() (string, error): Returns the username or an error if retrieval fails.
+//   - Pass() (string, error): Returns the password or an error if retrieval fails.
+//   - Token() (string, error): Returns the authentication token or an error if token acquisition fails.
 type AuthProvider interface {
 	Type() AuthType
-	User() string
-	Pass() string
-	Token() string
+	User() (string, error)
+	Pass() (string, error)
+	Token() (string, error)
 }
 
 // BasicAuth represents basic authentication credentials with a username and password.
@@ -52,25 +53,28 @@ func (b *BasicAuth) Type() AuthType {
 // Returns:
 //
 //	string: The username.
-func (b *BasicAuth) User() string {
-	return b.user
+//	error: Always nil for in-memory credentials.
+func (b *BasicAuth) User() (string, error) {
+	return b.user, nil
 }
 
 // Pass returns the password associated with the BasicAuth instance.
 // Returns:
 //
 //	string: The password.
-func (b *BasicAuth) Pass() string {
-	return b.pass
+//	error: Always nil for in-memory credentials.
+func (b *BasicAuth) Pass() (string, error) {
+	return b.pass, nil
 }
 
 // Token returns an empty string as the token.
-// This method is part of the BasicAuth struct.
+// BasicAuth does not use tokens.
 // Returns:
 //
 //	string: An empty string.
-func (b *BasicAuth) Token() string {
-	return textutils.EmptyStr
+//	error: Always nil.
+func (b *BasicAuth) Token() (string, error) {
+	return textutils.EmptyStr, nil
 }
 
 // Refresh refreshes the authentication credentials.
@@ -114,29 +118,32 @@ func (b *TokenBearerAuth) Type() AuthType {
 }
 
 // User returns an empty string as the username.
-// This method is part of the BearerAuth struct.
+// TokenBearerAuth does not use username credentials.
 // Returns:
 //
 //	string: An empty string.
-func (b *TokenBearerAuth) User() string {
-	return textutils.EmptyStr
+//	error: Always nil.
+func (b *TokenBearerAuth) User() (string, error) {
+	return textutils.EmptyStr, nil
 }
 
 // Pass returns an empty string as the password.
-// This method is part of the BearerAuth struct.
+// TokenBearerAuth does not use password credentials.
 // Returns:
 //
 //	string: An empty string.
-func (b *TokenBearerAuth) Pass() string {
-	return textutils.EmptyStr
+//	error: Always nil.
+func (b *TokenBearerAuth) Pass() (string, error) {
+	return textutils.EmptyStr, nil
 }
 
 // Token returns the token associated with the BearerAuth instance.
 // Returns:
 //
 //	string: The token.
-func (b *TokenBearerAuth) Token() string {
-	return b.token
+//	error: Always nil for static bearer tokens.
+func (b *TokenBearerAuth) Token() (string, error) {
+	return b.token, nil
 }
 
 // Refresh refreshes the authentication token.
@@ -160,5 +167,54 @@ func (b *TokenBearerAuth) Refresh() error {
 func NewBearerAuth(token string) AuthProvider {
 	return &TokenBearerAuth{
 		token: token,
+	}
+}
+
+// APIKeyAuth represents API key authentication where the key
+// is sent as a custom header (e.g., X-API-Key, api-key).
+// This is commonly used by OpenAI-compatible providers like Azure OpenAI.
+type APIKeyAuth struct {
+	headerName string
+	apiKey     string
+}
+
+// Type returns the authentication type for APIKeyAuth, which is AuthTypeAPIKey.
+func (a *APIKeyAuth) Type() AuthType {
+	return AuthTypeAPIKey
+}
+
+// User returns an empty string. APIKeyAuth does not use username credentials.
+func (a *APIKeyAuth) User() (string, error) {
+	return textutils.EmptyStr, nil
+}
+
+// Pass returns an empty string. APIKeyAuth does not use password credentials.
+func (a *APIKeyAuth) Pass() (string, error) {
+	return textutils.EmptyStr, nil
+}
+
+// Token returns the API key value.
+func (a *APIKeyAuth) Token() (string, error) {
+	return a.apiKey, nil
+}
+
+// HeaderName returns the HTTP header name used to send the API key.
+func (a *APIKeyAuth) HeaderName() string {
+	return a.headerName
+}
+
+// NewAPIKeyAuth creates a new APIKeyAuth instance.
+// Parameters:
+//
+//	headerName (string): The HTTP header name (e.g., "X-API-Key", "api-key").
+//	apiKey (string): The API key value.
+//
+// Returns:
+//
+//	AuthProvider: The APIKeyAuth instance.
+func NewAPIKeyAuth(headerName, apiKey string) AuthProvider {
+	return &APIKeyAuth{
+		headerName: headerName,
+		apiKey:     apiKey,
 	}
 }

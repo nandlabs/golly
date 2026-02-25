@@ -71,6 +71,16 @@ func init() {
 func Configure(l *LogConfig) {
 	mutex.Lock()
 	defer mutex.Unlock()
+	// Close existing writers before replacing them.
+	for _, w := range writers {
+		_ = w.Close()
+	}
+	writers = nil
+	// Close old async channel so the goroutine exits.
+	if logMsgChannel != nil {
+		close(logMsgChannel)
+		logMsgChannel = nil
+	}
 	logConfig = l
 	if l.DatePattern == "" {
 		l.DatePattern = time.RFC3339
@@ -180,7 +190,7 @@ func Get() Logger {
 	if _, ok := loggers[pkgName]; !ok {
 		Level := logConfig.DefaultLvl
 
-		if logConfig.PkgConfigs != nil && len(logConfig.PkgConfigs) > 0 {
+		if len(logConfig.PkgConfigs) > 0 {
 			for _, pkgConfig := range logConfig.PkgConfigs {
 				if pkgConfig.PackageName == pkgName {
 					Level = pkgConfig.Level
@@ -202,20 +212,25 @@ func Get() Logger {
 }
 
 func writeLogMsg(writer io.Writer, logMsg *LogMessage) {
-	if logConfig.Format == "json" {
+	// Snapshot config under lock to avoid racing with Configure().
+	mutex.Lock()
+	format := logConfig.Format
+	datePattern := logConfig.DatePattern
+	mutex.Unlock()
+
+	switch format {
+	case "json":
 		//TODO update marshalling to direct field access to avoid reflection.
 		//This will be based on codec branch.
 		data, _ := json.Marshal(logMsg)
 		_, _ = writer.Write(data)
 
-	} else if logConfig.Format == "text" {
+	case "text":
 		buf := bufio.NewWriter(writer)
 
 		if logMsg.FnName != textutils.EmptyStr {
 
-			//writeLog(writer, logMsg.Time.Format(logConfig.DatePattern), Levels[logMsg.Level], logMsg.FnName+":"+strconv.Itoa(logMsg.Line), logMsg.Content.String())
-
-			_, _ = buf.Write(formatTimeToBytes(logMsg.Time, logConfig.DatePattern))
+			_, _ = buf.Write(formatTimeToBytes(logMsg.Time, datePattern))
 			_, _ = buf.Write(whiteSpaceBytes)
 			_, _ = buf.Write(LevelsBytes[logMsg.Level])
 			_, _ = buf.Write(whiteSpaceBytes)
@@ -227,9 +242,8 @@ func writeLogMsg(writer io.Writer, logMsg *LogMessage) {
 			_, _ = buf.Write(newLineBytes)
 
 		} else {
-			//writeLog(writer, logMsg.Time.Format(logConfig.DatePattern), Levels[logMsg.Level],  logMsg.Content.String())
 
-			_, _ = buf.Write(formatTimeToBytes(logMsg.Time, logConfig.DatePattern))
+			_, _ = buf.Write(formatTimeToBytes(logMsg.Time, datePattern))
 			_, _ = buf.Write(whiteSpaceBytes)
 			_, _ = buf.Write(LevelsBytes[logMsg.Level])
 			_, _ = buf.Write(whiteSpaceBytes)
@@ -259,7 +273,12 @@ func handleLog(l *BaseLogger, logMsg *LogMessage) {
 		}
 	}
 
-	if logConfig.Async {
+	// Snapshot async flag under lock to avoid racing with Configure().
+	mutex.Lock()
+	async := logConfig.Async
+	mutex.Unlock()
+
+	if async {
 		logMsgChannel <- logMsg
 	} else {
 		doLog(logMsg)
