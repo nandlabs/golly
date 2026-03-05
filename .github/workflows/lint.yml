@@ -8,57 +8,8 @@ on:
     branches:
       - "main"
 
-permissions:
-  contents: read
-
 jobs:
-  golangci-lint:
-    name: "golangci-lint"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-        with:
-          go-version: "1.25"
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-
-      - name: Run golangci-lint
-        run: golangci-lint run --timeout=5m
-
-  vet:
-    name: "go vet"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-        with:
-          go-version: "1.25"
-
-      - name: Run go vet
-        run: go vet ./...
-
-  staticcheck:
-    name: "staticcheck"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-        with:
-          go-version: "1.25"
-
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@v0.6.1
-
-      - name: Run staticcheck
-        run: staticcheck ./...
+  lint:
+    uses: nandlabs/oss-workflows/.github/workflows/go-lint.yml@main
+    with:
+      go-version: "1.25"
