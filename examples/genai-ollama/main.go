@@ -116,7 +116,7 @@ func streaming(provider genai.Provider, model string) {
 		for _, c := range resp.Candidates {
 			for _, p := range c.Message.Parts {
 				if p.Text != nil {
-					fmt.Print(p.Text.Text)
+					fmt.Print(p.Text.Content)
 				}
 			}
 		}
@@ -167,7 +167,7 @@ func printResponse(resp *genai.GenResponse) {
 		fmt.Printf("Candidate %d (finish: %s):\n", candidate.Index, candidate.FinishReason)
 		for _, part := range candidate.Message.Parts {
 			if part.Text != nil {
-				fmt.Println(part.Text.Text)
+				fmt.Println(part.Text.Content)
 			}
 			if part.FuncCall != nil {
 				fmt.Printf("[Tool call] %s(%v)\n", part.FuncCall.FunctionName, part.FuncCall.Arguments)
