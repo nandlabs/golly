@@ -483,10 +483,10 @@ func (o *OpenAIProvider) convertMessages(message *genai.Message, options *genai.
 	for _, part := range message.Parts {
 		switch {
 		case part.Text != nil:
-			textParts = append(textParts, part.Text.Text)
+			textParts = append(textParts, part.Text.Content)
 			contentParts = append(contentParts, openAIContentPart{
 				Type: "text",
-				Text: part.Text.Text,
+				Text: part.Text.Content,
 			})
 
 		case part.File != nil && ioutils.IsImageMime(part.MimeType):
@@ -659,7 +659,7 @@ func (o *OpenAIProvider) openAIMsgToGenMessage(msg *openAIMessage) *genai.Messag
 				Name:     "text",
 				MimeType: ioutils.MimeTextPlain,
 				Text: &genai.TextPart{
-					Text: c,
+					Content: c,
 				},
 			})
 		}

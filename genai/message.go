@@ -21,6 +21,8 @@ func (r Role) String() string {
 		return "user"
 	case RoleAssistant:
 		return "assistant"
+	case RoleFunction:
+		return "function"
 	default:
 		return "unknown"
 	}
@@ -33,6 +35,7 @@ const (
 	RoleSystem Role = iota
 	RoleUser
 	RoleAssistant
+	RoleFunction
 )
 
 // Message represents a single message in a conversation, with a role and content parts.
@@ -55,7 +58,7 @@ type Part struct {
 
 // TextPart contains plain text content for a message part.
 type TextPart struct {
-	Text string `json:"text" yaml:"text" toml:"text"` // The text content
+	Content string `json:"content" yaml:"content" toml:"content"` // The text content
 
 }
 
@@ -92,7 +95,7 @@ func NewTextMessage(role Role, text string) *Message {
 				Name:     "text",
 				MimeType: ioutils.MimeTextPlain,
 				Text: &TextPart{
-					Text: text,
+					Content: text,
 				},
 			},
 		},
@@ -113,7 +116,7 @@ func NewJsonMessage(role Role, name string, v interface{}) (*Message, error) {
 				Name:     name,
 				MimeType: ioutils.MimeApplicationJSON,
 				Text: &TextPart{
-					Text: jsonStr,
+					Content: jsonStr,
 				},
 			},
 		},
@@ -131,7 +134,7 @@ func AddJsonPart(msg *Message, name string, v interface{}) error {
 		Name:     name,
 		MimeType: ioutils.MimeApplicationJSON,
 		Text: &TextPart{
-			Text: jsonStr,
+			Content: jsonStr,
 		},
 	})
 	return nil
@@ -151,7 +154,7 @@ func NewYamlMessage(role Role, name string, v interface{}) (*Message, error) {
 				Name:     name,
 				MimeType: ioutils.MimeTextYAML,
 				Text: &TextPart{
-					Text: yamlStr,
+					Content: yamlStr,
 				},
 			},
 		},
@@ -169,7 +172,7 @@ func AddYamlPart(msg *Message, name string, v interface{}) error {
 		Name:     name,
 		MimeType: ioutils.MimeTextYAML,
 		Text: &TextPart{
-			Text: yamlStr,
+			Content: yamlStr,
 		},
 	})
 	return nil
@@ -181,7 +184,7 @@ func AddTextPart(msg *Message, name, text string) {
 		Name:     name,
 		MimeType: ioutils.MimeTextPlain,
 		Text: &TextPart{
-			Text: text,
+			Content: text,
 		},
 	})
 }
@@ -264,7 +267,7 @@ func NewMsgFromPrompt(role Role, name, prompt string) *Message {
 				Name:     name,
 				MimeType: ioutils.MimeTextPlain,
 				Text: &TextPart{
-					Text: prompt,
+					Content: prompt,
 				},
 			},
 		},
@@ -283,7 +286,7 @@ func NewMsgFromPromptTemplate(role Role, pt *PromptTemplate, variables map[strin
 				Name:     pt.Name,
 				MimeType: ioutils.MimeTextPlain,
 				Text: &TextPart{
-					Text: prompt,
+					Content: prompt,
 				},
 			},
 		},

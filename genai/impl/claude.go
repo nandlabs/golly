@@ -526,7 +526,7 @@ func (c *ClaudeProvider) convertMessages(message *genai.Message) []claudeMessage
 		case part.Text != nil:
 			claudeMsg.Content = append(claudeMsg.Content, claudeContentBlock{
 				Type: "text",
-				Text: part.Text.Text,
+				Text: part.Text.Content,
 			})
 
 		case part.Bin != nil && ioutils.IsImageMime(part.MimeType):
@@ -678,7 +678,7 @@ func (c *ClaudeProvider) claudeContentToGenMessage(role string, content []claude
 					Name:     "text",
 					MimeType: ioutils.MimeTextPlain,
 					Text: &genai.TextPart{
-						Text: block.Text,
+						Content: block.Text,
 					},
 				})
 			}

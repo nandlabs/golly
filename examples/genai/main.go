@@ -15,7 +15,7 @@ func main() {
 	fmt.Printf("Message: role=%s, parts=%d\n", userMsg.Role, len(userMsg.Parts))
 	for _, part := range userMsg.Parts {
 		if part.Text != nil {
-			fmt.Printf("  Part: name=%s, text=%s\n", part.Name, part.Text.Text)
+			fmt.Printf("  Part: name=%s, text=%s\n", part.Name, part.Text.Content)
 		}
 	}
 
@@ -70,7 +70,7 @@ func main() {
 		fmt.Println("Prompt error:", err)
 	} else {
 		if welcomeMsg.Parts[0].Text != nil {
-			fmt.Printf("From prompt store: %s\n", welcomeMsg.Parts[0].Text.Text)
+			fmt.Printf("From prompt store: %s\n", welcomeMsg.Parts[0].Text.Content)
 		}
 	}
 
