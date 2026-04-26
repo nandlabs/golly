@@ -9,7 +9,7 @@ import (
 func TestNewLocalKeyManager(t *testing.T) {
 	km := NewLocalKeyManager("/tmp/keys")
 	if km == nil {
-		t.Error("Expected NewLocalKeyManager to return non-nil instance")
+		t.Fatal("Expected NewLocalKeyManager to return non-nil instance")
 	}
 	if km.keyStore != "/tmp/keys" {
 		t.Errorf("Expected keyStore to be /tmp/keys, got %q", km.keyStore)

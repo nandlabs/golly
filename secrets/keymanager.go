@@ -82,9 +82,8 @@ type KeyManager interface {
 type LocalKeyManager struct {
 	keys      map[string]*keyVersions                      // Map of keyID -> versions
 	policies  map[string]*KeyRotationPolicy                // Key rotation policies
-	mutex     sync.RWMutex                                 // Thread safety
-	keyStore  string                                       // Path to key storage directory
-	keyLoader func(id string, version int) ([]byte, error) // Custom key loader
+	mutex    sync.RWMutex // Thread safety
+	keyStore string       // Path to key storage directory
 }
 
 // keyVersions holds all versions of a key
