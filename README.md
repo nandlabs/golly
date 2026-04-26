@@ -21,6 +21,7 @@
   <a href="https://golly.nandlabs.io">Documentation</a> •
   <a href="#installation">Installation</a> •
   <a href="#core-packages">Packages</a> •
+  <a href="#-cloud-integrations">Cloud Integrations</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -80,7 +81,21 @@ go get oss.nandlabs.io/golly
 | [genai](genai/README.md)           | Provider-agnostic GenAI/LLM interface with prompt templates and multi-part messages |
 | [genai/impl](genai/impl/README.md) | OpenAI, Claude, and Ollama provider implementations                                 |
 
-### 🛠️ Infrastructure
+### � Security & Secrets
+
+| Package                          | Description                                                                                                     |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [secrets](secrets/README.md)     | Comprehensive credential management: encryption algorithms (AES-CTR/GCM, ChaCha20), key versioning & rotation, credential types (API Key, Password, Certificate, Token), multi-cloud stores (AWS, GCP, Vault), and pluggable storage backends |
+
+### ☁️ Cloud Integrations
+
+| Repository                                      | Description                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [golly-aws](https://github.com/nandlabs/golly-aws) | AWS service integrations: S3, SNS, SQS, Bedrock, and **Secrets Manager** for credentials |
+| [golly-gcp](https://github.com/nandlabs/golly-gcp) | GCP service integrations: Storage, Pub/Sub, GenAI, and **Secret Manager** for credentials |
+| [golly-vault](https://github.com/nandlabs/golly-vault) | HashiCorp Vault integration for centralized secret management with KV engines and advanced auth |
+
+### �🛠️ Infrastructure
 
 | Package                          | Description                                                                                         |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -92,7 +107,6 @@ go get oss.nandlabs.io/golly
 | [lifecycle](lifecycle/README.md) | Component lifecycle management with dependency ordering and state tracking                          |
 | [managers](managers/README.md)   | Generic item manager for registering, retrieving, and listing named items                           |
 | [pool](pool/README.md)           | Generic, thread-safe object pool with configurable capacity                                         |
-| [secrets](secrets/README.md)     | AES encryption and decryption for strings and byte slices                                           |
 
 ### 🧪 Testing
 
