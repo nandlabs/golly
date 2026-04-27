@@ -80,10 +80,10 @@ type KeyManager interface {
 
 // LocalKeyManager implements KeyManager for local file-based key storage
 type LocalKeyManager struct {
-	keys      map[string]*keyVersions                      // Map of keyID -> versions
-	policies  map[string]*KeyRotationPolicy                // Key rotation policies
-	mutex    sync.RWMutex // Thread safety
-	keyStore string       // Path to key storage directory
+	keys     map[string]*keyVersions       // Map of keyID -> versions
+	policies map[string]*KeyRotationPolicy // Key rotation policies
+	mutex    sync.RWMutex                  // Thread safety
+	keyStore string                        // Path to key storage directory
 }
 
 // keyVersions holds all versions of a key
