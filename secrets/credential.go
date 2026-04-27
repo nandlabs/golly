@@ -23,10 +23,12 @@ const (
 // property
 
 type Credential struct {
-	Value       []byte
-	LastUpdated time.Time
-	Version     string
-	MetaData    map[string]interface{}
+	Value                []byte
+	LastUpdated          time.Time
+	Version              string
+	EncryptionKeyID      string                 // ID of the key used to encrypt this credential
+	EncryptionKeyVersion int                    // Version of the encryption key used
+	MetaData             map[string]interface{} // Additional metadata
 }
 
 // Str function gets the Credential.Value field as string
