@@ -62,6 +62,7 @@ go get oss.nandlabs.io/golly
 | [clients](clients/README.md)     | HTTP client with auth providers, retry with backoff, and circuit breaker                                        |
 | [rest](rest/README.md)           | HTTP server with routing, middleware, TLS, and transport configuration                                          |
 | [turbo](turbo/README.md)         | Enterprise-grade HTTP router with path/query params, filters, CORS, and [auth](turbo/auth/README.md) middleware |
+| [ws](ws/README.md)               | WebSocket client and server (RFC 6455) with auth, retry, circuit breaker, and auto-reconnect                    |
 | [messaging](messaging/README.md) | General producer/consumer interfaces with local channel-based provider                                          |
 
 ### 🗃️ Data & Encoding
