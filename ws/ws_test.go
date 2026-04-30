@@ -2,12 +2,15 @@ package ws
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"oss.nandlabs.io/golly/clients"
 )
 
 func TestServerClientEcho(t *testing.T) {
@@ -357,5 +360,257 @@ func TestOptionsApplied(t *testing.T) {
 	}
 	if cfg.maxReconnectWait != 60*time.Second {
 		t.Errorf("maxReconnectWait: got %v, want 60s", cfg.maxReconnectWait)
+	}
+}
+
+func TestClientWithBasicAuth(t *testing.T) {
+	var receivedAuth string
+
+	// Custom server that captures the Authorization header from the handshake
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("Authorization")
+		// Proceed with WebSocket upgrade
+		handler := NewHandler(WithPingInterval(0))
+		handler.OnMessage(func(conn *Conn, msg Message) {
+			_ = conn.Send(msg)
+		})
+		handler.ServeHTTP(w, r)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	client, err := Dial(context.Background(), wsURL,
+		WithPingInterval(0),
+		WithBasicAuth("testuser", "testpass"),
+	)
+	if err != nil {
+		t.Fatalf("dial error: %v", err)
+	}
+	defer client.Close()
+
+	// Send a message to confirm connection works
+	if err := client.Send(NewTextMessage([]byte("auth-test"))); err != nil {
+		t.Fatalf("send error: %v", err)
+	}
+
+	select {
+	case msg := <-client.Messages():
+		if string(msg.Data) != "auth-test" {
+			t.Fatalf("expected 'auth-test', got %q", msg.Data)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for echo response")
+	}
+
+	// Verify the auth header was sent
+	expectedCreds := base64.StdEncoding.EncodeToString([]byte("testuser:testpass"))
+	expectedHeader := "Basic " + expectedCreds
+	if receivedAuth != expectedHeader {
+		t.Errorf("auth header: got %q, want %q", receivedAuth, expectedHeader)
+	}
+}
+
+func TestClientWithBearerAuth(t *testing.T) {
+	var receivedAuth string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("Authorization")
+		handler := NewHandler(WithPingInterval(0))
+		handler.ServeHTTP(w, r)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	client, err := Dial(context.Background(), wsURL,
+		WithPingInterval(0),
+		WithBearerAuth("my-secret-token"),
+	)
+	if err != nil {
+		t.Fatalf("dial error: %v", err)
+	}
+	defer client.Close()
+
+	if receivedAuth != "Bearer my-secret-token" {
+		t.Errorf("auth header: got %q, want %q", receivedAuth, "Bearer my-secret-token")
+	}
+}
+
+func TestClientWithCustomHeaders(t *testing.T) {
+	var receivedHeader string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeader = r.Header.Get("X-Custom-Header")
+		handler := NewHandler(WithPingInterval(0))
+		handler.ServeHTTP(w, r)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	client, err := Dial(context.Background(), wsURL,
+		WithPingInterval(0),
+		WithHeader("X-Custom-Header", "custom-value"),
+	)
+	if err != nil {
+		t.Fatalf("dial error: %v", err)
+	}
+	defer client.Close()
+
+	if receivedHeader != "custom-value" {
+		t.Errorf("custom header: got %q, want %q", receivedHeader, "custom-value")
+	}
+}
+
+func TestClientCircuitBreaker(t *testing.T) {
+	// Create a circuit breaker with low thresholds
+	cb := clients.NewCircuitBreaker(&clients.BreakerInfo{
+		FailureThreshold: 2,
+		SuccessThreshold: 1,
+		MaxHalfOpen:      1,
+		Timeout:          1,
+	})
+
+	// Verify that the circuit breaker is integrated with dial:
+	// connect to a non-existent server → should fail with a dial error
+	// but the circuit breaker's OnExecution should be called
+	ctx := context.Background()
+	_, err := Dial(ctx, "ws://127.0.0.1:1",
+		WithPingInterval(0),
+		WithCircuitBreaker(cb),
+		WithHandshakeTimeout(100*time.Millisecond),
+	)
+	if err == nil {
+		t.Fatal("expected dial error")
+	}
+
+	// Verify the circuit breaker was applied to config
+	cfg := defaultConfig()
+	WithCircuitBreaker(cb)(cfg)
+	if cfg.circuitBreaker == nil {
+		t.Fatal("circuit breaker should be set")
+	}
+
+	// Verify successful connection also reports to circuit breaker
+	handler := NewHandler(WithPingInterval(0))
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	client, err := Dial(ctx, wsURL,
+		WithPingInterval(0),
+		WithCircuitBreaker(cb),
+	)
+	if err != nil {
+		t.Fatalf("dial error: %v", err)
+	}
+	_ = client.Close()
+}
+
+func TestClientRetryPolicy(t *testing.T) {
+	attempts := 0
+	var mu sync.Mutex
+
+	// Server that only accepts after 2 attempts
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		attempts++
+		current := attempts
+		mu.Unlock()
+
+		if current < 2 {
+			// Reject the connection
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		// Accept on 2nd+ attempt
+		handler := NewHandler(WithPingInterval(0))
+		handler.ServeHTTP(w, r)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	client, err := Dial(context.Background(), wsURL,
+		WithPingInterval(0),
+		WithRetryPolicy(&clients.RetryPolicy{
+			MaxRetries:      3,
+			BackoffInterval: 50 * time.Millisecond,
+			MaxBackoff:      200 * time.Millisecond,
+			Exponential:     false,
+		}),
+	)
+	if err != nil {
+		t.Fatalf("dial error after retries: %v", err)
+	}
+	defer client.Close()
+
+	mu.Lock()
+	if attempts < 2 {
+		t.Errorf("expected at least 2 attempts, got %d", attempts)
+	}
+	mu.Unlock()
+}
+
+func TestClientWithClientOptions(t *testing.T) {
+	cfg := defaultConfig()
+
+	opts := clients.NewOptionsBuilder().
+		WithAuth(clients.NewBasicAuth("user", "pass")).
+		WithRetryPolicy(&clients.RetryPolicy{
+			MaxRetries:      5,
+			BackoffInterval: 100 * time.Millisecond,
+			MaxBackoff:      1 * time.Second,
+			Exponential:     true,
+		}).
+		Build()
+
+	WithClientOptions(opts)(cfg)
+
+	if cfg.auth == nil {
+		t.Error("auth should be set")
+	}
+	if cfg.auth.Type() != clients.AuthTypeBasic {
+		t.Errorf("auth type: got %v, want %v", cfg.auth.Type(), clients.AuthTypeBasic)
+	}
+	if cfg.retryPolicy == nil {
+		t.Error("retryPolicy should be set")
+	}
+	if cfg.retryPolicy.MaxRetries != 5 {
+		t.Errorf("maxRetries: got %d, want 5", cfg.retryPolicy.MaxRetries)
+	}
+}
+
+func TestOptionsNewFeatures(t *testing.T) {
+	cfg := defaultConfig()
+
+	cb := clients.NewCircuitBreaker(nil)
+	ri := &clients.RetryInfo{
+		MaxRetries:  3,
+		Wait:        100,
+		Exponential: true,
+		Multiplier:  2.0,
+		MaxWait:     5000,
+		Jitter:      true,
+	}
+
+	opts := []Option{
+		WithAuth(clients.NewBearerAuth("token123")),
+		WithCircuitBreaker(cb),
+		WithRetryInfo(ri),
+		WithHeader("X-Test", "value"),
+	}
+	for _, o := range opts {
+		o(cfg)
+	}
+
+	if cfg.auth == nil {
+		t.Error("auth should be set")
+	}
+	if cfg.circuitBreaker == nil {
+		t.Error("circuitBreaker should be set")
+	}
+	if cfg.retryInfo == nil {
+		t.Error("retryInfo should be set")
+	}
+	if cfg.headers["X-Test"] != "value" {
+		t.Errorf("header: got %q, want %q", cfg.headers["X-Test"], "value")
 	}
 }

@@ -3,6 +3,8 @@ package ws
 import (
 	"crypto/tls"
 	"time"
+
+	"oss.nandlabs.io/golly/clients"
 )
 
 const (
@@ -28,6 +30,13 @@ type config struct {
 	autoReconnect    bool
 	maxReconnectWait time.Duration
 	checkOrigin      func(origin string) bool
+
+	// Client options from the clients package
+	auth           clients.AuthProvider
+	retryPolicy    *clients.RetryPolicy
+	retryInfo      *clients.RetryInfo
+	circuitBreaker *clients.CircuitBreaker
+	headers        map[string]string
 }
 
 func defaultConfig() *config {
@@ -40,6 +49,7 @@ func defaultConfig() *config {
 		writeTimeout:     defaultWriteTimeout,
 		handshakeTimeout: defaultHandshakeTimeout,
 		maxReconnectWait: 30 * time.Second,
+		headers:          make(map[string]string),
 	}
 }
 
@@ -136,5 +146,74 @@ func WithMaxReconnectWait(d time.Duration) Option {
 func WithCheckOrigin(fn func(origin string) bool) Option {
 	return func(c *config) {
 		c.checkOrigin = fn
+	}
+}
+
+// WithAuth sets the authentication provider for the WebSocket handshake.
+// The auth credentials are sent as HTTP headers during the upgrade request.
+func WithAuth(auth clients.AuthProvider) Option {
+	return func(c *config) {
+		c.auth = auth
+	}
+}
+
+// WithBasicAuth sets basic authentication for the WebSocket handshake.
+func WithBasicAuth(user, pass string) Option {
+	return func(c *config) {
+		c.auth = clients.NewBasicAuth(user, pass)
+	}
+}
+
+// WithBearerAuth sets bearer token authentication for the WebSocket handshake.
+func WithBearerAuth(token string) Option {
+	return func(c *config) {
+		c.auth = clients.NewBearerAuth(token)
+	}
+}
+
+// WithRetryPolicy sets the retry policy for connection attempts.
+// Retries apply to the initial dial and handshake, not to individual messages.
+func WithRetryPolicy(rp *clients.RetryPolicy) Option {
+	return func(c *config) {
+		c.retryPolicy = rp
+	}
+}
+
+// WithRetryInfo sets the enhanced retry configuration with jitter support.
+// Retries apply to the initial dial and handshake, not to individual messages.
+func WithRetryInfo(ri *clients.RetryInfo) Option {
+	return func(c *config) {
+		c.retryInfo = ri
+	}
+}
+
+// WithCircuitBreaker sets the circuit breaker for connection attempts.
+// When the circuit is open, Dial and reconnect attempts are rejected immediately.
+func WithCircuitBreaker(cb *clients.CircuitBreaker) Option {
+	return func(c *config) {
+		c.circuitBreaker = cb
+	}
+}
+
+// WithHeader adds a custom HTTP header to the WebSocket handshake request.
+func WithHeader(key, value string) Option {
+	return func(c *config) {
+		c.headers[key] = value
+	}
+}
+
+// WithClientOptions applies a full clients.ClientOptions configuration.
+// This sets auth, retry policy, and circuit breaker from the unified options struct.
+func WithClientOptions(opts *clients.ClientOptions) Option {
+	return func(c *config) {
+		if opts.Auth != nil {
+			c.auth = opts.Auth
+		}
+		if opts.RetryPolicy != nil {
+			c.retryPolicy = opts.RetryPolicy
+		}
+		if opts.CircuitBreaker != nil {
+			c.circuitBreaker = opts.CircuitBreaker
+		}
 	}
 }

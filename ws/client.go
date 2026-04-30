@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"oss.nandlabs.io/golly/clients"
 )
 
 // Client represents a WebSocket client connection.
@@ -31,6 +33,8 @@ type Client struct {
 
 // Dial creates a new WebSocket client connection to the given URL.
 // The URL scheme must be "ws" or "wss".
+// If a CircuitBreaker is configured, it will be checked before connecting.
+// If a RetryPolicy or RetryInfo is configured, failed connections will be retried.
 func Dial(ctx context.Context, rawURL string, opts ...Option) (*Client, error) {
 	cfg := defaultConfig()
 	for _, o := range opts {
@@ -44,7 +48,7 @@ func Dial(ctx context.Context, rawURL string, opts ...Option) (*Client, error) {
 		done:     make(chan struct{}),
 	}
 
-	if err := c.connect(ctx); err != nil {
+	if err := c.connectWithRetry(ctx); err != nil {
 		return nil, err
 	}
 
@@ -119,6 +123,91 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// connectWithRetry wraps connect with circuit breaker and retry logic.
+func (c *Client) connectWithRetry(ctx context.Context) error {
+	// Check circuit breaker
+	if c.cfg.circuitBreaker != nil {
+		if err := c.cfg.circuitBreaker.CanExecute(); err != nil {
+			return fmt.Errorf("ws: circuit breaker open: %w", err)
+		}
+	}
+
+	err := c.connect(ctx)
+
+	// Report to circuit breaker
+	if c.cfg.circuitBreaker != nil {
+		c.cfg.circuitBreaker.OnExecution(err == nil)
+	}
+
+	if err == nil {
+		return nil
+	}
+
+	// Retry with RetryInfo (enhanced)
+	if c.cfg.retryInfo != nil {
+		return c.retryConnect(ctx, err, c.retryInfoWait)
+	}
+
+	// Retry with RetryPolicy (legacy)
+	if c.cfg.retryPolicy != nil {
+		return c.retryConnect(ctx, err, c.retryPolicyWait)
+	}
+
+	return err
+}
+
+// retryWaitFunc returns the wait duration for a given retry count.
+type retryWaitFunc func(int) time.Duration
+
+func (c *Client) retryInfoWait(attempt int) time.Duration {
+	return c.cfg.retryInfo.WaitTime(attempt)
+}
+
+func (c *Client) retryPolicyWait(attempt int) time.Duration {
+	return c.cfg.retryPolicy.WaitTime(attempt)
+}
+
+func (c *Client) retryConnect(ctx context.Context, lastErr error, waitFn retryWaitFunc) error {
+	maxRetries := 0
+	if c.cfg.retryInfo != nil {
+		maxRetries = c.cfg.retryInfo.MaxRetries
+	} else if c.cfg.retryPolicy != nil {
+		maxRetries = c.cfg.retryPolicy.MaxRetries
+	}
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		wait := waitFn(attempt)
+		logger.DebugF("ws: retry %d/%d after %v (last error: %v)", attempt+1, maxRetries, wait, lastErr)
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(wait):
+		}
+
+		// Check circuit breaker before retry
+		if c.cfg.circuitBreaker != nil {
+			if err := c.cfg.circuitBreaker.CanExecute(); err != nil {
+				return fmt.Errorf("ws: circuit breaker open during retry: %w", err)
+			}
+		}
+
+		err := c.connect(ctx)
+
+		// Report to circuit breaker
+		if c.cfg.circuitBreaker != nil {
+			c.cfg.circuitBreaker.OnExecution(err == nil)
+		}
+
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+	}
+
+	return fmt.Errorf("ws: connection failed after %d retries: %w", maxRetries, lastErr)
+}
+
 func (c *Client) connect(ctx context.Context) error {
 	u, err := url.Parse(c.url)
 	if err != nil {
@@ -172,15 +261,30 @@ func (c *Client) connect(ctx context.Context) error {
 		path = "/"
 	}
 
-	handshake := fmt.Sprintf("GET %s HTTP/1.1\r\n"+
-		"Host: %s\r\n"+
-		"Upgrade: websocket\r\n"+
-		"Connection: Upgrade\r\n"+
-		"Sec-WebSocket-Key: %s\r\n"+
-		"Sec-WebSocket-Version: 13\r\n\r\n",
-		path, u.Host, wsKey)
+	var handshakeBuf strings.Builder
+	fmt.Fprintf(&handshakeBuf, "GET %s HTTP/1.1\r\n", path)
+	fmt.Fprintf(&handshakeBuf, "Host: %s\r\n", u.Host)
+	handshakeBuf.WriteString("Upgrade: websocket\r\n")
+	handshakeBuf.WriteString("Connection: Upgrade\r\n")
+	fmt.Fprintf(&handshakeBuf, "Sec-WebSocket-Key: %s\r\n", wsKey)
+	handshakeBuf.WriteString("Sec-WebSocket-Version: 13\r\n")
 
-	if _, err := netConn.Write([]byte(handshake)); err != nil {
+	// Add authentication headers
+	if c.cfg.auth != nil {
+		if err := writeAuthHeaders(&handshakeBuf, c.cfg.auth); err != nil {
+			_ = netConn.Close()
+			return fmt.Errorf("ws: auth header failed: %w", err)
+		}
+	}
+
+	// Add custom headers
+	for k, v := range c.cfg.headers {
+		fmt.Fprintf(&handshakeBuf, "%s: %s\r\n", k, v)
+	}
+
+	handshakeBuf.WriteString("\r\n")
+
+	if _, err := netConn.Write([]byte(handshakeBuf.String())); err != nil {
 		_ = netConn.Close()
 		return fmt.Errorf("ws: handshake write failed: %w", err)
 	}
@@ -293,8 +397,27 @@ func (c *Client) reconnectLoop() {
 		}
 		c.mu.Unlock()
 
+		// Check circuit breaker before reconnect
+		if c.cfg.circuitBreaker != nil {
+			if err := c.cfg.circuitBreaker.CanExecute(); err != nil {
+				logger.DebugF("ws: circuit breaker open, skipping reconnect")
+				wait *= 2
+				if wait > c.cfg.maxReconnectWait {
+					wait = c.cfg.maxReconnectWait
+				}
+				continue
+			}
+		}
+
 		logger.InfoF("ws: attempting reconnection to %s", c.url)
-		if err := c.connect(context.Background()); err != nil {
+		err := c.connect(context.Background())
+
+		// Report to circuit breaker
+		if c.cfg.circuitBreaker != nil {
+			c.cfg.circuitBreaker.OnExecution(err == nil)
+		}
+
+		if err != nil {
 			logger.DebugF("ws: reconnect failed: %v", err)
 			// Exponential backoff
 			wait *= 2
@@ -316,4 +439,43 @@ func generateKey() string {
 		return base64.StdEncoding.EncodeToString([]byte("golly-ws-key1234"))
 	}
 	return base64.StdEncoding.EncodeToString(key)
+}
+
+// apiKeyHeaderer is an optional interface for auth providers that supply a custom header name.
+type apiKeyHeaderer interface {
+	HeaderName() string
+}
+
+// writeAuthHeaders writes authentication headers to the handshake request buffer.
+func writeAuthHeaders(buf *strings.Builder, auth clients.AuthProvider) error {
+	switch auth.Type() {
+	case clients.AuthTypeBasic:
+		user, err := auth.User()
+		if err != nil {
+			return err
+		}
+		pass, err := auth.Pass()
+		if err != nil {
+			return err
+		}
+		creds := base64.StdEncoding.EncodeToString([]byte(user + ":" + pass))
+		fmt.Fprintf(buf, "Authorization: Basic %s\r\n", creds)
+	case clients.AuthTypeBearer:
+		token, err := auth.Token()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(buf, "Authorization: Bearer %s\r\n", token)
+	case clients.AuthTypeAPIKey:
+		token, err := auth.Token()
+		if err != nil {
+			return err
+		}
+		headerName := "X-API-Key"
+		if h, ok := auth.(apiKeyHeaderer); ok && h.HeaderName() != "" {
+			headerName = h.HeaderName()
+		}
+		fmt.Fprintf(buf, "%s: %s\r\n", headerName, token)
+	}
+	return nil
 }
