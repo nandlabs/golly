@@ -92,8 +92,8 @@ go get oss.nandlabs.io/golly
 
 | Repository                                      | Latest  | Description                                                                              |
 | ----------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| [golly-aws](https://github.com/nandlabs/golly-aws) | v0.3.1 | AWS service integrations: S3, SNS, SQS, Bedrock, and **Secrets Manager** for credentials |
-| [golly-gcp](https://github.com/nandlabs/golly-gcp) | v0.2.1 | GCP service integrations: Storage, Pub/Sub, GenAI, and **Secret Manager** for credentials |
+| [golly-aws](https://github.com/nandlabs/golly-aws) | v0.3.0 | AWS service integrations: S3, SNS, SQS, Bedrock, and **Secrets Manager** for credentials |
+| [golly-gcp](https://github.com/nandlabs/golly-gcp) | v0.2.0 | GCP service integrations: Storage, Pub/Sub, GenAI, and **Secret Manager** for credentials |
 | [golly-vault](https://github.com/nandlabs/golly-vault) | v0.1.0 | HashiCorp Vault integration for centralized secret management with KV engines and advanced auth |
 
 ### �🛠️ Infrastructure

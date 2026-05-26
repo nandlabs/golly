@@ -160,7 +160,7 @@ func (sv *StructValidator) parseFields(v interface{}) structFields {
 
 			for i := 0; i < f.typ.NumField(); i++ {
 				sf := f.typ.Field(i)
-				if sf.Anonymous && sf.Type.Kind() == reflect.Pointer {
+				if sf.Anonymous && sf.Type.Kind() == reflect.Ptr {
 					// embedded pointer field — reserved for future use
 					continue
 				}
@@ -177,7 +177,7 @@ func (sv *StructValidator) parseFields(v interface{}) structFields {
 				index[len(f.index)] = i
 
 				ft := sf.Type
-				if ft.Name() == "" && ft.Kind() == reflect.Pointer {
+				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
 					ft = ft.Elem()
 				}
 

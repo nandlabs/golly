@@ -110,7 +110,7 @@ func navigateToField(value any, fieldName string) (any, error) {
 		}
 		return field.Interface(), nil
 
-	case reflect.Pointer:
+	case reflect.Ptr:
 		// For pointers, dereference and try again
 		if v.IsNil() {
 			return nil, ErrFieldNotFound

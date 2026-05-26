@@ -77,7 +77,7 @@ func Empty(obj any) bool {
 	}
 	val := reflect.ValueOf(obj)
 	switch val.Kind() {
-	case reflect.Pointer:
+	case reflect.Ptr:
 		// if pointer is nil return true
 		if val.IsNil() {
 			return true
