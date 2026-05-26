@@ -33,7 +33,7 @@ var ErrUnsupportedType = errors.New("unsupported type for schema generation")
 func GenerateSchema(t reflect.Type) (schema *Schema, err error) {
 
 	switch t.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		schema, err = GenerateSchema(t.Elem())
 
 	case reflect.Struct:
