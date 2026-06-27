@@ -22,6 +22,8 @@ const (
 	OptionOutputMime         = "output_mime"
 	OptionSchema             = "schema"
 	OptionSystemInstructions = "system_instructions"
+	OptionTools              = "tools"
+	OptionToolChoice         = "tool_choice"
 )
 
 // Options represents the options for the Service
@@ -700,4 +702,49 @@ func (o *Options) SystemInstructions() string {
 		return o.GetString(OptionSystemInstructions)
 	}
 	return ""
+}
+
+// SetSystemInstructions sets the "system_instructions" option to the specified value.
+func (o *OptionsBuilder) SetSystemInstructions(instr string) *OptionsBuilder {
+	o.options.values[OptionSystemInstructions] = instr
+	return o
+}
+
+// SetTools sets the "tools" option in the OptionsBuilder.
+// The model is told about these tools and may emit FuncCallPart responses
+// for any of them. Pairs with SetToolChoice for selection control.
+func (o *OptionsBuilder) SetTools(tools ...Tool) *OptionsBuilder {
+	o.options.values[OptionTools] = tools
+	return o
+}
+
+// SetToolChoice sets the "tool_choice" option in the OptionsBuilder.
+// Use NewToolChoice(ToolChoiceAuto|None|Required) or NewNamedToolChoice(name).
+func (o *OptionsBuilder) SetToolChoice(choice *ToolChoice) *OptionsBuilder {
+	o.options.values[OptionToolChoice] = choice
+	return o
+}
+
+// GetTools returns the tools declared on the Options, or nil if none were set.
+func (o *Options) GetTools() []Tool {
+	if !o.Has(OptionTools) {
+		return nil
+	}
+	if v, ok := o.values[OptionTools].([]Tool); ok {
+		return v
+	}
+	return nil
+}
+
+// GetToolChoice returns the tool-choice declared on the Options, or nil if
+// none was set (the provider should treat nil as ToolChoiceAuto when tools
+// are present).
+func (o *Options) GetToolChoice() *ToolChoice {
+	if !o.Has(OptionToolChoice) {
+		return nil
+	}
+	if v, ok := o.values[OptionToolChoice].(*ToolChoice); ok {
+		return v
+	}
+	return nil
 }

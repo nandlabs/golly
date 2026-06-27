@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"oss.nandlabs.io/golly/clients"
+	"oss.nandlabs.io/golly/data"
 	"oss.nandlabs.io/golly/genai"
 	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/rest"
@@ -77,6 +78,7 @@ type openAIChatRequest struct {
 	FrequencyPenalty *float64          `json:"frequency_penalty,omitempty"`
 	Seed             *int              `json:"seed,omitempty"`
 	Tools            []openAITool      `json:"tools,omitempty"`
+	ToolChoice       any               `json:"tool_choice,omitempty"`
 	ResponseFormat   *openAIRespFormat `json:"response_format,omitempty"`
 }
 
@@ -134,7 +136,16 @@ type openAIToolCallFunction struct {
 
 // openAIRespFormat specifies the response format
 type openAIRespFormat struct {
-	Type string `json:"type"` // "text" or "json_object"
+	Type       string                  `json:"type"` // "text", "json_object", or "json_schema"
+	JSONSchema *openAIRespFormatSchema `json:"json_schema,omitempty"`
+}
+
+// openAIRespFormatSchema is the payload for response_format.type = "json_schema".
+type openAIRespFormatSchema struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Strict      bool   `json:"strict,omitempty"`
+	Schema      any    `json:"schema"`
 }
 
 // openAIChatResponse represents the response from the OpenAI Chat Completions API
@@ -449,12 +460,79 @@ func (o *OpenAIProvider) buildRequest(model string, message *genai.Message, opti
 		if stopWords := options.GetStrings(genai.OptionStopWords); len(stopWords) > 0 {
 			req.Stop = stopWords
 		}
-		if outputMime := options.GetString(genai.OptionOutputMime); outputMime == ioutils.MimeApplicationJSON {
+		// Schema-constrained output takes precedence over a bare json_object mime hint.
+		if schema := options.GetSchema(); schema != nil {
+			req.ResponseFormat = &openAIRespFormat{
+				Type: "json_schema",
+				JSONSchema: &openAIRespFormatSchema{
+					Name:        schemaName(schema, "response"),
+					Description: schema.Description,
+					Strict:      true,
+					Schema:      schema,
+				},
+			}
+		} else if outputMime := options.GetString(genai.OptionOutputMime); outputMime == ioutils.MimeApplicationJSON {
 			req.ResponseFormat = &openAIRespFormat{Type: "json_object"}
+		}
+		if tools := options.GetTools(); len(tools) > 0 {
+			req.Tools = toOpenAITools(tools)
+		}
+		if tc := options.GetToolChoice(); tc != nil {
+			req.ToolChoice = openAIToolChoice(tc)
 		}
 	}
 
 	return req
+}
+
+// schemaName returns a stable name for use as the OpenAI json_schema "name"
+// field. Title > Id > fallback.
+func schemaName(s *data.Schema, fallback string) string {
+	if s == nil {
+		return fallback
+	}
+	if s.Title != "" {
+		return s.Title
+	}
+	if s.Id != "" {
+		return s.Id
+	}
+	return fallback
+}
+
+// toOpenAITools converts genai.Tool list into OpenAI's tools[] block.
+func toOpenAITools(tools []genai.Tool) []openAITool {
+	out := make([]openAITool, 0, len(tools))
+	for _, t := range tools {
+		if t.Function == nil {
+			continue
+		}
+		out = append(out, openAITool{
+			Type: "function",
+			Function: openAIToolFunction{
+				Name:        t.Function.Name,
+				Description: t.Function.Description,
+				Parameters:  t.Function.Parameters,
+			},
+		})
+	}
+	return out
+}
+
+// openAIToolChoice converts genai.ToolChoice to the OpenAI wire shape.
+// Returns the string "auto" / "none" / "required" or
+// {type:"function", function:{name:...}} for a named choice.
+func openAIToolChoice(tc *genai.ToolChoice) any {
+	switch tc.Mode {
+	case genai.ToolChoiceAuto, genai.ToolChoiceNone, genai.ToolChoiceRequired:
+		return string(tc.Mode)
+	case genai.ToolChoiceNamed:
+		return map[string]any{
+			"type":     "function",
+			"function": map[string]any{"name": tc.Name},
+		}
+	}
+	return nil
 }
 
 // convertMessages builds the OpenAI messages array from a genai.Message.
@@ -681,4 +759,107 @@ func (o *OpenAIProvider) openAIMsgToGenMessage(msg *openAIMessage) *genai.Messag
 	}
 
 	return message
+}
+
+// --- Embeddings ---
+
+// openAIEmbedRequest is the wire shape for POST /v1/embeddings.
+type openAIEmbedRequest struct {
+	Model          string   `json:"model"`
+	Input          []string `json:"input"`
+	EncodingFormat string   `json:"encoding_format,omitempty"` // "float" (default)
+}
+
+// openAIEmbedResponse is the wire shape returned by /v1/embeddings.
+type openAIEmbedResponse struct {
+	Object string             `json:"object"`
+	Data   []openAIEmbedDatum `json:"data"`
+	Model  string             `json:"model"`
+	Usage  *openAIEmbedUsage  `json:"usage,omitempty"`
+}
+
+// openAIEmbedDatum is one entry in openAIEmbedResponse.Data — one vector per input.
+type openAIEmbedDatum struct {
+	Object    string    `json:"object"`
+	Index     int       `json:"index"`
+	Embedding []float32 `json:"embedding"`
+}
+
+// openAIEmbedUsage reports token usage for embedding calls.
+type openAIEmbedUsage struct {
+	PromptTokens int `json:"prompt_tokens"`
+	TotalTokens  int `json:"total_tokens"`
+}
+
+// Embed implements genai.Embedder. It POSTs to {BaseURL}/embeddings and returns
+// one vector per Part in req.Inputs. Only text parts are accepted; other Part
+// kinds are skipped (OpenAI's embedding endpoint is text-only today).
+func (o *OpenAIProvider) Embed(ctx context.Context, req *genai.EmbedRequest) (*genai.EmbedResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("embed request is nil")
+	}
+	inputs := partsToTextInputs(req.Inputs)
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("embed request has no text inputs")
+	}
+
+	payload := &openAIEmbedRequest{
+		Model: req.Model,
+		Input: inputs,
+	}
+
+	url := fmt.Sprintf("%s/embeddings", o.baseURL)
+	httpReq, err := o.client.NewRequest(url, http.MethodPost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create embed request: %w", err)
+	}
+	if _, err = httpReq.WithContext(ctx); err != nil {
+		return nil, fmt.Errorf("failed to set context: %w", err)
+	}
+	o.setHeaders(httpReq)
+	httpReq.SetBody(payload)
+	httpReq.SetContentType(ioutils.MimeApplicationJSON)
+
+	resp, err := o.client.Execute(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("openai embeddings request failed: %w", err)
+	}
+	if !resp.IsSuccess() {
+		return nil, o.parseError(resp)
+	}
+
+	var embedResp openAIEmbedResponse
+	if err := resp.Decode(&embedResp); err != nil {
+		return nil, fmt.Errorf("failed to decode embed response: %w", err)
+	}
+
+	out := &genai.EmbedResponse{
+		Vectors: make([][]float32, len(embedResp.Data)),
+	}
+	for _, d := range embedResp.Data {
+		if d.Index < 0 || d.Index >= len(out.Vectors) {
+			continue
+		}
+		out.Vectors[d.Index] = d.Embedding
+	}
+	if embedResp.Usage != nil {
+		out.Meta = &genai.ResponseMeta{
+			InputTokens: embedResp.Usage.PromptTokens,
+			TotalTokens: embedResp.Usage.TotalTokens,
+		}
+	}
+	return out, nil
+}
+
+// partsToTextInputs extracts text content from a list of Parts. Non-text parts
+// are skipped; callers that need multimodal embeddings should target a
+// provider-specific helper once support exists upstream.
+func partsToTextInputs(parts []genai.Part) []string {
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p.Text != nil && p.Text.Content != "" {
+			out = append(out, p.Text.Content)
+		}
+	}
+	return out
 }

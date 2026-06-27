@@ -230,12 +230,16 @@ func (r *Request) toHttpRequest() (httpReq *http.Request, err error) {
 			if r.bodyReader == nil && r.body != nil {
 				pr, pw := io.Pipe()
 				go func() {
-					defer ioutils.CloserFunc(pw)
-					var c codec.Codec
-					c, err = codec.Get(r.contentType, r.client.options.codecOptions)
-					if err == nil {
-						err = c.Write(r.body, pw)
+					// Use a local err and propagate via pw.CloseWithError so the
+					// HTTP transport reading from pr sees the encoder failure on
+					// Read. Writing to the outer err from this goroutine would
+					// race with the main goroutine continuing past this block.
+					var encErr error
+					c, encErr := codec.Get(r.contentType, r.client.options.codecOptions)
+					if encErr == nil {
+						encErr = c.Write(r.body, pw)
 					}
+					_ = pw.CloseWithError(encErr)
 				}()
 				r.bodyReader = pr
 			}
