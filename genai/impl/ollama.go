@@ -2,9 +2,13 @@ package impl
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"oss.nandlabs.io/golly/clients"
 	"oss.nandlabs.io/golly/genai"
+	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/rest"
 )
 
@@ -96,4 +100,78 @@ func (o *OllamaProvider) Generate(ctx context.Context, model string, message *ge
 // GenerateStream delegates to the embedded OpenAIProvider.
 func (o *OllamaProvider) GenerateStream(ctx context.Context, model string, message *genai.Message, options *genai.Options) (<-chan *genai.GenResponse, <-chan error) {
 	return o.OpenAIProvider.GenerateStream(ctx, model, message, options)
+}
+
+// --- Embeddings (native Ollama /api/embed) ---
+
+// ollamaEmbedRequest is the native Ollama batch-embedding request shape.
+type ollamaEmbedRequest struct {
+	Model string   `json:"model"`
+	Input []string `json:"input"`
+}
+
+// ollamaEmbedResponse is the native Ollama embedding response shape.
+type ollamaEmbedResponse struct {
+	Model           string      `json:"model"`
+	Embeddings      [][]float32 `json:"embeddings"`
+	TotalDuration   int64       `json:"total_duration,omitempty"` // nanoseconds
+	LoadDuration    int64       `json:"load_duration,omitempty"`  // nanoseconds
+	PromptEvalCount int         `json:"prompt_eval_count,omitempty"`
+}
+
+// Embed implements genai.Embedder using Ollama's native batch endpoint
+// (POST /api/embed). The OpenAI-compatible /v1 endpoint does not surface
+// the same batching guarantees, so the native path is preferred.
+func (o *OllamaProvider) Embed(ctx context.Context, req *genai.EmbedRequest) (*genai.EmbedResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("embed request is nil")
+	}
+	inputs := partsToTextInputs(req.Inputs)
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("embed request has no text inputs")
+	}
+
+	url := fmt.Sprintf("%s/api/embed", ollamaRootURL(o.baseURL))
+	httpReq, err := o.client.NewRequest(url, http.MethodPost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create embed request: %w", err)
+	}
+	if _, err = httpReq.WithContext(ctx); err != nil {
+		return nil, fmt.Errorf("failed to set context: %w", err)
+	}
+	httpReq.SetBody(&ollamaEmbedRequest{Model: req.Model, Input: inputs})
+	httpReq.SetContentType(ioutils.MimeApplicationJSON)
+
+	resp, err := o.client.Execute(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("ollama embeddings request failed: %w", err)
+	}
+	if !resp.IsSuccess() {
+		return nil, fmt.Errorf("ollama embeddings API error: status %d", resp.StatusCode())
+	}
+
+	var embedResp ollamaEmbedResponse
+	if err := resp.Decode(&embedResp); err != nil {
+		return nil, fmt.Errorf("failed to decode embed response: %w", err)
+	}
+
+	out := &genai.EmbedResponse{
+		Vectors: embedResp.Embeddings,
+	}
+	if embedResp.PromptEvalCount > 0 || embedResp.TotalDuration > 0 {
+		out.Meta = &genai.ResponseMeta{
+			InputTokens: embedResp.PromptEvalCount,
+			TotalTokens: embedResp.PromptEvalCount,
+			TotalTime:   embedResp.TotalDuration / 1_000_000, // ns → ms
+		}
+	}
+	return out, nil
+}
+
+// ollamaRootURL strips a trailing "/v1" (or "/v1/") from the configured base
+// URL so the native Ollama endpoints (which live at the root, not under /v1)
+// can be addressed.
+func ollamaRootURL(baseURL string) string {
+	trimmed := strings.TrimRight(baseURL, "/")
+	return strings.TrimSuffix(trimmed, "/v1")
 }

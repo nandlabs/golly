@@ -78,6 +78,7 @@ type claudeRequest struct {
 	TopK          *int            `json:"top_k,omitempty"`
 	StopSequences []string        `json:"stop_sequences,omitempty"`
 	Tools         []claudeTool    `json:"tools,omitempty"`
+	ToolChoice    any             `json:"tool_choice,omitempty"`
 	Metadata      *claudeMetadata `json:"metadata,omitempty"`
 }
 
@@ -499,11 +500,65 @@ func (c *ClaudeProvider) buildRequest(model string, message *genai.Message, opti
 		if stopWords := options.GetStrings(genai.OptionStopWords); len(stopWords) > 0 {
 			req.StopSequences = stopWords
 		}
+		// Tools / tool_choice declared by the caller.
+		if tools := options.GetTools(); len(tools) > 0 {
+			req.Tools = toClaudeTools(tools)
+		}
+		if tc := options.GetToolChoice(); tc != nil {
+			req.ToolChoice = claudeToolChoice(tc)
+		}
+		// Structured-output: Claude has no native json_schema response_format,
+		// so we use the "tool-as-schema" pattern — inject a synthetic tool
+		// constrained to the schema and pin tool_choice to it. The caller
+		// receives the schema-conformant arguments in a FuncCallPart.
+		if schema := options.GetSchema(); schema != nil && len(req.Tools) == 0 {
+			toolName := schemaName(schema, "structured_output")
+			req.Tools = []claudeTool{{
+				Name:        toolName,
+				Description: schema.Description,
+				InputSchema: schema,
+			}}
+			if req.ToolChoice == nil {
+				req.ToolChoice = map[string]any{"type": "tool", "name": toolName}
+			}
+		}
 	}
 
 	req.Messages = c.convertMessages(message)
 
 	return req
+}
+
+// toClaudeTools converts genai.Tool list to Claude's tools[] block.
+func toClaudeTools(tools []genai.Tool) []claudeTool {
+	out := make([]claudeTool, 0, len(tools))
+	for _, t := range tools {
+		if t.Function == nil {
+			continue
+		}
+		out = append(out, claudeTool{
+			Name:        t.Function.Name,
+			Description: t.Function.Description,
+			InputSchema: t.Function.Parameters,
+		})
+	}
+	return out
+}
+
+// claudeToolChoice converts genai.ToolChoice to Anthropic's tool_choice shape.
+// Anthropic uses {type:"auto"|"any"|"tool"|"none", name?:"..."}.
+func claudeToolChoice(tc *genai.ToolChoice) any {
+	switch tc.Mode {
+	case genai.ToolChoiceAuto:
+		return map[string]any{"type": "auto"}
+	case genai.ToolChoiceNone:
+		return map[string]any{"type": "none"}
+	case genai.ToolChoiceRequired:
+		return map[string]any{"type": "any"}
+	case genai.ToolChoiceNamed:
+		return map[string]any{"type": "tool", "name": tc.Name}
+	}
+	return nil
 }
 
 // convertMessages builds the Anthropic messages array from a genai.Message.
