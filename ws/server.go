@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -88,6 +89,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Authenticate the handshake before doing anything destructive (hijack).
+	var authCtx context.Context
+	if h.cfg.upgradeAuth != nil {
+		ok, ctx := h.cfg.upgradeAuth(r)
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		authCtx = ctx
+	}
+
 	// Get the WebSocket key
 	key := r.Header.Get("Sec-WebSocket-Key")
 	if key == "" {
@@ -124,6 +136,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Create WebSocket connection
 	conn := newConn(netConn, h.cfg, true)
+	conn.setContext(authCtx)
 	// Use buffered reader from hijack if it has buffered data
 	if bufrw.Reader.Buffered() > 0 {
 		conn.reader = bufrw.Reader
@@ -205,6 +218,16 @@ func Upgrade(w http.ResponseWriter, r *http.Request, opts ...Option) (*Conn, err
 		o(cfg)
 	}
 
+	var authCtx context.Context
+	if cfg.upgradeAuth != nil {
+		ok, ctx := cfg.upgradeAuth(r)
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return nil, ErrUnauthorized
+		}
+		authCtx = ctx
+	}
+
 	key := r.Header.Get("Sec-WebSocket-Key")
 	if key == "" {
 		return nil, ErrHandshakeFailed
@@ -234,6 +257,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request, opts ...Option) (*Conn, err
 	}
 
 	conn := newConn(netConn, cfg, true)
+	conn.setContext(authCtx)
 	if bufrw.Reader.Buffered() > 0 {
 		conn.reader = bufrw.Reader
 	}

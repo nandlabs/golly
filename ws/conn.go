@@ -2,6 +2,7 @@ package ws
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -32,6 +33,7 @@ type Conn struct {
 	closed   atomic.Bool
 	closeCh  chan struct{}
 	isServer bool
+	ctx      context.Context
 
 	onMessage    MessageHandler
 	onDisconnect DisconnectHandler
@@ -47,6 +49,22 @@ func newConn(netConn net.Conn, cfg *config, isServer bool) *Conn {
 		cfg:      cfg,
 		closeCh:  make(chan struct{}),
 		isServer: isServer,
+		ctx:      context.Background(),
+	}
+}
+
+// Context returns the per-connection context. For server-side connections this
+// is the context returned by an UpgradeAuthFunc (when configured) — useful for
+// reading the authenticated principal in message handlers. Defaults to
+// context.Background() when no auth hook is wired.
+func (c *Conn) Context() context.Context {
+	return c.ctx
+}
+
+// setContext sets the connection's context (used by server during handshake).
+func (c *Conn) setContext(ctx context.Context) {
+	if ctx != nil {
+		c.ctx = ctx
 	}
 }
 

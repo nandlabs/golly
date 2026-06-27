@@ -1,11 +1,20 @@
 package ws
 
 import (
+	"context"
 	"crypto/tls"
+	"net/http"
 	"time"
 
 	"oss.nandlabs.io/golly/clients"
 )
+
+// UpgradeAuthFunc authenticates a WebSocket upgrade request server-side.
+// Return ok=false to reject the handshake (the server responds 401).
+// The returned ctx (may be the request context unchanged) is carried into
+// the resulting Conn and retrievable via Conn.Context() — use it to attach
+// principals, tenant ids, etc., for downstream message handlers.
+type UpgradeAuthFunc func(r *http.Request) (ok bool, ctx context.Context)
 
 const (
 	defaultReadBufferSize   = 4096
@@ -30,6 +39,7 @@ type config struct {
 	autoReconnect    bool
 	maxReconnectWait time.Duration
 	checkOrigin      func(origin string) bool
+	upgradeAuth      UpgradeAuthFunc
 
 	// Client options from the clients package
 	auth           clients.AuthProvider
@@ -146,6 +156,24 @@ func WithMaxReconnectWait(d time.Duration) Option {
 func WithCheckOrigin(fn func(origin string) bool) Option {
 	return func(c *config) {
 		c.checkOrigin = fn
+	}
+}
+
+// WithUpgradeAuth sets a server-side authentication hook called during the
+// WebSocket handshake. When ok=false the upgrade is rejected with 401 Unauthorized;
+// when ok=true the returned context is attached to the resulting Conn (retrievable
+// via Conn.Context()) so message handlers can read the authenticated principal.
+//
+// Example:
+//
+//	ws.WithUpgradeAuth(func(r *http.Request) (bool, context.Context) {
+//	    user, err := verifyJWT(r.Header.Get("Authorization"))
+//	    if err != nil { return false, nil }
+//	    return true, context.WithValue(r.Context(), userKey, user)
+//	})
+func WithUpgradeAuth(fn UpgradeAuthFunc) Option {
+	return func(c *config) {
+		c.upgradeAuth = fn
 	}
 }
 
