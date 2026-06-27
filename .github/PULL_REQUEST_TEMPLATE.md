@@ -52,6 +52,7 @@ Closes #<!-- issue number -->
 - [ ] I have updated the documentation accordingly
 - [ ] My changes generate no new warnings or errors
 - [ ] I have read the [CONTRIBUTING](../CONTRIBUTING.md) guide
+- [ ] I agree my contribution may be redistributed under either the [Apache 2.0](../LICENSE-APACHE) or [MIT](../LICENSE-MIT) license (project is dual-licensed; see [License of Contributions](../CONTRIBUTING.md#license-of-contributions))
 
 ## Additional Context
 
