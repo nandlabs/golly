@@ -426,3 +426,145 @@ func TestLocalProvider_ManagerAddListener(t *testing.T) {
 		t.Fatal("listener did not receive message within timeout")
 	}
 }
+
+// --- Listener removal (ListenerRemover) ---
+
+func TestLocalProvider_RemoveListeners_DropsAll(t *testing.T) {
+	lp := newTestProvider(t)
+	uri := mustParseURL(t, "chan://remove-all")
+
+	var fired atomic.Int32
+	err := lp.AddListener(uri, func(Message) { fired.Add(1) })
+	assert.NoError(t, err)
+	err = lp.AddListener(uri, func(Message) { fired.Add(1) })
+	assert.NoError(t, err)
+
+	// Remove all listeners; subsequent messages must not fire any.
+	err = lp.RemoveListeners(uri)
+	assert.NoError(t, err)
+
+	msg, err := NewLocalMessage()
+	assert.NoError(t, err)
+	_, _ = msg.SetBodyStr("ignored")
+	err = lp.Send(uri, msg)
+	assert.NoError(t, err)
+
+	// Give the dispatch goroutine time to (not) fire anything.
+	time.Sleep(150 * time.Millisecond)
+	if fired.Load() != 0 {
+		t.Fatalf("expected 0 listener fires after RemoveListeners, got %d", fired.Load())
+	}
+}
+
+func TestLocalProvider_RemoveListeners_Idempotent(t *testing.T) {
+	lp := newTestProvider(t)
+	uri := mustParseURL(t, "chan://remove-idempotent")
+
+	// Remove with no listeners registered yet.
+	assert.NoError(t, lp.RemoveListeners(uri))
+	// Remove twice.
+	assert.NoError(t, lp.RemoveListeners(uri))
+
+	// Add a listener, remove, remove again.
+	assert.NoError(t, lp.AddListener(uri, func(Message) {}))
+	assert.NoError(t, lp.RemoveListeners(uri))
+	assert.NoError(t, lp.RemoveListeners(uri))
+}
+
+func TestLocalProvider_RemoveNamedListener_LeavesOthers(t *testing.T) {
+	lp := newTestProvider(t)
+	uri := mustParseURL(t, "chan://remove-named")
+
+	var unnamedFired atomic.Int32
+	var keptNamedFired atomic.Int32
+	var droppedNamedFired atomic.Int32
+
+	assert.NoError(t, lp.AddListener(uri, func(Message) { unnamedFired.Add(1) }))
+	assert.NoError(t, lp.AddListener(uri, func(Message) { keptNamedFired.Add(1) },
+		NewOptionsBuilder().AddNamedListener("keep").Build()...))
+	assert.NoError(t, lp.AddListener(uri, func(Message) { droppedNamedFired.Add(1) },
+		NewOptionsBuilder().AddNamedListener("drop").Build()...))
+
+	// Remove only the "drop" named group.
+	assert.NoError(t, lp.RemoveNamedListener(uri, "drop"))
+
+	msg, _ := NewLocalMessage()
+	_, _ = msg.SetBodyStr("partial")
+	assert.NoError(t, lp.Send(uri, msg))
+
+	// Wait for dispatch.
+	time.Sleep(150 * time.Millisecond)
+
+	if unnamedFired.Load() != 1 {
+		t.Errorf("unnamed listener should have fired once; got %d", unnamedFired.Load())
+	}
+	if keptNamedFired.Load() != 1 {
+		t.Errorf("kept named listener should have fired once; got %d", keptNamedFired.Load())
+	}
+	if droppedNamedFired.Load() != 0 {
+		t.Errorf("dropped named listener should NOT have fired; got %d", droppedNamedFired.Load())
+	}
+}
+
+func TestLocalProvider_RemoveListeners_ClosedProvider(t *testing.T) {
+	lp := &LocalProvider{}
+	assert.NoError(t, lp.Setup())
+	assert.NoError(t, lp.Close())
+	uri := mustParseURL(t, "chan://closed")
+	if err := lp.RemoveListeners(uri); err != ErrProviderClosed {
+		t.Errorf("expected ErrProviderClosed, got %v", err)
+	}
+	if err := lp.RemoveNamedListener(uri, "foo"); err != ErrProviderClosed {
+		t.Errorf("expected ErrProviderClosed, got %v", err)
+	}
+}
+
+func TestManager_RemoveListeners_DelegatesToProvider(t *testing.T) {
+	mgr := GetManager()
+	uri := mustParseURL(t, "chan://manager-remove")
+
+	var fired atomic.Int32
+	assert.NoError(t, mgr.AddListener(uri, func(Message) { fired.Add(1) }))
+	assert.NoError(t, mgr.RemoveListeners(uri))
+
+	msg, _ := mgr.NewMessage("chan")
+	_, _ = msg.SetBodyStr("nope")
+	assert.NoError(t, mgr.Send(uri, msg))
+	time.Sleep(150 * time.Millisecond)
+	if fired.Load() != 0 {
+		t.Fatalf("manager RemoveListeners did not propagate; %d fires", fired.Load())
+	}
+}
+
+// TestManager_RemoveListeners_UnsupportedProvider verifies that a provider
+// not implementing ListenerRemover triggers ErrListenerRemovalUnsupported.
+func TestManager_RemoveListeners_UnsupportedProvider(t *testing.T) {
+	// Construct a fresh manager so we don't pollute the default one.
+	m := &managerImpl{knownProviders: make(map[string]Provider)}
+	// A bare Provider — Schemes/Id only, no listener-removal support.
+	bare := &bareProvider{}
+	m.Register(bare)
+	uri := mustParseURL(t, "bare://x")
+	err := m.RemoveListeners(uri)
+	if err != ErrListenerRemovalUnsupported {
+		t.Fatalf("expected ErrListenerRemovalUnsupported, got %v", err)
+	}
+	err = m.RemoveNamedListener(uri, "n")
+	if err != ErrListenerRemovalUnsupported {
+		t.Fatalf("expected ErrListenerRemovalUnsupported, got %v", err)
+	}
+}
+
+// bareProvider implements Provider but explicitly NOT ListenerRemover.
+type bareProvider struct{}
+
+func (p *bareProvider) Close() error                                             { return nil }
+func (p *bareProvider) Id() string                                               { return "bare" }
+func (p *bareProvider) Schemes() []string                                        { return []string{"bare"} }
+func (p *bareProvider) Setup() error                                             { return nil }
+func (p *bareProvider) NewMessage(string, ...Option) (Message, error)            { return nil, nil }
+func (p *bareProvider) Send(*url.URL, Message, ...Option) error                  { return nil }
+func (p *bareProvider) SendBatch(*url.URL, []Message, ...Option) error           { return nil }
+func (p *bareProvider) Receive(*url.URL, ...Option) (Message, error)             { return nil, nil }
+func (p *bareProvider) ReceiveBatch(*url.URL, ...Option) ([]Message, error)      { return nil, nil }
+func (p *bareProvider) AddListener(*url.URL, func(msg Message), ...Option) error { return nil }

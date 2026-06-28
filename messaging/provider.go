@@ -25,6 +25,24 @@ type Receiver interface {
 	AddListener(*url.URL, func(msg Message), ...Option) error
 }
 
+// ListenerRemover is an optional capability a Receiver may implement to
+// support tearing down previously-registered listeners. Providers signal
+// support by satisfying this interface in addition to Receiver; callers
+// should type-assert before invoking.
+//
+// Implementations must be idempotent — removing listeners that aren't
+// registered (or for an unknown URL) is not an error.
+type ListenerRemover interface {
+	// RemoveListeners removes every listener registered for the URL.
+	// The destination channel itself remains open so Send/Receive continue
+	// to work. Returns nil if no listeners were registered (idempotent).
+	RemoveListeners(*url.URL) error
+	// RemoveNamedListener removes only the named-listener group for the URL,
+	// leaving other listeners on the same URL in place. Returns nil if the
+	// URL or name is unknown (idempotent).
+	RemoveNamedListener(*url.URL, string) error
+}
+
 // Provider interface exposes methods for a messaging provider
 // It includes Producer and Receiver interfaces
 // It also includes Schemes method to get the supported schemes,
