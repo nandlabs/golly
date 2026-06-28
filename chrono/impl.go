@@ -37,6 +37,7 @@ type defaultScheduler struct {
 	lockTTL             time.Duration
 	instanceID          string
 	wake                chan struct{} // signal to recalculate timer when jobs are added/removed/resumed
+	leader              LeaderElector // gates due-job dispatch in multi-node deployments
 }
 
 // AddJob adds a job with the given schedule.
@@ -357,6 +358,12 @@ func (s *defaultScheduler) run() {
 
 // checkAndExecute checks storage for due jobs and executes them.
 func (s *defaultScheduler) checkAndExecute(now time.Time) {
+	// Skip dispatch when this instance is not the leader. The per-job lock-TTL
+	// remains as the underlying safety net; the elector is an explicit gate
+	// for multi-node deployments that want to centralize scheduling on one node.
+	if s.leader != nil && !s.leader.IsLeader(s.ctx) {
+		return
+	}
 	// Query storage for due jobs
 	records, err := s.storage.GetDueJobs(s.ctx, now)
 	if err != nil {
@@ -417,8 +424,11 @@ func (s *defaultScheduler) executeJob(entry *jobEntry, rec *JobRecord) {
 
 	var jobErr error
 	maxAttempts := 1 + entry.config.maxRetries
+	started := time.Now()
+	attemptsTaken := 0
 
 	for range maxAttempts {
+		attemptsTaken++
 		// Create job context (with optional timeout)
 		var jobCtx context.Context
 		var jobCancel context.CancelFunc
@@ -479,5 +489,16 @@ func (s *defaultScheduler) executeJob(entry *jobEntry, rec *JobRecord) {
 		if entry.config.onSuccess != nil {
 			entry.config.onSuccess(rec.ID)
 		}
+	}
+	// Unified WithResult hook fires for both success and failure with
+	// timing data and retry count.
+	if entry.config.onResult != nil {
+		entry.config.onResult(JobResult{
+			JobID:      rec.ID,
+			Started:    started,
+			Finished:   now,
+			Err:        jobErr,
+			RetryCount: attemptsTaken - 1,
+		})
 	}
 }
