@@ -21,4 +21,6 @@ var (
 	ErrFragmentedControl = errors.New("ws: fragmented control frame")
 	// ErrControlTooLarge is returned when a control frame payload exceeds 125 bytes.
 	ErrControlTooLarge = errors.New("ws: control frame too large")
+	// ErrUnauthorized is returned when an UpgradeAuthFunc rejects the handshake.
+	ErrUnauthorized = errors.New("ws: unauthorized")
 )
