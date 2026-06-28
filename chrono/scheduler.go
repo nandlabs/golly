@@ -84,6 +84,9 @@ type jobConfig struct {
 	timeout    time.Duration
 	onSuccess  func(jobID string)
 	onError    func(jobID string, err error)
+	onResult   func(JobResult)
+	misfire    MisfirePolicy
+	misfireSet bool
 }
 
 // WithMaxRetries sets the maximum number of retries for a failed job execution.
@@ -258,6 +261,9 @@ func New(opts ...Option) Scheduler {
 	}
 	if s.storage == nil {
 		s.storage = NewInMemoryStorage()
+	}
+	if s.leader == nil {
+		s.leader = NewAlwaysLeader()
 	}
 	logger.InfoF("Scheduler created (instance=%s, storagePollInterval=%s, lockTTL=%s)", s.instanceID, s.storagePollInterval, s.lockTTL)
 	return s
