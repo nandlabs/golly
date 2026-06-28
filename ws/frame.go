@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 )
 
 // readFrame reads a single WebSocket frame from the reader.
@@ -58,8 +59,17 @@ func readFrame(r io.Reader, maxSize int64) (*frame, error) {
 		return nil, ErrControlTooLarge
 	}
 
-	// Check max message size
-	if maxSize > 0 && int64(payloadLen) > maxSize {
+	// RFC 6455 §5.2 forbids the most-significant bit being set in the 8-byte
+	// extended length, so payloadLen must fit in int64. We also cap at
+	// math.MaxInt to avoid make([]byte, payloadLen) overflowing on 32-bit
+	// systems even when no maxSize cap was supplied.
+	if payloadLen > math.MaxInt {
+		return nil, ErrMessageTooLarge
+	}
+	// Check max message size. Compare in the same unsigned space to avoid
+	// int64 sign-flip turning huge payloads into "negative > maxSize == false"
+	// and bypassing the cap.
+	if maxSize > 0 && payloadLen > uint64(maxSize) {
 		return nil, ErrMessageTooLarge
 	}
 
