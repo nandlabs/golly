@@ -177,6 +177,37 @@ func (lp *LocalProvider) AddListener(url *url.URL, listener func(msg Message), o
 	return nil
 }
 
+// RemoveListeners drops every listener registered for the URL. The
+// underlying destination channel and dispatch goroutine remain alive
+// (subsequent Send/Receive calls continue to work, and new AddListener
+// calls re-attach immediately). Idempotent — returns nil even if no
+// listeners were registered.
+func (lp *LocalProvider) RemoveListeners(url *url.URL) error {
+	lp.mutex.Lock()
+	defer lp.mutex.Unlock()
+	if lp.closed {
+		return ErrProviderClosed
+	}
+	delete(lp.listeners, url.Host)
+	return nil
+}
+
+// RemoveNamedListener drops the listeners registered under the given
+// named group for the URL. Other listener groups (including unnamed)
+// on the same URL are untouched. Idempotent — returns nil if the URL
+// or name is unknown.
+func (lp *LocalProvider) RemoveNamedListener(url *url.URL, name string) error {
+	lp.mutex.Lock()
+	defer lp.mutex.Unlock()
+	if lp.closed {
+		return ErrProviderClosed
+	}
+	if groups, ok := lp.listeners[url.Host]; ok {
+		delete(groups, name)
+	}
+	return nil
+}
+
 // dispatchMessages reads messages from the channel and dispatches them to
 // registered listeners. Takes a snapshot of listeners under read lock to
 // avoid data races with concurrent AddListener calls.

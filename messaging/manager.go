@@ -14,9 +14,14 @@ var mutex sync.Mutex
 // Manager interface defines an abstraction for messaging providers that can be registered
 type Manager interface {
 	Provider
+	ListenerRemover // delegated to providers that opt in to ListenerRemover
 	Wait()
 	Register(Provider)
 }
+
+// ErrListenerRemovalUnsupported is returned by manager methods when the
+// underlying provider for a URL scheme does not implement ListenerRemover.
+var ErrListenerRemovalUnsupported = fmt.Errorf("provider does not support listener removal")
 
 // managerImpl struct is used to manage the known Messaging providers.
 // It includes a mutex to handle concurrent access to the known providers
@@ -69,6 +74,36 @@ func (m *managerImpl) AddListener(u *url.URL, listener func(msg Message), option
 		err = provider.AddListener(u, listener, options...)
 	}
 	return
+}
+
+// RemoveListeners removes every listener for the URL via the matching
+// provider. Returns ErrListenerRemovalUnsupported when the provider for
+// the scheme does not implement ListenerRemover.
+func (m *managerImpl) RemoveListeners(u *url.URL) error {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return err
+	}
+	remover, ok := provider.(ListenerRemover)
+	if !ok {
+		return ErrListenerRemovalUnsupported
+	}
+	return remover.RemoveListeners(u)
+}
+
+// RemoveNamedListener removes the named-listener group for the URL via
+// the matching provider. Returns ErrListenerRemovalUnsupported when the
+// provider for the scheme does not implement ListenerRemover.
+func (m *managerImpl) RemoveNamedListener(u *url.URL, name string) error {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return err
+	}
+	remover, ok := provider.(ListenerRemover)
+	if !ok {
+		return ErrListenerRemovalUnsupported
+	}
+	return remover.RemoveNamedListener(u, name)
 }
 
 // ReceiveBatch receives a batch of messages using the appropriate provider
