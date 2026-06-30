@@ -72,6 +72,21 @@ func (g *Group) Delete(path string, h func(w http.ResponseWriter, r *http.Reques
 	return g.add(path, h, DELETE)
 }
 
+// Patch registers a PATCH handler under the group's prefix.
+func (g *Group) Patch(path string, h func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return g.add(path, h, PATCH)
+}
+
+// Head registers a HEAD handler under the group's prefix.
+func (g *Group) Head(path string, h func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return g.add(path, h, HEAD)
+}
+
+// Options registers an OPTIONS handler under the group's prefix.
+func (g *Group) Options(path string, h func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return g.add(path, h, OPTIONS)
+}
+
 // Add registers an arbitrary method handler (or methods) on this Group.
 func (g *Group) Add(path string, h func(w http.ResponseWriter, r *http.Request), methods ...string) (*Route, error) {
 	return g.add(path, h, methods...)
