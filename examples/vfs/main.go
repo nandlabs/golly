@@ -41,7 +41,7 @@ func main() {
 		fmt.Println("Open error:", err)
 		return
 	}
-	content, err := file.AsString()
+	content, err := vfs.ReadAllString(file)
 	if err != nil {
 		fmt.Println("Read error:", err)
 	} else {
