@@ -6,6 +6,8 @@ import (
 	"html"
 	"net/http"
 	"path"
+	"sort"
+	"strings"
 )
 
 // Common constants used throughout
@@ -71,4 +73,34 @@ func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
 // methodNotAllowedHandler when a requested method is not allowed in the registered route's method list this handler is invoked
 func methodNotAllowedHandler() http.Handler {
 	return http.HandlerFunc(methodNotAllowed)
+}
+
+// toggleTrailingSlash returns the path with a single trailing slash
+// added or removed. Returns the empty string for the root "/" (no
+// useful toggle exists). Used by ServeHTTP when StrictSlash is off to
+// retry routing with the inverse trailing-slash form.
+func toggleTrailingSlash(p string) string {
+	if p == "" || p == "/" {
+		return ""
+	}
+	if strings.HasSuffix(p, "/") {
+		return strings.TrimRight(p, "/")
+	}
+	return p + "/"
+}
+
+// allowedMethods returns a comma-separated list of HTTP methods that
+// the route has handlers registered for, sorted deterministically (so
+// the Allow header value is stable across requests and easy to test).
+// Returns the empty string when the route has no handlers.
+func allowedMethods(route *Route) string {
+	if route == nil || len(route.handlers) == 0 {
+		return ""
+	}
+	methods := make([]string, 0, len(route.handlers))
+	for m := range route.handlers {
+		methods = append(methods, m)
+	}
+	sort.Strings(methods)
+	return strings.Join(methods, ", ")
 }

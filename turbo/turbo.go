@@ -19,7 +19,21 @@ import (
 // avoiding collisions with other packages using built-in types as keys.
 type paramsKey struct{}
 
-// Router struct that holds the router configuration
+// Router is a turbo HTTP router. It implements http.Handler so it drops
+// directly into http.Server.
+//
+// Concurrency contract:
+//   - Route registration (Get/Post/Put/Delete/Patch/Head/Options/Add,
+//     AddGlobalFilter, Group) is safe to call concurrently AND while
+//     ServeHTTP is running: every mutation takes the write lock and
+//     every dispatch takes the read lock. There is no must-finish-
+//     registering-before-serving requirement.
+//   - The recommended pattern is still to register all routes during
+//     startup and treat the router as immutable thereafter — the
+//     dispatch read lock is uncontended in that case.
+//   - SetNotFoundHandler / SetMethodNotAllowedHandler / StrictSlash
+//     should be called during startup; they do not take the lock and
+//     racing them with ServeHTTP is undefined.
 type Router struct {
 	lock sync.RWMutex
 	// Handler for any route that is not defined
@@ -30,6 +44,10 @@ type Router struct {
 	topLevelRoutes map[string]*Route
 	// global filters
 	globalFilters []FilterFunc
+	// strictSlash controls trailing-slash matching: when true, "/users"
+	// and "/users/" are distinct routes; when false (default), a request
+	// path that fails to match is retried with a toggled trailing slash.
+	strictSlash bool
 }
 
 // Param to hold key value
@@ -119,6 +137,25 @@ func (router *Router) Put(path string, f func(w http.ResponseWriter, r *http.Req
 // Delete to Add a turbo handler for DELETE method
 func (router *Router) Delete(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
 	return router.Add(path, f, DELETE)
+}
+
+// Patch registers a turbo handler for the PATCH method.
+func (router *Router) Patch(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return router.Add(path, f, PATCH)
+}
+
+// Head registers a turbo handler for the HEAD method. Note: HEAD is not
+// auto-derived from GET — register it explicitly when the response body
+// matters (most clients tolerate a no-op HEAD).
+func (router *Router) Head(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return router.Add(path, f, HEAD)
+}
+
+// Options registers a turbo handler for the OPTIONS method. When using
+// the CORS filter from turbo/filters, register an Options route only if
+// you need application-specific handling beyond preflight.
+func (router *Router) Options(path string, f func(w http.ResponseWriter, r *http.Request)) (*Route, error) {
+	return router.Add(path, f, OPTIONS)
 }
 
 func sanitizePath(p string) (string, error) {
@@ -298,6 +335,24 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// start by checking where the method of the Request is same as that of the registered method
 	match, params := router.findRoute(r)
+
+	// Trailing-slash fallback: if no route matched and StrictSlash is
+	// off (the default), retry with the trailing slash toggled. Only
+	// adopt the retry match if it has a handler for THIS request's
+	// method — otherwise the retry would silently promote a 404 into
+	// a 405 (e.g. a path-var node matched after stripping the trailing
+	// slash, even though no actual method handler exists on it).
+	if match == nil && !router.strictSlash {
+		alt := toggleTrailingSlash(r.URL.Path)
+		if alt != "" && alt != r.URL.Path {
+			altReq := r.Clone(r.Context())
+			altReq.URL.Path = alt
+			if m2, p2 := router.findRoute(altReq); m2 != nil && m2.handlers[r.Method] != nil {
+				match, params = m2, p2
+			}
+		}
+	}
+
 	if match != nil {
 		handler = match.handlers[r.Method]
 		// Global Middlewares added
@@ -321,6 +376,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		handler = router.unManagedRouteHandler
 	}
 	if handler == nil {
+		// match != nil but no handler for this method ⇒ 405. Per RFC 9110
+		// §15.5.6 a 405 response MUST include an Allow header listing the
+		// methods that ARE valid for the target resource.
+		if match != nil {
+			if allow := allowedMethods(match); allow != "" {
+				w.Header().Set("Allow", allow)
+			}
+		}
 		handler = router.unsupportedMethodHandler
 	}
 	if params != nil {
@@ -329,13 +392,51 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler.ServeHTTP(w, r)
 }
 
+// SetUnmanaged registers a custom 404 handler. Prefer SetNotFoundHandler
+// (canonical name); both methods set the same field.
 func (r *Router) SetUnmanaged(handler http.Handler) *Router {
 	r.unManagedRouteHandler = handler
 	return r
 }
 
+// SetUnsupportedMethod registers a custom 405 handler. Prefer
+// SetMethodNotAllowedHandler (canonical name); both methods set the same
+// field.
 func (r *Router) SetUnsupportedMethod(handler http.Handler) *Router {
 	r.unsupportedMethodHandler = handler
+	return r
+}
+
+// SetNotFoundHandler registers a custom handler invoked when no route
+// matches the request path. Canonical name for SetUnmanaged.
+func (r *Router) SetNotFoundHandler(handler http.Handler) *Router {
+	r.unManagedRouteHandler = handler
+	return r
+}
+
+// SetMethodNotAllowedHandler registers a custom handler invoked when a
+// route exists for the path but not for the request's HTTP method. Before
+// the handler runs, the router sets the "Allow" header to a comma-
+// separated list of methods that ARE registered for that path, per RFC
+// 9110 §15.5.6.
+//
+// Canonical name for SetUnsupportedMethod.
+func (r *Router) SetMethodNotAllowedHandler(handler http.Handler) *Router {
+	r.unsupportedMethodHandler = handler
+	return r
+}
+
+// StrictSlash configures trailing-slash policy.
+//
+// When false (default), a request whose path doesn't match any
+// registered route is retried with the trailing slash toggled — so
+// "/users" matches a "/users/" route and vice versa. This is the
+// least-surprising default.
+//
+// When true, "/users" and "/users/" are distinct: each must be
+// registered explicitly.
+func (r *Router) StrictSlash(strict bool) *Router {
+	r.strictSlash = strict
 	return r
 }
 

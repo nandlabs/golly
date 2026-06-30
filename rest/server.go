@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -43,6 +44,12 @@ type Server interface {
 	Put(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// AddRoute adds a route to the server
 	Delete(path string, handler HandlerFunc) (route *turbo.Route, err error)
+	// Patch registers a PATCH handler
+	Patch(path string, handler HandlerFunc) (route *turbo.Route, err error)
+	// Head registers a HEAD handler
+	Head(path string, handler HandlerFunc) (route *turbo.Route, err error)
+	// Options registers an OPTIONS handler
+	Options(path string, handler HandlerFunc) (route *turbo.Route, err error)
 	// Unhandled adds a handler for unhandled routes
 	Unhandled(handler HandlerFunc) (err error)
 	// Unsupported adds a handler for unsupported methods
@@ -100,6 +107,24 @@ func (rs *restServer) Put(path string, handler HandlerFunc) (route *turbo.Route,
 // Delete adds a route to the server
 func (rs *restServer) Delete(path string, handler HandlerFunc) (route *turbo.Route, err error) {
 	return rs.AddRoute(path, handler, http.MethodDelete)
+}
+
+// Patch registers a PATCH handler on the server.
+func (rs *restServer) Patch(path string, handler HandlerFunc) (route *turbo.Route, err error) {
+	return rs.AddRoute(path, handler, http.MethodPatch)
+}
+
+// Head registers a HEAD handler on the server.
+func (rs *restServer) Head(path string, handler HandlerFunc) (route *turbo.Route, err error) {
+	return rs.AddRoute(path, handler, http.MethodHead)
+}
+
+// Options registers an OPTIONS handler on the server. Note: when using
+// the CORS filter (Opts().Cors), preflight OPTIONS requests are
+// handled by the filter — register Options only for app-specific
+// OPTIONS behavior.
+func (rs *restServer) Options(path string, handler HandlerFunc) (route *turbo.Route, err error) {
+	return rs.AddRoute(path, handler, http.MethodOptions)
 }
 
 // Unhandled adds a handler for unhandled routes
@@ -188,6 +213,7 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 		return
 	}
 	router := turbo.NewRouter()
+	router.StrictSlash(opts.StrictSlash)
 	router.AddCorsFilter(opts.Cors)
 
 	httpServer := &http.Server{
@@ -195,6 +221,22 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 		Addr:         opts.ListenHost + ":" + strconv.Itoa(int(opts.ListenPort)),
 		ReadTimeout:  time.Duration(opts.ReadTimeout) * time.Millisecond,
 		WriteTimeout: time.Duration(opts.WriteTimeout) * time.Millisecond,
+	}
+	// TLS configuration. When the user supplies a full *tls.Config it
+	// wins outright (mTLS, custom ciphers, GetCertificate, ALPN).
+	// Otherwise we set MinVersion on a fresh Config so the cert files
+	// loaded by ServeTLS inherit it. Default min version is TLS 1.2.
+	if opts.EnableTLS {
+		switch {
+		case opts.TLSConfig != nil:
+			httpServer.TLSConfig = opts.TLSConfig
+		default:
+			min := opts.TLSMinVersion
+			if min == 0 {
+				min = tls.VersionTLS12
+			}
+			httpServer.TLSConfig = &tls.Config{MinVersion: min}
+		}
 	}
 	var listener net.Listener
 	rServer = &restServer{
@@ -216,7 +258,13 @@ func NewServer(opts *SrvOptions) (rServer Server, err error) {
 
 					go func() {
 
-						if opts.EnableTLS && opts.CertPath != textutils.EmptyStr && opts.PrivateKeyPath != textutils.EmptyStr {
+						// TLS path: enabled iff EnableTLS is set AND either a
+						// cert/key pair on disk OR a fully-populated
+						// TLSConfig (with Certificates or GetCertificate)
+						// is provided. ServeTLS reads from the file paths
+						// when they're non-empty; otherwise it relies on
+						// httpServer.TLSConfig already carrying the cert.
+						if opts.EnableTLS {
 							logger.InfoF("Starting to accept rest(https) requests on %s", httpServer.Addr)
 							err = httpServer.ServeTLS(listener, opts.CertPath, opts.PrivateKeyPath)
 							if err != nil {
