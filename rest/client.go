@@ -223,9 +223,12 @@ func (co *ClientOptsBuilder) Build() *ClientOpts {
 }
 
 // Client represents a REST client.
+//
+// Retry and circuit-breaker behavior are configured on the embedded
+// clients.ClientOptions (accessible via CliOptsBuilder().RetryPolicy(...)
+// and .CircuitBreaker(...)) and are applied in Execute — see
+// rest/client.go Execute for the exact ordering.
 type Client struct {
-	// retryInfo      *clients.RetryInfo
-	// circuitBreaker *clients.CircuitBreaker
 	httpClient    http.Client
 	httpTransport *http.Transport
 	options       *ClientOpts
