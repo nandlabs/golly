@@ -59,8 +59,14 @@
 //
 // # Client
 //
-// rest also exposes a Client. Authentication is delegated to the
-// golly/clients package (Basic / Bearer / API key); retry and circuit-
-// breaker integration is in progress — see the package source for
-// current status.
+// rest also exposes a Client. Authentication, retry-with-backoff, and
+// circuit-breaker are all delegated to the golly/clients package:
+//
+//   - auth: CliOptsBuilder().WithAuth(...) — Basic / Bearer / API key
+//   - retry: CliOptsBuilder().RetryPolicy(maxRetries, waitMs, exponential, maxWaitMs)
+//   - breaker: CliOptsBuilder().CircuitBreaker(failure, success, maxHalfOpen, timeout)
+//
+// Client.Execute runs the auth handler, checks the breaker, does the
+// request, signals the breaker, and retries per the RetryPolicy. The
+// retry loop honors request-context cancellation.
 package rest
