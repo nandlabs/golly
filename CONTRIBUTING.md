@@ -47,5 +47,4 @@ Concretely, by contributing you confirm that:
   owing you any additional terms or conditions.
 
 This is the standard "inbound = outbound" rule used across the Rust and Go
-ecosystems. The same clause appears verbatim in the [LICENSE](LICENSE) summary
-file.
+ecosystems. The same clause appears verbatim in [LICENSING.md](LICENSING.md).

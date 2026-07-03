@@ -350,4 +350,4 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## License
 
-See LICENSE file for details.
+Dual-licensed under [Apache 2.0](../../LICENSE-APACHE) or [MIT](../../LICENSE-MIT); see [LICENSING.md](../../LICENSING.md).
