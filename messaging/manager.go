@@ -1,6 +1,7 @@
 package messaging
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sync"
@@ -124,6 +125,57 @@ func (m *managerImpl) SendBatch(u *url.URL, msgs []Message, options ...Option) (
 		err = provider.SendBatch(u, msgs, options...)
 	}
 	return
+}
+
+// SendCtx delegates to the matching provider's SendCtx when it implements
+// ProducerCtx; otherwise it falls back to the non-ctx Send raced against
+// ctx via the package-level SendCtx helper.
+func (m *managerImpl) SendCtx(ctx context.Context, u *url.URL, msg Message, opts ...Option) error {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return err
+	}
+	return SendCtx(ctx, provider, u, msg, opts...)
+}
+
+// SendBatchCtx mirrors SendCtx for batches.
+func (m *managerImpl) SendBatchCtx(ctx context.Context, u *url.URL, msgs []Message, opts ...Option) error {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return err
+	}
+	return SendBatchCtx(ctx, provider, u, msgs, opts...)
+}
+
+// ReceiveCtx delegates to the matching provider's ReceiveCtx when it
+// implements ReceiverCtx; otherwise it falls back to Receive raced
+// against ctx.
+func (m *managerImpl) ReceiveCtx(ctx context.Context, u *url.URL, opts ...Option) (Message, error) {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return nil, err
+	}
+	return ReceiveCtx(ctx, provider, u, opts...)
+}
+
+// ReceiveBatchCtx mirrors ReceiveCtx for batches.
+func (m *managerImpl) ReceiveBatchCtx(ctx context.Context, u *url.URL, opts ...Option) ([]Message, error) {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return nil, err
+	}
+	return ReceiveBatchCtx(ctx, provider, u, opts...)
+}
+
+// AddListenerCtx delegates to the matching provider's AddListenerCtx
+// when it implements ReceiverCtx; otherwise it falls back to
+// AddListener raced against ctx.
+func (m *managerImpl) AddListenerCtx(ctx context.Context, u *url.URL, l func(Message), opts ...Option) error {
+	provider, err := m.getFor(u.Scheme)
+	if err != nil {
+		return err
+	}
+	return AddListenerCtx(ctx, provider, u, l, opts...)
 }
 
 // Schemes returns the supported URL schemes by the known providers

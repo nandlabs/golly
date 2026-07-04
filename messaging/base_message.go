@@ -15,6 +15,19 @@ type BaseMessage struct {
 	headers     map[string]interface{}
 	headerTypes map[string]reflect.Kind
 	body        *bytes.Buffer
+	routingKey  string
+}
+
+// RoutingKey returns the routing key associated with the message. It is
+// "" when no key has been assigned. BaseMessage implements the Keyed
+// capability interface so any Message embedding it is Keyed-compatible.
+func (bm *BaseMessage) RoutingKey() string {
+	return bm.routingKey
+}
+
+// SetRoutingKey stores a routing key on the message. See Keyed.
+func (bm *BaseMessage) SetRoutingKey(key string) {
+	bm.routingKey = key
 }
 
 func NewBaseMessage() (baseMsg *BaseMessage, err error) {
