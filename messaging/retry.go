@@ -71,7 +71,6 @@ func WithRetry(handler func(Message), policy RetryPolicy, dlqURL *url.URL) func(
 					time.Sleep(wait)
 				}
 			}
-			lastPanic = nil
 			done := runHandlerSafely(handler, msg)
 			if done == nil {
 				return // success

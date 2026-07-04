@@ -99,7 +99,7 @@ func ReceiveBatchCtx(ctx context.Context, r Receiver, u *url.URL, opts ...Option
 
 // AddListenerCtx mirrors Receiver.AddListener with context support.
 // Providers that implement ReceiverCtx typically tear the listener down
-// when ctx is cancelled; the fallback path returns immediately after the
+// when ctx is canceled; the fallback path returns immediately after the
 // underlying AddListener call and leaves ctx cancellation to the caller.
 func AddListenerCtx(ctx context.Context, r Receiver, u *url.URL, l func(Message), opts ...Option) error {
 	if rc, ok := r.(ReceiverCtx); ok {

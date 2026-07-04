@@ -811,7 +811,7 @@ func (lp *LocalProvider) ReceiveBatchCtx(ctx context.Context, u *url.URL, opts .
 }
 
 // AddListenerCtx registers a listener and installs a ctx watcher that
-// removes the listener (via RemoveListeners) when ctx is cancelled. Note
+// removes the listener (via RemoveListeners) when ctx is canceled. Note
 // this removes ALL unnamed listeners for the URL when the anonymous
 // listener path is used, matching the granularity of ListenerRemover.
 // Callers that need finer control should use AddListener with a
