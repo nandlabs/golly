@@ -86,26 +86,38 @@ func (cb *CircuitBreaker) CanExecute() (err error) {
 }
 
 // OnExecution is called after a request is executed.
-// It updates the success or failure counters based on the result of the request.
-// It also checks if the circuit needs to transition to a different state based on the counters and thresholds.
+// It updates the success or failure counters based on the result of the request
+// and drives state transitions:
+//
+//   - Closed  + failure: increment the consecutive-failure counter; open once it
+//     reaches FailureThreshold. A success resets the counter (consecutive semantics).
+//   - HalfOpen + success: increment the consecutive-success counter; close once it
+//     reaches SuccessThreshold.
+//   - HalfOpen + failure: a single failed probe snaps the circuit back open.
+//   - Open: ignored (CanExecute gates execution while open; the open→half-open
+//     timer governs recovery), but handled defensively in case a caller reports late.
 func (cb *CircuitBreaker) OnExecution(success bool) {
-	var val uint64
-	state := cb.getState()
-	if success {
-		val = atomic.AddUint64(&cb.successCounter, 1)
-		if state == circuitHalfOpen {
-			if val >= cb.SuccessThreshold {
+	switch cb.getState() {
+	case circuitClosed:
+		if success {
+			// A success breaks any accumulating failure streak.
+			atomic.StoreUint64(&cb.failureCounter, 0)
+			return
+		}
+		if atomic.AddUint64(&cb.failureCounter, 1) >= cb.FailureThreshold {
+			cb.updateState(circuitClosed, circuitOpen)
+		}
+	case circuitHalfOpen:
+		if success {
+			if atomic.AddUint64(&cb.successCounter, 1) >= cb.SuccessThreshold {
 				cb.updateState(circuitHalfOpen, circuitClosed)
 			}
+			return
 		}
-	} else {
-		val = atomic.AddUint64(&cb.failureCounter, 1)
-		// Check if the failure threshold is reached
-		if state == circuitClosed {
-			if val >= cb.FailureThreshold {
-				cb.updateState(circuitClosed, circuitOpen)
-			}
-		}
+		// Any failure while probing reopens the circuit immediately.
+		cb.updateState(circuitHalfOpen, circuitOpen)
+	case circuitOpen:
+		// No-op: execution should be gated by CanExecute while open.
 	}
 }
 
@@ -136,7 +148,6 @@ func (cb *CircuitBreaker) updateState(oldState, newState uint32) {
 }
 
 // getState returns the current state of the circuit breaker.
-func (cb *CircuitBreaker) getState() (s uint32) {
-	atomic.LoadUint32(&s)
-	return
+func (cb *CircuitBreaker) getState() uint32 {
+	return atomic.LoadUint32(&cb.currentState)
 }
