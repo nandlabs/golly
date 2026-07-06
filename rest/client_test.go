@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -229,72 +230,63 @@ func TestClient_isError(t *testing.T) {
 	}
 }
 func TestClient_ExecuteWithCircuitBreaker(t *testing.T) {
-	coptsBuilder1 := CliOptsBuilder().ErrOnStatus(http.StatusInternalServerError)
-	coptsBuilder1.CircuitBreaker(3, 3, 3, 5000)
+	// "Open" path: a server that always 500s trips the breaker after the
+	// failure threshold, after which Execute fails fast with ErrCBOpen and
+	// returns a nil Response (it never reaches the transport).
+	t.Run("opens after failure threshold", func(t *testing.T) {
+		failing := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer failing.Close()
 
-	tests := []struct {
-		name           string
-		clientOptions  *ClientOpts
-		requestURL     string
-		requestMethod  string
-		expectedStatus int
-		expectError    bool
-	}{
-		{
-			name:          "Circuit breaker open",
-			clientOptions: coptsBuilder1.Build(),
-			requestURL:    "/test",
-			requestMethod: http.MethodGet,
-			expectError:   true,
-		},
-		{
-			name:           "Circuit breaker closed",
-			clientOptions:  coptsBuilder1.Build(),
-			requestURL:     "/test",
-			requestMethod:  http.MethodGet,
-			expectedStatus: http.StatusOK,
-			expectError:    false,
-		},
-	}
+		opts := CliOptsBuilder().ErrOnStatus(http.StatusInternalServerError)
+		opts.CircuitBreaker(3, 3, 3, 5000) // threshold 3, long timeout so it stays open
+		client := NewClientWithOptions(opts.Build())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.expectError {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				} else {
-					w.WriteHeader(http.StatusOK)
-				}
-			}))
-			defer ts.Close()
+		req, err := client.NewRequest(failing.URL+"/test", http.MethodGet)
+		if err != nil {
+			t.Fatalf("NewRequest: %v", err)
+		}
 
-			tt.requestURL = ts.URL + tt.requestURL
-			client := NewClientWithOptions(tt.clientOptions)
-			req, err := client.NewRequest(tt.requestURL, tt.requestMethod)
-			if err != nil {
-				if !tt.expectError {
-					t.Errorf("unexpected error creating request: %v", err)
-				}
-				return
-			}
-			var res *Response
+		// The first three calls hit the server (all 500 → failures) and trip
+		// the breaker; subsequent calls fail fast.
+		var lastRes *Response
+		var lastErr error
+		for i := 0; i < 5; i++ {
+			lastRes, lastErr = client.Execute(req)
+		}
+		if !errors.Is(lastErr, clients.ErrCBOpen) {
+			t.Fatalf("expected ErrCBOpen once the breaker trips, got res=%v err=%v", lastRes, lastErr)
+		}
+		if lastRes != nil {
+			t.Errorf("Execute should return a nil Response when the breaker is open, got %v", lastRes)
+		}
+	})
 
-			for i := 0; i < 5; i++ {
-				res, err = client.Execute(req)
-			}
-			if tt.expectError {
-				if !client.isError(err, res.raw) {
-					t.Errorf("expected error, got none")
-				}
-				return
-			}
+	// "Closed" path: an independent client with its own (closed) breaker
+	// serves requests normally.
+	t.Run("closed breaker permits execution", func(t *testing.T) {
+		ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ok.Close()
 
-			if res.raw.StatusCode != tt.expectedStatus {
-				t.Errorf("expected status %d, got %d", tt.expectedStatus, res.raw.StatusCode)
-			}
-		})
-	}
+		opts := CliOptsBuilder()
+		opts.CircuitBreaker(3, 3, 3, 5000)
+		client := NewClientWithOptions(opts.Build())
+
+		req, err := client.NewRequest(ok.URL+"/test", http.MethodGet)
+		if err != nil {
+			t.Fatalf("NewRequest: %v", err)
+		}
+		res, err := client.Execute(req)
+		if err != nil {
+			t.Fatalf("closed breaker should permit execution, got %v", err)
+		}
+		if res == nil || res.raw.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200, got res=%v err=%v", res, err)
+		}
+	})
 }
 
 func TestClient_ExecuteWithRetries(t *testing.T) {
