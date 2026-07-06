@@ -32,7 +32,7 @@ const (
 
 // Pin bypasses routing entirely, dispatching directly to a named
 // (Provider, Model). It is an escape hatch for A/B tests and for reproducing a
-// specific model's behaviour while debugging.
+// specific model's behavior while debugging.
 type Pin struct {
 	Provider string
 	Model    string

@@ -75,7 +75,7 @@ func TestBuildRegistry_FiveStepMerge(t *testing.T) {
 		t.Errorf("text capability should remain on base/big")
 	}
 	// Step 4 model disabled.
-	if _, ok := reg.Get("base", "small"); ok {
+	if _, present := reg.Get("base", "small"); present {
 		t.Errorf("base/small should have been dropped")
 	}
 	// Step 5 custom model added.

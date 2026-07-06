@@ -29,7 +29,7 @@ type ModelRouter interface {
 // regHolder wraps a ModelRegistry so it can be swapped atomically.
 type regHolder struct{ reg ModelRegistry }
 
-// circuitBreaker is the minimal breaker behaviour the router composes with.
+// circuitBreaker is the minimal breaker behavior the router composes with.
 // *clients.CircuitBreaker satisfies it; the seam also keeps the router's
 // breaker-skip logic testable without depending on breaker internals.
 type circuitBreaker interface {
