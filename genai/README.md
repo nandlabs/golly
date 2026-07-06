@@ -104,6 +104,67 @@ opts2.Set(genai.OptionMaxTokens, 2048)
 opts2.Set(genai.OptionSystemInstructions, "You are a coding assistant.")
 ```
 
+## Model Router
+
+The router adds a task-aware selection layer **above** providers. Instead of
+hard-coding a model name, you describe a `Task` — required capabilities, size
+estimates, an optional cost budget, and a priority — and the router picks the
+`(provider, model)`, reconciles your `Options` with the chosen model's limits,
+dispatches the existing `Generate`, and fails over on transient errors.
+
+```
+Task ─► ModelRouter ─► RoutingStrategy ─► ranked []RouteCandidate
+                                             │
+                          Route{ Primary, Fallbacks[] }
+                                             │
+        clamp Options ─► Provider.Generate(ctx, model, msg, opts) ─► resp
+        (retry same model on transient errors; escalate to next on exhaustion)
+```
+
+Providers opt in to capability routing by implementing the optional
+`CapabilityProvider` interface (`ModelCatalog()` / `ModelInfoFor()`). This does
+**not** touch the existing `Provider` interface — a provider that does not
+implement it still works and stays reachable by explicit rule or `Pin`.
+
+### Quick start
+
+```go
+providers := genai.NewProviderSet(bedrockProvider, vertexProvider) // explicit, no global
+cfg, _ := genai.LoadRoutingConfig("genai.yaml")                    // optional policy overlay
+registry, err := genai.NewModelRegistry(providers, cfg)            // errors on phantom custom models
+if err != nil {
+    log.Fatal(err)
+}
+
+router, _ := genai.NewRouter(
+    genai.WithProviders(providers),
+    genai.WithRegistry(registry),
+    genai.WithStrategy(genai.NewCapabilityStrategy()),
+    genai.WithRetryPolicy(&clients.RetryPolicy{MaxRetries: 2, BackoffInterval: 200 * time.Millisecond, Exponential: true}),
+    genai.WithCircuitBreaker(clients.NewCircuitBreaker(&clients.BreakerInfo{FailureThreshold: 5})),
+    genai.WithFallbackDepth(2),
+)
+
+task := genai.Task{
+    Type:                 genai.TaskSummarize,
+    EstInputTokens:       12000,
+    RequiredCapabilities: []genai.Capability{genai.CapVision},
+    Priority:             genai.PriorityCost,
+}
+msg := genai.NewTextMessage(genai.RoleUser, "Summarize the attached document")
+resp, err := router.Route(ctx, task, msg, genai.NewOptionsBuilder().Build())
+```
+
+Use `router.Resolve(task, opts)` to inspect the chosen plan and full
+`RouteDecision` (candidates, exclusions, firing strategy) **without** making a
+call — the backbone of fast, offline routing tests. Embeddings route through the
+parallel `EmbeddingRouter`, which shares the same registry filtered to
+`CapEmbeddings`.
+
+Built-in strategies: `CapabilityStrategy` (filter + blended-cost/priority
+ranking), `RuleBasedStrategy` (`When().Use()` / `Default()`), and
+`CompositeStrategy` (first non-empty ranking wins).
+
 ## Providers
 
 Three provider implementations are available in the `genai/impl` sub-package:
