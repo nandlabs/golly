@@ -45,7 +45,7 @@ func marshalRequestBody(body any, options *genai.Options, forward bool, provider
 	sort.Strings(extraNames)
 
 	fields := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(raw, &fields); err != nil {
+	if err = json.Unmarshal(raw, &fields); err != nil {
 		return nil, fmt.Errorf("failed to prepare request for custom options: %w", err)
 	}
 
@@ -54,9 +54,9 @@ func marshalRequestBody(body any, options *genai.Options, forward bool, provider
 			genai.LOGGER.WarnF("genai/%s: custom option %q conflicts with a request field set by the provider; ignored", provider, name)
 			continue
 		}
-		v, err := json.Marshal(options.Get(name))
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal custom option %q: %w", name, err)
+		v, mErr := json.Marshal(options.Get(name))
+		if mErr != nil {
+			return nil, fmt.Errorf("failed to marshal custom option %q: %w", name, mErr)
 		}
 		fields[name] = v
 	}

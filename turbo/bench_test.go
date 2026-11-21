@@ -35,7 +35,6 @@ func BenchmarkFindRouteStatic(b *testing.B) {
 		RemoteAddr:       "",
 		RequestURI:       "",
 		TLS:              nil,
-		Cancel:           nil,
 		Response:         nil,
 	}
 	for i := 0; i < b.N; i++ {
@@ -70,7 +69,6 @@ func BenchmarkFindRoutePathParam(b *testing.B) {
 		RemoteAddr:       "",
 		RequestURI:       "",
 		TLS:              nil,
-		Cancel:           nil,
 		Response:         nil,
 	}
 	for i := 0; i < b.N; i++ {

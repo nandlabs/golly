@@ -238,7 +238,7 @@ func TestMarshalRequestBody_NilOptionsAndUnmarshalable(t *testing.T) {
 
 func TestIsStandardOption(t *testing.T) {
 	if !genai.IsStandardOption(genai.OptionTemperature) || !genai.IsStandardOption(genai.OptionTools) {
-		t.Error("expected standard options to be recognised")
+		t.Error("expected standard options to be recognized")
 	}
 	if genai.IsStandardOption("reasoning") {
 		t.Error("custom option reported as standard")
