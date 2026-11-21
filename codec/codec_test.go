@@ -68,7 +68,7 @@ func TestNewJsonCodec2(t *testing.T) {
 		Time: 123124124,
 	}
 	if m != want {
-		t.Errorf("got %q, want %q", m, want)
+		t.Errorf("got %+v, want %+v", m, want)
 	}
 }
 
@@ -99,7 +99,7 @@ func TestNewXmlCodec2(t *testing.T) {
 		Time: 123124124,
 	}
 	if m != want {
-		t.Errorf("got %q, want %q", m, want)
+		t.Errorf("got %+v, want %+v", m, want)
 	}
 }
 
