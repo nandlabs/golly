@@ -37,6 +37,7 @@ type OpenAIProvider struct {
 	description  string
 	version      string
 	extraHeaders map[string]string
+	forwardOpts  bool
 }
 
 // OpenAIProviderConfig contains configuration for the OpenAI provider
@@ -59,6 +60,11 @@ type OpenAIProviderConfig struct {
 	// ExtraHeaders are additional HTTP headers to include with every request.
 	// Use this for provider-specific headers not covered by the auth mechanism.
 	ExtraHeaders map[string]string
+	// ForwardUnknownOptions controls whether custom options (names that are not
+	// genai standard options, e.g. set with OptionsBuilder.Add("reasoning_effort", ...))
+	// are sent as extra top-level fields of the request body. nil (the default)
+	// means true; set it to a pointer to false to drop custom options.
+	ForwardUnknownOptions *bool
 }
 
 // --- OpenAI API request/response types ---
@@ -231,6 +237,7 @@ func NewOpenAIProviderWithConfig(config *OpenAIProviderConfig, opts *rest.Client
 		description:  description,
 		version:      version,
 		extraHeaders: config.ExtraHeaders,
+		forwardOpts:  forwardEnabled(config.ForwardUnknownOptions),
 	}
 }
 
@@ -259,6 +266,10 @@ func (o *OpenAIProvider) Models() []string {
 // Generate generates a response based on the provided message and options.
 func (o *OpenAIProvider) Generate(ctx context.Context, model string, message *genai.Message, options *genai.Options) (*genai.GenResponse, error) {
 	oaiReq := o.buildRequest(model, message, options, false)
+	reqBody, err := marshalRequestBody(oaiReq, options, o.forwardOpts, OpenAIProviderName)
+	if err != nil {
+		return nil, err
+	}
 
 	url := fmt.Sprintf("%s/chat/completions", o.baseURL)
 
@@ -271,7 +282,7 @@ func (o *OpenAIProvider) Generate(ctx context.Context, model string, message *ge
 		return nil, fmt.Errorf("failed to set context: %w", err)
 	}
 	o.setHeaders(req)
-	req.SetBody(oaiReq)
+	req.SeBodyReader(bytes.NewReader(reqBody))
 	req.SetContentType(ioutils.MimeApplicationJSON)
 
 	resp, err := o.client.Execute(req)
@@ -304,9 +315,9 @@ func (o *OpenAIProvider) GenerateStream(ctx context.Context, model string, messa
 
 		url := fmt.Sprintf("%s/chat/completions", o.baseURL)
 
-		reqBody, err := json.Marshal(oaiReq)
+		reqBody, err := marshalRequestBody(oaiReq, options, o.forwardOpts, OpenAIProviderName)
 		if err != nil {
-			errorChan <- fmt.Errorf("failed to marshal request: %w", err)
+			errorChan <- err
 			return
 		}
 

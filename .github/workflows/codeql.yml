@@ -19,4 +19,4 @@ jobs:
             contents: read
             security-events: write
         with:
-            go-version: "1.25"
+            go-version: "1.26"

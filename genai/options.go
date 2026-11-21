@@ -26,6 +26,42 @@ const (
 	OptionToolChoice         = "tool_choice"
 )
 
+// standardOptions is the set of provider-neutral option names defined by this
+// package. Providers map these to their own request fields (or ignore the ones
+// they do not support); they are never forwarded verbatim to a provider API.
+var standardOptions = map[string]struct{}{
+	OptionMaxTokens:          {},
+	OptionMinTokens:          {},
+	OptionTemperature:        {},
+	OptionTopP:               {},
+	OptionCandidateCount:     {},
+	OptionStopWords:          {},
+	OptionTopK:               {},
+	OptionSeed:               {},
+	OptionMinLength:          {},
+	OptionMaxLength:          {},
+	OptionRepetitionPenalty:  {},
+	OptionFrequencyPenalty:   {},
+	OptionPresencePenalty:    {},
+	OptionBestOf:             {},
+	OptionLogProbs:           {},
+	OptionEcho:               {},
+	OptionOutputMime:         {},
+	OptionSchema:             {},
+	OptionSystemInstructions: {},
+	OptionTools:              {},
+	OptionToolChoice:         {},
+}
+
+// IsStandardOption reports whether name is one of the provider-neutral option
+// names defined by this package (the OptionXxx constants). Any other name is a
+// custom option, typically set with OptionsBuilder.Add, which providers may
+// forward as a provider-specific request parameter.
+func IsStandardOption(name string) bool {
+	_, ok := standardOptions[name]
+	return ok
+}
+
 // Options represents the options for the Service
 type Options struct {
 	values map[string]any

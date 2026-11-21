@@ -40,6 +40,7 @@ type ClaudeProvider struct {
 	description  string
 	version      string
 	extraHeaders map[string]string
+	forwardOpts  bool
 }
 
 // ClaudeProviderConfig contains configuration for the Claude provider.
@@ -62,6 +63,11 @@ type ClaudeProviderConfig struct {
 	Version string
 	// ExtraHeaders are additional HTTP headers to include with every request.
 	ExtraHeaders map[string]string
+	// ForwardUnknownOptions controls whether custom options (names that are not
+	// genai standard options, e.g. set with OptionsBuilder.Add("thinking", ...))
+	// are sent as extra top-level fields of the request body. nil (the default)
+	// means true; set it to a pointer to false to drop custom options.
+	ForwardUnknownOptions *bool
 }
 
 // --- Anthropic API request/response types ---
@@ -225,6 +231,7 @@ func NewClaudeProviderWithConfig(config *ClaudeProviderConfig, opts *rest.Client
 		description:  description,
 		version:      version,
 		extraHeaders: config.ExtraHeaders,
+		forwardOpts:  forwardEnabled(config.ForwardUnknownOptions),
 	}
 }
 
@@ -253,6 +260,10 @@ func (c *ClaudeProvider) Models() []string {
 // Generate generates a response based on the provided message and options.
 func (c *ClaudeProvider) Generate(ctx context.Context, model string, message *genai.Message, options *genai.Options) (*genai.GenResponse, error) {
 	claudeReq := c.buildRequest(model, message, options, false)
+	reqBody, err := marshalRequestBody(claudeReq, options, c.forwardOpts, ClaudeProviderName)
+	if err != nil {
+		return nil, err
+	}
 
 	url := fmt.Sprintf("%s/v1/messages", c.baseURL)
 
@@ -265,7 +276,7 @@ func (c *ClaudeProvider) Generate(ctx context.Context, model string, message *ge
 		return nil, fmt.Errorf("failed to set context: %w", err)
 	}
 	c.setHeaders(req)
-	req.SetBody(claudeReq)
+	req.SeBodyReader(bytes.NewReader(reqBody))
 	req.SetContentType(ioutils.MimeApplicationJSON)
 
 	resp, err := c.client.Execute(req)
@@ -298,9 +309,9 @@ func (c *ClaudeProvider) GenerateStream(ctx context.Context, model string, messa
 
 		url := fmt.Sprintf("%s/v1/messages", c.baseURL)
 
-		reqBody, err := json.Marshal(claudeReq)
+		reqBody, err := marshalRequestBody(claudeReq, options, c.forwardOpts, ClaudeProviderName)
 		if err != nil {
-			errorChan <- fmt.Errorf("failed to marshal request: %w", err)
+			errorChan <- err
 			return
 		}
 

@@ -49,6 +49,11 @@ type OllamaProviderConfig struct {
 	Version string
 	// ExtraHeaders are additional HTTP headers to include with every request.
 	ExtraHeaders map[string]string
+	// ForwardUnknownOptions controls whether custom options (names that are not
+	// genai standard options, e.g. set with OptionsBuilder.Add("keep_alive", ...))
+	// are sent as extra top-level fields of the request body. nil (the default)
+	// means true; set it to a pointer to false to drop custom options.
+	ForwardUnknownOptions *bool
 }
 
 // NewOllamaProvider creates a new Ollama provider with default settings and the given REST client options.
@@ -76,12 +81,13 @@ func NewOllamaProviderWithConfig(config *OllamaProviderConfig, opts *rest.Client
 	}
 
 	openai := NewOpenAIProviderWithConfig(&OpenAIProviderConfig{
-		Auth:         config.Auth, // nil for unauthenticated local instances
-		BaseURL:      baseURL,
-		Models:       config.Models,
-		Description:  description,
-		Version:      version,
-		ExtraHeaders: config.ExtraHeaders,
+		Auth:                  config.Auth, // nil for unauthenticated local instances
+		BaseURL:               baseURL,
+		Models:                config.Models,
+		Description:           description,
+		Version:               version,
+		ExtraHeaders:          config.ExtraHeaders,
+		ForwardUnknownOptions: config.ForwardUnknownOptions,
 	}, opts)
 
 	return &OllamaProvider{OpenAIProvider: openai}
