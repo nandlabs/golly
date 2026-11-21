@@ -13,6 +13,7 @@ The Claude provider implements the `genai.Provider` interface for the [Anthropic
   - [Standard Anthropic API](#standard-anthropic-api)
   - [Custom Auth Provider](#custom-auth-provider)
 - [Supported Options](#supported-options)
+  - [Custom (Provider-Specific) Options](#custom-provider-specific-options)
 - [Generating Responses](#generating-responses)
   - [Basic Generation](#basic-generation)
   - [System Instructions](#system-instructions)
@@ -100,6 +101,7 @@ provider := impl.NewClaudeProviderWithConfig(&impl.ClaudeProviderConfig{
 | `Description`  | `string`               | `"Anthropic Claude API provider..."` | Provider description                                       |
 | `Version`      | `string`               | `"1.0.0"`                            | Provider version                                           |
 | `ExtraHeaders` | `map[string]string`    | `nil`                                | Additional HTTP headers on every request                   |
+| `ForwardUnknownOptions` | `*bool`                | `nil` (forward)                      | Forward custom options in the request body ([details](#custom-provider-specific-options)) |
 
 ## Authentication
 
@@ -157,6 +159,37 @@ provider := impl.NewClaudeProviderWithConfig(&impl.ClaudeProviderConfig{
 | `OptionSystemInstructions` | `system`         | `string`   | System prompt (top-level field, not a message)                      |
 
 > **Note:** Unlike OpenAI, Claude does not support `frequency_penalty`, `presence_penalty`, `seed`, `candidate_count (n)`, or `response_format`. These options are silently ignored.
+
+### Custom (Provider-Specific) Options
+
+Any option whose name is not a genai standard option (the `genai.OptionXxx` constants) is forwarded as an extra **top-level field of the JSON request body**, under its option name, with its Go value JSON-encoded. Use `OptionsBuilder.Add` (or `Options.Set`) for parameters that have no typed setter, such as thinking, metadata, service_tier:
+
+```go
+opts := genai.NewOptionsBuilder().
+    SetMaxTokens(4096).
+    Add("thinking", map[string]any{"type": "enabled", "budget_tokens": 2048}).
+    Add("metadata", map[string]any{"user_id": "user-123"}).
+    Build()
+
+resp, err := provider.Generate(ctx, "claude-sonnet-4-20250514", msg, opts)
+// request body: {..., "max_tokens": 4096, "thinking": {...}, "metadata": {...}}
+```
+
+Rules:
+
+- Standard options keep their typed mapping. A standard option this provider does not support is still ignored; it is never sent under its genai name.
+- A custom option never overrides a field the provider sets itself (`model`, `messages`, `stream`, ...). A conflicting name is ignored and a warning is logged. A field the provider leaves empty can be supplied this way.
+- Forwarding applies to both `Generate` and `GenerateStream`.
+
+To opt out and drop custom options (the previous behaviour), set `ForwardUnknownOptions` to `false`:
+
+```go
+off := false
+provider := impl.NewClaudeProviderWithConfig(&impl.ClaudeProviderConfig{
+    Auth:                  clients.NewAPIKeyAuth("x-api-key", key),
+    ForwardUnknownOptions: &off,
+}, nil)
+```
 
 ## Generating Responses
 

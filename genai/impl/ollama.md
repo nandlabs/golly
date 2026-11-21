@@ -15,6 +15,7 @@ The Ollama provider implements the `genai.Provider` interface for [Ollama](https
   - [Behind a Reverse Proxy](#behind-a-reverse-proxy)
   - [Behind an API Gateway](#behind-an-api-gateway)
 - [Supported Options](#supported-options)
+  - [Custom (Provider-Specific) Options](#custom-provider-specific-options)
 - [Generating Responses](#generating-responses)
   - [Basic Generation](#basic-generation)
   - [System Instructions](#system-instructions)
@@ -112,6 +113,7 @@ provider := impl.NewOllamaProviderWithConfig(&impl.OllamaProviderConfig{
 | `Description`  | `string`               | `"Ollama provider for local model inference..."` | Provider description                                     |
 | `Version`      | `string`               | `"1.0.0"`                                        | Provider version                                         |
 | `ExtraHeaders` | `map[string]string`    | `nil`                                            | Additional HTTP headers on every request                 |
+| `ForwardUnknownOptions` | `*bool`                | `nil` (forward)                                  | Forward custom options in the request body ([details](#custom-provider-specific-options)) |
 
 ## Authentication
 
@@ -180,6 +182,35 @@ Since Ollama uses the OpenAI-compatible API, it supports the same options as the
 | `OptionSystemInstructions` | `messages[0]` (system) | `string`   | Prepended as system message    |
 
 > **Note:** Not all models support all options. For example, vision models like `llava` support image inputs, while text-only models like `llama3` do not.
+
+### Custom (Provider-Specific) Options
+
+Any option whose name is not a genai standard option (the `genai.OptionXxx` constants) is forwarded as an extra **top-level field of the JSON request body**, under its option name, with its Go value JSON-encoded. Use `OptionsBuilder.Add` (or `Options.Set`) for parameters that have no typed setter, such as keep_alive or other parameters accepted by Ollama's OpenAI-compatible endpoint:
+
+```go
+opts := genai.NewOptionsBuilder().
+    SetTemperature(0.2).
+    Add("keep_alive", "10m").
+    Build()
+
+resp, err := provider.Generate(ctx, "llama3", msg, opts)
+// request body: {..., "temperature": 0.2, "keep_alive": "10m"}
+```
+
+Rules:
+
+- Standard options keep their typed mapping. A standard option this provider does not support is still ignored; it is never sent under its genai name.
+- A custom option never overrides a field the provider sets itself (`model`, `messages`, `stream`, ...). A conflicting name is ignored and a warning is logged. A field the provider leaves empty can be supplied this way.
+- Forwarding applies to both `Generate` and `GenerateStream`.
+
+To opt out and drop custom options (the previous behaviour), set `ForwardUnknownOptions` to `false`:
+
+```go
+off := false
+provider := impl.NewOllamaProviderWithConfig(&impl.OllamaProviderConfig{
+    ForwardUnknownOptions: &off,
+}, nil)
+```
 
 ## Generating Responses
 

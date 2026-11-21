@@ -14,6 +14,7 @@ The OpenAI provider implements the `genai.Provider` interface for the [OpenAI Ch
   - [Azure OpenAI](#azure-openai)
   - [Custom Auth Provider](#custom-auth-provider)
 - [Supported Options](#supported-options)
+  - [Custom (Provider-Specific) Options](#custom-provider-specific-options)
 - [Generating Responses](#generating-responses)
   - [Basic Generation](#basic-generation)
   - [System Instructions](#system-instructions)
@@ -100,6 +101,7 @@ provider := impl.NewOpenAIProviderWithConfig(&impl.OpenAIProviderConfig{
 | `Description`  | `string`               | `"OpenAI API provider for GPT model inference"` | Provider description                                          |
 | `Version`      | `string`               | `"1.0.0"`                                       | Provider version                                              |
 | `ExtraHeaders` | `map[string]string`    | `nil`                                           | Additional HTTP headers on every request                      |
+| `ForwardUnknownOptions` | `*bool`                | `nil` (forward)                                 | Forward custom options in the request body ([details](#custom-provider-specific-options)) |
 
 ## Authentication
 
@@ -169,6 +171,37 @@ provider := impl.NewOpenAIProviderWithConfig(&impl.OpenAIProviderConfig{
 | `OptionStopWords`          | `stop`                 | `[]string` | Stop sequences                             |
 | `OptionOutputMime`         | `response_format`      | `string`   | Set to `"application/json"` for JSON mode  |
 | `OptionSystemInstructions` | `messages[0]` (system) | `string`   | Prepended as a system message              |
+
+### Custom (Provider-Specific) Options
+
+Any option whose name is not a genai standard option (the `genai.OptionXxx` constants) is forwarded as an extra **top-level field of the JSON request body**, under its option name, with its Go value JSON-encoded. Use `OptionsBuilder.Add` (or `Options.Set`) for parameters that have no typed setter, such as reasoning_effort, parallel_tool_calls, user, logit_bias, or an OpenAI-compatible gateway's own parameters (e.g. OpenRouter's reasoning):
+
+```go
+opts := genai.NewOptionsBuilder().
+    SetTemperature(0).
+    Add("reasoning_effort", "high").
+    Add("parallel_tool_calls", false).
+    Build()
+
+resp, err := provider.Generate(ctx, "gpt-4o", msg, opts)
+// request body: {..., "temperature": 0, "reasoning_effort": "high", "parallel_tool_calls": false}
+```
+
+Rules:
+
+- Standard options keep their typed mapping. A standard option this provider does not support is still ignored; it is never sent under its genai name.
+- A custom option never overrides a field the provider sets itself (`model`, `messages`, `stream`, ...). A conflicting name is ignored and a warning is logged. A field the provider leaves empty can be supplied this way.
+- Forwarding applies to both `Generate` and `GenerateStream`.
+
+To opt out and drop custom options (the previous behaviour), set `ForwardUnknownOptions` to `false`:
+
+```go
+off := false
+provider := impl.NewOpenAIProviderWithConfig(&impl.OpenAIProviderConfig{
+    Auth:                  clients.NewBearerAuth(key),
+    ForwardUnknownOptions: &off,
+}, nil)
+```
 
 ## Generating Responses
 
